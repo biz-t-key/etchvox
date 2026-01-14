@@ -24,8 +24,8 @@ export default function HomePage() {
         {/* Logo */}
         <div>
           <h1 className="text-5xl md:text-7xl font-black tracking-tight leading-tight">
-            <span className="neon-text-cyan">VOICE</span>
-            <span className="neon-text-magenta">GLOW</span>
+            <span className="neon-text-cyan">ETCH</span>
+            <span className="neon-text-magenta">VOX</span>
           </h1>
         </div>
 
