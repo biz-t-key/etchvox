@@ -204,7 +204,7 @@ export default function ResultPage() {
 
                         {/* STAGE 3: FULL CONTENT */}
                         {displayStage === 'full' && (
-                            <div className="animate-slide-up space-y-12 pb-20">
+                            <div className="animate-slide-up space-y-16 pb-20">
 
                                 {/* 📸 NEW: Share Card Section */}
                                 <div className="space-y-6">
@@ -241,7 +241,7 @@ export default function ResultPage() {
                                 {/* The Roast */}
                                 <div className="bg-black/50 rounded-2xl p-6 md:p-8 border border-white/10 shadow-xl overflow-hidden relative">
                                     <div className="absolute top-0 right-0 p-4 text-[100px] opacity-5 pointer-events-none select-none">🔥</div>
-                                    <h3 className="mono text-cyan-400 text-sm mb-4 tracking-widest uppercase flex items-center gap-2">
+                                    <h3 className="mono text-cyan-400 text-sm mb-6 tracking-widest uppercase flex items-center gap-2">
                                         <span className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
                                         Behavioral_Profile_Analysis
                                     </h3>
@@ -250,22 +250,21 @@ export default function ResultPage() {
                                             {voiceType.roast}
                                         </p>
                                     ) : (
-                                        <div className="relative">
-                                            <p className="text-gray-200 leading-relaxed blur-lg select-none text-lg">
+                                        <div className="relative min-h-[200px] flex items-center justify-center">
+                                            <p className="text-gray-200 leading-relaxed blur-lg select-none text-lg absolute inset-0 p-4">
                                                 {voiceType.roast}
                                             </p>
-                                            <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm rounded-xl">
-                                                <div className="text-center p-6 glass rounded-2xl border border-white/10">
-                                                    <div className="text-5xl mb-4">㊙️</div>
-                                                    <h4 className="text-xl font-bold mb-4">Restricted Content</h4>
-                                                    <button
-                                                        onClick={() => handleCheckout('unlock')}
-                                                        disabled={processingPayment}
-                                                        className="w-full bg-gradient-to-r from-cyan-500 to-magenta-500 hover:from-cyan-400 hover:to-magenta-400 text-white font-bold py-4 px-8 rounded-full shadow-lg shadow-cyan-500/20 transition-all transform hover:scale-105"
-                                                    >
-                                                        {processingPayment ? 'Processing...' : 'Unlock Deep Profile - $4.99'}
-                                                    </button>
-                                                </div>
+                                            <div className="relative z-10 text-center p-8 glass rounded-2xl border border-white/10 max-w-sm mx-auto">
+                                                <div className="text-6xl mb-4">🔒</div>
+                                                <h4 className="text-2xl font-bold mb-2">UNLOCK</h4>
+                                                <p className="text-sm text-gray-400 mb-6">Full personality analysis</p>
+                                                <button
+                                                    onClick={() => handleCheckout('unlock')}
+                                                    disabled={processingPayment}
+                                                    className="w-full bg-gradient-to-r from-cyan-500 to-magenta-500 hover:from-cyan-400 hover:to-magenta-400 text-white font-bold py-4 px-8 rounded-full shadow-lg shadow-cyan-500/20 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    {processingPayment ? 'Processing...' : '$4.99'}
+                                                </button>
                                             </div>
                                         </div>
                                     )}
@@ -329,7 +328,7 @@ export default function ResultPage() {
                                         createdAt={result.createdAt}
                                     />
                                 ) : (
-                                    <div className="bg-gradient-to-br from-cyan-900/40 via-black to-magenta-900/40 border border-white/10 rounded-3xl p-8 text-center relative overflow-hidden group">
+                                    <div className="bg-gradient-to-br from-cyan-900/40 via-black to-magenta-900/40 border border-white/10 rounded-3xl p-10 md:p-12 text-center relative overflow-hidden group">
                                         <div className="absolute inset-0 bg-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                                         <div className="relative z-10">
                                             <div className="text-5xl mb-4">⏳</div>
