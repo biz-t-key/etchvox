@@ -31,10 +31,19 @@ export interface VoiceResult {
     vaultEnabled?: boolean;
     purchasedAt?: string;
     toxicityProfile?: ToxicityProfile;
+    aiAnalysis?: string; // Markdown text from Gemini
+    coupleData?: {
+        userA: { name: string; job: string; metrics: AnalysisMetrics };
+        userB: { name: string; job: string; metrics: AnalysisMetrics };
+    };
 }
 
 // Save result to Firestore (and localStorage as fallback)
-export async function saveResult(result: VoiceResult, audioBlob?: Blob): Promise<void> {
+export async function saveResult(
+    result: VoiceResult,
+    audioBlob?: Blob,
+    coupleAudioBlobs?: { userA: Blob; userB: Blob }
+): Promise<void> {
     // Always save to localStorage first (fallback)
     localStorage.setItem(`etchvox_result_${result.id}`, JSON.stringify(result));
     localStorage.setItem('etchvox_latest_result', result.id);
@@ -51,22 +60,30 @@ export async function saveResult(result: VoiceResult, audioBlob?: Blob): Promise
                 updatedAt: Timestamp.now(),
             });
 
-            // ✅ 全ユーザーの音声を保存（ML訓練 & Vault機能用）
+            // ✅ Upload Single Audio (Legacy/Solo)
             if (audioBlob) {
                 const uploadResult = await uploadAudio(result.id, audioBlob);
                 if (uploadResult) {
-                    // Update result with audio URL
                     await updateDoc(resultRef, {
                         audioUrl: uploadResult.url,
                         audioPath: uploadResult.path,
                     });
-
-                    // Update localStorage as well
+                    // Update local object
                     result.audioUrl = uploadResult.url;
                     result.audioPath = uploadResult.path;
-                    localStorage.setItem(`etchvox_result_${result.id}`, JSON.stringify(result));
+                }
+            }
 
-                    console.log('✅ Audio saved for all users:', uploadResult.path);
+            // ✅ Upload Couple Audio
+            if (coupleAudioBlobs) {
+                const uploadA = await uploadAudio(`${result.id}_userA`, coupleAudioBlobs.userA);
+                const uploadB = await uploadAudio(`${result.id}_userB`, coupleAudioBlobs.userB);
+
+                if (uploadA && uploadB) {
+                    await updateDoc(resultRef, {
+                        'coupleData.userA.audioUrl': uploadA.url,
+                        'coupleData.userB.audioUrl': uploadB.url
+                    });
                 }
             }
 
@@ -118,6 +135,7 @@ export async function getResult(resultId: string): Promise<VoiceResult | null> {
                     vaultEnabled: data.vaultEnabled,
                     purchasedAt: data.purchasedAt,
                     toxicityProfile: data.toxicityProfile,
+                    aiAnalysis: data.aiAnalysis,
                 };
 
                 // Cache in localStorage

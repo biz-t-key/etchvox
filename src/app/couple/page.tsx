@@ -1,402 +1,290 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { coupleSteps, totalDuration, getStepByTime, getAlternatingWordIndex, CoupleStep } from '@/lib/coupleScripts';
+import { VoiceAnalyzer } from '@/lib/analyzer';
+import { generateResultId } from '@/lib/permalink';
+import { saveResult, getSessionId, VoiceResult } from '@/lib/storage';
 import ParticleVisualizer from '@/components/recording/ParticleVisualizer';
 
-type Phase = 'input' | 'recording' | 'processing' | 'complete';
+type Phase = 'intro' | 'recordA' | 'profileA' | 'handoff' | 'recordB' | 'profileB' | 'analyzing' | 'payment';
 
-interface UserInfo {
-    name: string;
-    job: string;
-    accent: string;
-}
+const JOBS = [
+    'Lawyer', 'Executive', 'Engineer', 'Doctor', 'Founder',
+    'Consultant', 'Artist', 'Teacher', 'Designer', 'Nurse',
+    'Writer', 'Musician', 'Student', 'Sales', 'Other'
+];
 
-export default function CoupleRecordPage() {
+export default function CouplePage() {
     const router = useRouter();
-    const [phase, setPhase] = useState<Phase>('input');
-    const [userA, setUserA] = useState<UserInfo>({ name: '', job: '', accent: 'us' });
-    const [userB, setUserB] = useState<UserInfo>({ name: '', job: '', accent: 'us' });
-    const [currentStep, setCurrentStep] = useState<CoupleStep | null>(null);
-    const [elapsedTime, setElapsedTime] = useState(0);
-    const [stepElapsed, setStepElapsed] = useState(0);
-    const [error, setError] = useState<string | null>(null);
-    const [consentGiven, setConsentGiven] = useState(false);
-    const [countdown, setCountdown] = useState<number | null>(null);
+    const [phase, setPhase] = useState<Phase>('intro');
+    const [timeLeft, setTimeLeft] = useState(10);
+    const [isRecording, setIsRecording] = useState(false);
 
+    // Data Store
+    const [userA, setUserA] = useState<any>({});
+    const [userB, setUserB] = useState<any>({});
+
+    // Hardware Refs
+    const analyzerRef = useRef<VoiceAnalyzer | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-    const audioContextRef = useRef<AudioContext | null>(null);
-    const analyserRef = useRef<AnalyserNode | null>(null);
-    const timerRef = useRef<NodeJS.Timeout | null>(null);
     const chunksRef = useRef<Blob[]>([]);
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const animationFrameRef = useRef<number | null>(null);
 
     // Cleanup
     useEffect(() => {
         return () => {
+            if (analyzerRef.current) analyzerRef.current.destroy();
             if (timerRef.current) clearInterval(timerRef.current);
-            if (audioContextRef.current) audioContextRef.current.close();
+            if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
         };
     }, []);
 
-    const startRecording = async () => {
+    const startRecording = async (currentUser: 'A' | 'B') => {
         try {
-            setError(null);
-
             const stream = await navigator.mediaDevices.getUserMedia({
-                audio: {
-                    echoCancellation: false, // Keep natural audio for couple analysis
-                    noiseSuppression: false,
-                    sampleRate: 44100,
-                },
+                audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
             });
 
-            // Setup AudioContext for visualization
-            audioContextRef.current = new AudioContext({ sampleRate: 44100 });
-            analyserRef.current = audioContextRef.current.createAnalyser();
-            analyserRef.current.fftSize = 2048;
+            analyzerRef.current = new VoiceAnalyzer();
+            await analyzerRef.current.initialize();
+            analyzerRef.current.connectStream(stream);
 
-            const source = audioContextRef.current.createMediaStreamSource(stream);
-            source.connect(analyserRef.current);
-
-            // Setup MediaRecorder
-            mediaRecorderRef.current = new MediaRecorder(stream, {
-                mimeType: 'audio/webm;codecs=opus',
-            });
-
+            mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
             chunksRef.current = [];
+
             mediaRecorderRef.current.ondataavailable = (e) => {
                 if (e.data.size > 0) chunksRef.current.push(e.data);
             };
 
-            // Start recording
             mediaRecorderRef.current.start(100);
-            setPhase('recording');
-            setElapsedTime(0);
-            setStepElapsed(0);
+            setIsRecording(true);
+            setTimeLeft(8); // Short snappy recording for couples
+
+            // Start Visualizer Loop
+            const collectLoop = () => {
+                if (analyzerRef.current && isRecording) {
+                    analyzerRef.current.collectSample();
+                }
+                animationFrameRef.current = requestAnimationFrame(collectLoop);
+            };
+            collectLoop();
 
             // Timer
-            let elapsed = 0;
-            let stepStart = 0;
             timerRef.current = setInterval(() => {
-                elapsed += 0.1;
-                setElapsedTime(elapsed);
-
-                const step = getStepByTime(elapsed);
-                if (step) {
-                    // Check if transitioning TO unison phase - show countdown
-                    const prevStep = getStepByTime(elapsed - 0.1);
-                    if (step.phase === 'unison' && prevStep?.phase !== 'unison' && countdown === null) {
-                        // Start countdown
-                        setCountdown(3);
-                        setTimeout(() => setCountdown(2), 1000);
-                        setTimeout(() => setCountdown(1), 2000);
-                        setTimeout(() => setCountdown(0), 3000); // 0 = GO!
-                        setTimeout(() => setCountdown(null), 3500);
+                setTimeLeft((prev) => {
+                    if (prev <= 1) {
+                        finishRecording(currentUser);
+                        return 0;
                     }
-
-                    setCurrentStep(step);
-
-                    // Calculate step-local elapsed time
-                    let accumulatedTime = 0;
-                    for (const s of coupleSteps) {
-                        if (s.id === step.id) break;
-                        accumulatedTime += s.duration;
-                    }
-                    setStepElapsed(elapsed - accumulatedTime);
-                }
-
-                if (elapsed >= totalDuration) {
-                    finishRecording();
-                }
-            }, 100);
+                    return prev - 1;
+                });
+            }, 1000);
 
         } catch (err) {
-            console.error('Microphone access denied:', err);
-            setError('Microphone access required. Please allow access and try again.');
+            console.error('Mic Error', err);
+            alert('Microphone access required.');
         }
     };
 
-    const finishRecording = useCallback(() => {
+    const finishRecording = async (currentUser: 'A' | 'B') => {
         if (timerRef.current) clearInterval(timerRef.current);
+        if (mediaRecorderRef.current) mediaRecorderRef.current.stop();
 
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-            mediaRecorderRef.current.stop();
-            mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+        // Get Analysis
+        const analysis = analyzerRef.current?.analyze();
+        const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
+
+        const userData = {
+            metrics: analysis?.metrics,
+            audioBlob: audioBlob,
+            tempId: generateResultId()
+        };
+
+        if (currentUser === 'A') {
+            setUserA((prev: any) => ({ ...prev, ...userData }));
+            setPhase('profileA');
+        } else {
+            setUserB((prev: any) => ({ ...prev, ...userData }));
+            setPhase('profileB');
         }
 
-        setPhase('processing');
-
-        // In production, you would upload the audio and process with Python
-        // For MVP, we simulate processing
-        setTimeout(() => {
-            // Generate a fake result ID
-            const resultId = `CPL-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-
-            // Store user info
-            const coupleData = {
-                id: resultId,
-                userA,
-                userB,
-                createdAt: new Date().toISOString(),
-                // In production, these would come from Python processor
-                matrixScore: Math.floor(Math.random() * 30) + 65, // 65-95
-                status: 'demo', // Flag that this is demo data
-            };
-
-            localStorage.setItem(`etchvox_couple_${resultId}`, JSON.stringify(coupleData));
-
-            setPhase('complete');
-            router.push(`/couple/result/${resultId}`);
-        }, 3000);
-    }, [router, userA, userB]);
-
-    // Render alternating words with highlights
-    const renderAlternatingScript = () => {
-        if (!currentStep || currentStep.phase !== 'alternating') return null;
-
-        const words = currentStep.script.en.split(' | ');
-        const pattern = currentStep.highlightPattern || [];
-        const currentWordIndex = getAlternatingWordIndex(stepElapsed, currentStep);
-
-        return (
-            <div className="flex flex-wrap justify-center gap-2 text-2xl">
-                {words.map((word, i) => {
-                    const speaker = pattern[i];
-                    const isActive = i === currentWordIndex;
-                    const isPast = i < currentWordIndex;
-
-                    let colorClass = 'text-gray-600';
-                    if (isActive) {
-                        colorClass = speaker === 'A' ? 'text-cyan-400 animate-pulse scale-125'
-                            : speaker === 'B' ? 'text-magenta-400 animate-pulse scale-125'
-                                : 'text-yellow-400 animate-pulse scale-125';
-                    } else if (isPast) {
-                        colorClass = 'text-gray-500';
-                    }
-
-                    return (
-                        <span
-                            key={i}
-                            className={`transition-all duration-200 ${colorClass} ${isActive ? 'font-bold' : ''}`}
-                        >
-                            {speaker === 'BOTH' && isActive && <span className="text-xs block">TOGETHER!</span>}
-                            {word}
-                        </span>
-                    );
-                })}
-            </div>
-        );
+        setIsRecording(false);
     };
+
+    const handleProfileSubmit = (user: 'A' | 'B', name: string, job: string) => {
+        if (user === 'A') {
+            setUserA((prev: any) => ({ ...prev, name, job }));
+            setPhase('handoff');
+        } else {
+            setUserB((prev: any) => ({ ...prev, name, job }));
+            // Start final processing
+            processCoupleResult(name, job);
+        }
+    };
+
+    const processCoupleResult = async (finalNameB: string, finalJobB: string) => {
+        setPhase('analyzing');
+
+        // Ensure state is up to date (React batching might delay userB update)
+        const finalUserB = { ...userB, name: finalNameB, job: finalJobB };
+
+        // Save Result (Placeholder for couple logic)
+        // Ideally we save a single "Couple Result" containing both metrics
+        // For MVP, we save it as a result with specific metadata
+        const coupleResultId = generateResultId();
+
+        const coupleData: VoiceResult = {
+            id: coupleResultId,
+            sessionId: getSessionId(),
+            typeCode: 'COUPLE_MIX' as any, // Placeholder type
+            metrics: userA.metrics, // Main metrics (A) - we'll store B in custom fields
+            accentOrigin: 'Couple',
+            createdAt: new Date().toISOString(),
+            locale: 'en-US',
+            isPremium: false,
+            // Custom fields for couple (will be saved to Firestore)
+            coupleData: {
+                userA: { name: userA.name, job: userA.job, metrics: userA.metrics },
+                userB: { name: finalNameB, job: finalJobB, metrics: finalUserB.metrics }
+            }
+        } as any; // Cast as any to bypass strict type check for now
+
+        // ✅ Save with COUPLE AUDIO BLOBS
+        await saveResult(coupleData, undefined, {
+            userA: userA.audioBlob,
+            userB: finalUserB.audioBlob
+        });
+
+        // Redirect to Payment/Result (For now, go to result page with couple params)
+        // In production, this would go to Stripe Checkout
+        router.push(`/result/${coupleResultId}?type=couple`);
+    };
+
+    // --- UI COMPONENTS ---
+
+    // 1. Intro Screen
+    if (phase === 'intro') return (
+        <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center">
+            <h1 className="text-3xl font-bold uppercase tracking-widest mb-4">
+                <span className="text-pink-500">Couple</span> Resonance
+            </h1>
+            <p className="text-gray-400 max-w-md mb-8 text-sm leading-relaxed">
+                Discover the acoustic physics of your relationship.<br />
+                We analyze voice frequency, cadence, and tone to decode your hidden dynamics.
+            </p>
+            <div className="bg-white/5 border border-white/10 p-6 rounded-xl mb-8 w-full max-w-sm">
+                <div className="flex justify-between text-xs text-gray-500 uppercase tracking-widest mb-4">
+                    <span>Includes</span>
+                    <span>$15.00</span>
+                </div>
+                <ul className="text-left space-y-3 text-sm text-gray-300">
+                    <li className="flex gap-2"><span>🔬</span> Compatibility Score</li>
+                    <li className="flex gap-2"><span>🎭</span> Vocal Archetype SCM</li>
+                    <li className="flex gap-2"><span>🔥</span> Friction & Flow Analysis</li>
+                </ul>
+            </div>
+            <button onClick={() => setPhase('recordA')} className="w-full max-w-xs bg-white text-black font-bold py-4 rounded-full uppercase tracking-[0.2em] hover:bg-pink-500 hover:text-white transition-colors">
+                Start Analysis
+            </button>
+        </main>
+    );
+
+    // 2. Recording Screen (Shared)
+    if (phase === 'recordA' || phase === 'recordB') {
+        const currentUser = phase === 'recordA' ? 'Partner A' : 'Partner B';
+        return (
+            <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center relative overflow-hidden">
+                <ParticleVisualizer analyser={analyzerRef.current?.getAnalyser() || null} isActive={isRecording} />
+
+                <div className="z-10 text-center space-y-8">
+                    <div className="uppercase tracking-[0.2em] text-pink-500 text-xs font-bold">
+                        Recording: {currentUser}
+                    </div>
+
+                    {!isRecording ? (
+                        <div className="space-y-6">
+                            <p className="text-2xl font-light">"Tell us about your day in one sentence."</p>
+                            <button onClick={() => startRecording(phase === 'recordA' ? 'A' : 'B')} className="w-20 h-20 rounded-full border-2 border-white flex items-center justify-center hover:bg-white/10 transition-all">
+                                <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse" />
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="text-6xl font-mono font-bold">{timeLeft}</div>
+                    )}
+                </div>
+            </main>
+        );
+    }
+
+    // 3. Profile Input (Shared)
+    if (phase === 'profileA' || phase === 'profileB') {
+        const currentUser = phase === 'profileA' ? 'A' : 'B';
+        return <ProfileForm user={currentUser} onSubmit={(n, j) => handleProfileSubmit(currentUser, n, j)} />;
+    }
+
+    // 4. Handoff
+    if (phase === 'handoff') return (
+        <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center text-center p-6">
+            <div className="text-4xl mb-6">🔄</div>
+            <h2 className="text-xl font-bold uppercase tracking-widest mb-2">Next: Partner B</h2>
+            <p className="text-gray-400 text-sm mb-8">Pass the device to your partner.</p>
+            <button onClick={() => setPhase('recordB')} className="bg-pink-500 text-white px-8 py-3 rounded-full font-bold uppercase tracking-widest">
+                Ready
+            </button>
+        </main>
+    );
 
     return (
-        <div className="min-h-screen bg-black py-12 px-6">
-            <div className="max-w-2xl mx-auto">
+        <main className="min-h-screen bg-black flex items-center justify-center">
+            <div className="animate-spin text-4xl">⏳</div>
+        </main>
+    );
+}
 
-                {/* Input Phase - Now includes intro info */}
-                {phase === 'input' && (
-                    <div className="fade-in space-y-10">
-                        {/* Header */}
-                        <div className="text-center space-y-4">
-                            <h1 className="text-4xl md:text-5xl font-bold">
-                                <span className="neon-text-cyan">Couple</span>{' '}
-                                <span className="neon-text-magenta">Mode</span>
-                            </h1>
-                            <p className="text-gray-400 text-lg">
-                                Discover your vocal compatibility together
-                            </p>
-                        </div>
+// Sub-component for Profile Form
+function ProfileForm({ user, onSubmit }: { user: 'A' | 'B', onSubmit: (name: string, job: string) => void }) {
+    const [name, setName] = useState('');
+    const [job, setJob] = useState(JOBS[0]);
 
-                        {/* Compact How it works */}
-                        <div className="glass rounded-2xl p-6 text-center">
-                            <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-300">
-                                <span>🎤 Intro (5s each)</span>
-                                <span>→</span>
-                                <span>🎵 Read Together (10s)</span>
-                                <span>→</span>
-                                <span>🎭 Drama (4s each)</span>
-                                <span>→</span>
-                                <span>⚡ Speed Round (8s)</span>
-                            </div>
-                            <p className="text-gray-500 text-xs mt-3">Total: ~36 seconds</p>
-                        </div>
+    return (
+        <main className="min-h-screen bg-black text-white p-6 flex flex-col justify-center max-w-md mx-auto">
+            <h2 className="text-xl font-bold uppercase tracking-widest mb-8 text-center text-gray-500">
+                Partner {user} Profile
+            </h2>
 
-                        {/* Name Input Cards */}
-                        <div className="text-center">
-                            <h2 className="text-2xl font-bold mb-6">Who's playing?</h2>
-                        </div>
+            <div className="space-y-6">
+                <div>
+                    <label className="block text-xs uppercase tracking-wider text-gray-500 mb-2">Name / Nickname</label>
+                    <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg p-4 text-white placeholder-gray-700 focus:border-pink-500 outline-none transition-colors"
+                        placeholder="e.g. Alex"
+                    />
+                </div>
 
-                        <div className="grid md:grid-cols-2 gap-6">
-                            {/* Person A Card */}
-                            <div className="rounded-2xl p-8 border-2 border-cyan-500/40 bg-cyan-500/5">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <span className="w-12 h-12 rounded-full bg-cyan-500/30 flex items-center justify-center text-cyan-400 font-black text-xl">A</span>
-                                    <span className="text-xl font-bold neon-text-cyan">Person A</span>
-                                </div>
-                                <input
-                                    type="text"
-                                    placeholder="Enter name..."
-                                    value={userA.name}
-                                    onChange={(e) => setUserA({ ...userA, name: e.target.value })}
-                                    className="w-full bg-black/50 border-2 border-cyan-500/30 rounded-xl px-5 py-4 text-lg focus:border-cyan-500 outline-none placeholder:text-gray-600"
-                                    autoFocus
-                                />
-                            </div>
+                <div>
+                    <label className="block text-xs uppercase tracking-wider text-gray-500 mb-2">Profession (For SCM)</label>
+                    <select
+                        value={job}
+                        onChange={(e) => setJob(e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg p-4 text-white outline-none appearance-none"
+                    >
+                        {JOBS.map(j => <option key={j} value={j} className="bg-black">{j}</option>)}
+                    </select>
+                </div>
 
-                            {/* Person B Card */}
-                            <div className="rounded-2xl p-8 border-2 border-magenta-500/40 bg-magenta-500/5">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <span className="w-12 h-12 rounded-full bg-magenta-500/30 flex items-center justify-center text-magenta-400 font-black text-xl">B</span>
-                                    <span className="text-xl font-bold neon-text-magenta">Person B</span>
-                                </div>
-                                <input
-                                    type="text"
-                                    placeholder="Enter name..."
-                                    value={userB.name}
-                                    onChange={(e) => setUserB({ ...userB, name: e.target.value })}
-                                    className="w-full bg-black/50 border-2 border-magenta-500/30 rounded-xl px-5 py-4 text-lg focus:border-magenta-500 outline-none placeholder:text-gray-600"
-                                />
-                            </div>
-                        </div>
-
-                        {error && (
-                            <div className="bg-red-500/20 border border-red-500 rounded-xl p-5 mb-6 text-red-400 text-base">
-                                {error}
-                            </div>
-                        )}
-
-                        {/* Privacy Consent - Required */}
-                        <div className="glass rounded-xl p-6 mb-6 border-2 border-white/5 bg-white/5 max-w-xl mx-auto">
-                            <div className="flex items-start gap-4">
-                                <input
-                                    type="checkbox"
-                                    id="couple-consent"
-                                    checked={consentGiven}
-                                    onChange={(e) => setConsentGiven(e.target.checked)}
-                                    className="mt-1 w-5 h-5 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-cyan-500"
-                                />
-                                <label htmlFor="couple-consent" className="text-sm text-gray-400 leading-relaxed cursor-pointer select-none text-left block">
-                                    We consent to our voices being <strong className="text-gray-200">recorded, analyzed, and stored</strong> together on EtchVox servers.
-                                    Our voice data and compatibility results will be kept unless we request deletion.
-                                    {' '}<a href="/privacy" target="_blank" className="text-cyan-500 hover:text-cyan-400 underline decoration-1 underline-offset-4">Privacy Policy</a>
-                                </label>
-                            </div>
-                        </div>
-
-                        <button
-                            onClick={startRecording}
-                            disabled={!userA.name || !userB.name || !consentGiven}
-                            className="w-full btn-metallic py-6 rounded-full text-xl font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                        >
-                            <span className="mr-3">🎤</span> START RECORDING TOGETHER
-                        </button>
-
-                        {(!userA.name || !userB.name || !consentGiven) && (
-                            <p className="text-amber-400 text-sm font-semibold text-center">
-                                {!userA.name || !userB.name ? '↑ Enter both names' : '↑ Please accept the consent to continue'}
-                            </p>
-                        )}
-                    </div>
-                )}
-
-                {/* Recording Phase */}
-                {phase === 'recording' && currentStep && (
-                    <div className="fade-in text-center">
-                        {/* Progress */}
-                        <div className="mb-4">
-                            <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-gradient-to-r from-cyan-500 to-magenta-500 transition-all duration-100"
-                                    style={{ width: `${(elapsedTime / totalDuration) * 100}%` }}
-                                />
-                            </div>
-                            <div className="text-gray-500 text-sm mt-1 mono">
-                                {Math.floor(elapsedTime)}s / {totalDuration}s
-                            </div>
-                        </div>
-
-                        {/* Speaker Indicator - Larger and clearer */}
-                        <div className="flex justify-center gap-6 mb-8">
-                            <div className={`px-6 py-3 rounded-full transition-all font-bold text-lg ${currentStep.speaker === 'A' || currentStep.speaker === 'BOTH' || currentStep.speaker === 'ALTERNATE'
-                                ? 'bg-cyan-500/40 text-cyan-300 scale-110 border-2 border-cyan-500 shadow-[0_0_20px_rgba(0,240,255,0.3)]'
-                                : 'bg-gray-800 text-gray-600 border-2 border-transparent'
-                                }`}>
-                                <span className="mr-2">🎤</span>{userA.name || 'A'}
-                            </div>
-                            <div className={`px-6 py-3 rounded-full transition-all font-bold text-lg ${currentStep.speaker === 'B' || currentStep.speaker === 'BOTH' || currentStep.speaker === 'ALTERNATE'
-                                ? 'bg-magenta-500/40 text-magenta-300 scale-110 border-2 border-magenta-500 shadow-[0_0_20px_rgba(255,0,255,0.3)]'
-                                : 'bg-gray-800 text-gray-600 border-2 border-transparent'
-                                }`}>
-                                <span className="mr-2">🎤</span>{userB.name || 'B'}
-                            </div>
-                        </div>
-
-                        {/* Countdown Overlay for Unison */}
-                        {countdown !== null && (
-                            <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-                                <div className="text-center">
-                                    <div className="text-9xl font-black animate-pulse">
-                                        {countdown === 0 ? (
-                                            <span className="bg-gradient-to-r from-cyan-400 to-magenta-400 bg-clip-text text-transparent">GO!</span>
-                                        ) : (
-                                            <span className="text-white">{countdown}</span>
-                                        )}
-                                    </div>
-                                    <p className="text-gray-400 text-xl mt-4">Read TOGETHER!</p>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* UI Text - Larger */}
-                        <div className="mono text-base text-cyan-400 mb-6 animate-pulse">
-                            {currentStep.ui.en}
-                        </div>
-
-                        {/* Visualizer - More space */}
-                        <div className="mb-8">
-                            <ParticleVisualizer
-                                analyser={analyserRef.current}
-                                isActive={true}
-                            />
-                        </div>
-
-                        {/* Instruction - Larger */}
-                        <p className="text-gray-300 text-lg mb-8 font-medium">
-                            {currentStep.instruction.en}
-                        </p>
-
-                        {/* Script */}
-                        {currentStep.phase === 'alternating' ? (
-                            renderAlternatingScript()
-                        ) : (
-                            <div className="glass rounded-2xl p-10 border border-white/10">
-                                <p className="text-2xl font-semibold leading-relaxed">
-                                    "{currentStep.script.en}"
-                                </p>
-                            </div>
-                        )}
-
-                        {/* Timer - Larger */}
-                        <div className="mt-10 flex items-center justify-center gap-3">
-                            <span className="w-4 h-4 bg-red-500 rounded-full animate-pulse" />
-                            <span className="text-red-400 mono text-lg font-bold">RECORDING</span>
-                        </div>
-                    </div>
-                )}
-
-                {/* Processing Phase */}
-                {phase === 'processing' && (
-                    <div className="text-center fade-in">
-                        <div className="w-20 h-20 mx-auto mb-6 border-4 border-cyan-500 border-t-magenta-500 rounded-full animate-spin" />
-                        <p className="mono text-cyan-400 animate-pulse mb-2">
-                            Analyzing vocal compatibility...
-                        </p>
-                        <p className="text-gray-500 text-sm">
-                            Calculating Matrix Score...
-                        </p>
-                    </div>
-                )}
+                <button
+                    disabled={!name}
+                    onClick={() => onSubmit(name, job)}
+                    className="w-full bg-white text-black font-bold py-4 rounded-lg uppercase tracking-widest hover:bg-gray-200 disabled:opacity-50 mt-8"
+                >
+                    Continue
+                </button>
             </div>
-        </div>
+        </main>
     );
 }
