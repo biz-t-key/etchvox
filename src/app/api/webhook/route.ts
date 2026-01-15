@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
                     const db = getDb();
                     // First, get the current result data to perform analysis
                     const { getDoc } = await import('firebase/firestore');
-                    const { SoloIdentityEngine, CoupleResonanceEngine } = await import('@/lib/voiceProcessor');
+                    const { SoloIdentityEngine, CoupleResonanceEngine, normalizeMetricsForEngine } = await import('@/lib/voiceProcessor');
                     const { generateContent } = await import('@/lib/gemini');
                     const { SOLO_AUDIT_SYSTEM_PROMPT, COUPLE_AUDIT_SYSTEM_PROMPT } = await import('@/lib/prompts');
 
@@ -51,12 +51,15 @@ export async function POST(req: NextRequest) {
 
                         // --- SOLO FLOW ---
                         if (type === 'solo' && data.metrics) {
+                            // ✅ Normalize raw metrics to 0-100 scale
+                            const normalized = normalizeMetricsForEngine(data.metrics);
+
                             const engine = new SoloIdentityEngine(
-                                data.metrics.pitch || 50,
-                                data.metrics.speed || 50,
-                                data.metrics.volume || 50,
-                                data.metrics.tone || 50,
-                                data.typeCode?.replace('_', '').substring(0, 4) || 'INTJ'
+                                normalized.p,
+                                normalized.s,
+                                normalized.v,
+                                normalized.t,
+                                data.mbti || 'INTJ' // Will be fixed in Phase 2
                             );
 
                             const payload = engine.generatePayload();
@@ -69,17 +72,13 @@ export async function POST(req: NextRequest) {
                             const { userA, userB } = data.coupleData;
 
                             if (userA && userB) {
-                                // Map AnalysisMetrics (pitch, speed, vibe, tone) to Engine input (p, s, v, t)
-                                const safeMap = (m: any) => ({
-                                    p: Math.min(100, Math.max(0, (m.pitch || 150) / 3)),
-                                    s: Math.min(100, Math.max(0, (m.speed || 0.5) * 100)),
-                                    v: Math.min(100, Math.max(0, (m.vibe || 0.1) * 500)),
-                                    t: Math.min(100, Math.max(0, (m.tone || 2000) / 40))
-                                });
+                                // ✅ Normalize metrics for both users
+                                const normalizedA = normalizeMetricsForEngine(userA.metrics);
+                                const normalizedB = normalizeMetricsForEngine(userB.metrics);
 
                                 const engine = new CoupleResonanceEngine(
-                                    { ...safeMap(userA.metrics), name: userA.name, job: userA.job, accent: 'Unknown' },
-                                    { ...safeMap(userB.metrics), name: userB.name, job: userB.job, accent: 'Unknown' }
+                                    { ...normalizedA, name: userA.name, job: userA.job, accent: 'Unknown' },
+                                    { ...normalizedB, name: userB.name, job: userB.job, accent: 'Unknown' }
                                 );
 
                                 const payload = engine.generatePayload();

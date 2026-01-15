@@ -1,4 +1,42 @@
 import { SOLO_AUDIT_SYSTEM_PROMPT, COUPLE_AUDIT_SYSTEM_PROMPT } from './prompts';
+import { AnalysisMetrics } from './types';
+
+/**
+ * Normalize AnalysisMetrics (raw Hz/float values) to 0-100 scale
+ * for use with Identity Engines.
+ * 
+ * Raw values from analyzer:
+ * - pitch: 50-300 Hz (typical human voice)
+ * - speed: 0-1 (normalized float)
+ * - vibe: 0-0.5 (variance ratio, energy fluctuation)
+ * - tone: 500-4000 Hz (spectral centroid)
+ */
+export function normalizeMetricsForEngine(metrics: AnalysisMetrics): {
+    p: number; s: number; v: number; t: number;
+} {
+    // Pitch: 50-300 Hz → 0-100
+    // Lower pitch (50Hz) = 0, Higher pitch (300Hz) = 100
+    const p = Math.min(100, Math.max(0, ((metrics.pitch - 50) / 250) * 100));
+
+    // Speed: 0-1 → 0-100
+    const s = Math.min(100, Math.max(0, metrics.speed * 100));
+
+    // Volume: Use 'vibe' (variance) as proxy for volume/energy
+    // Higher variance = more dynamic/loud voice
+    // vibe typically ranges 0-0.5 → map to 0-100
+    const v = Math.min(100, Math.max(0, (metrics.vibe / 0.5) * 100));
+
+    // Tone: 500-4000 Hz → 0-100
+    // Lower tone (500Hz) = 0 (husky/deep), Higher tone (4000Hz) = 100 (clear/bright)
+    const t = Math.min(100, Math.max(0, ((metrics.tone - 500) / 3500) * 100));
+
+    return {
+        p: Math.round(p),
+        s: Math.round(s),
+        v: Math.round(v),
+        t: Math.round(t)
+    };
+}
 
 // ==========================================
 // 1. SHARED CORE: Acoustic Quantizer

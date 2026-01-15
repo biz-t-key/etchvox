@@ -118,17 +118,19 @@ export default function CouplePage() {
             setUserA((prev: any) => ({ ...prev, name, job }));
             setPhase('handoff');
         } else {
-            setUserB((prev: any) => ({ ...prev, name, job }));
-            // Start final processing
-            processCoupleResult(name, job);
+            // ✅ Create final object before state update to avoid race condition
+            const finalUserB = { ...userB, name, job };
+            setUserB(finalUserB);
+            // Pass final data directly instead of relying on state
+            processCoupleResult(finalUserB);
         }
     };
 
-    const processCoupleResult = async (finalNameB: string, finalJobB: string) => {
+    const processCoupleResult = async (finalUserB: any) => {
         setPhase('analyzing');
 
         // Ensure state is up to date (React batching might delay userB update)
-        const finalUserB = { ...userB, name: finalNameB, job: finalJobB };
+        // const finalUserB = { ...userB, name: finalNameB, job: finalJobB }; // This line is removed
 
         // Save Result (Placeholder for couple logic)
         // Ideally we save a single "Couple Result" containing both metrics
@@ -147,7 +149,7 @@ export default function CouplePage() {
             // Custom fields for couple (will be saved to Firestore)
             coupleData: {
                 userA: { name: userA.name, job: userA.job, metrics: userA.metrics },
-                userB: { name: finalNameB, job: finalJobB, metrics: finalUserB.metrics }
+                userB: { name: finalUserB.name, job: finalUserB.job, metrics: finalUserB.metrics }
             }
         } as any; // Cast as any to bypass strict type check for now
 

@@ -32,6 +32,7 @@ export interface VoiceResult {
     purchasedAt?: string;
     toxicityProfile?: ToxicityProfile;
     aiAnalysis?: string; // Markdown text from Gemini
+    mbti?: string; // User's self-reported MBTI (e.g., "INTJ")
     coupleData?: {
         userA: { name: string; job: string; metrics: AnalysisMetrics };
         userB: { name: string; job: string; metrics: AnalysisMetrics };
@@ -136,6 +137,7 @@ export async function getResult(resultId: string): Promise<VoiceResult | null> {
                     purchasedAt: data.purchasedAt,
                     toxicityProfile: data.toxicityProfile,
                     aiAnalysis: data.aiAnalysis,
+                    mbti: data.mbti,
                 };
 
                 // Cache in localStorage
