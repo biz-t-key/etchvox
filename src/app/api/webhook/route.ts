@@ -3,6 +3,10 @@ import Stripe from 'stripe';
 import { getDb, isFirebaseConfigured } from '@/lib/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 
+// ✅ Configuration for Vercel/Next.js
+export const maxDuration = 60; // 60 seconds max timeout
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
         apiVersion: '2025-01-27.acacia' as any,

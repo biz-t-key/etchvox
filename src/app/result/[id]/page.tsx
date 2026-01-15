@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { loadStripe } from '@stripe/stripe-js';
+import ReactMarkdown from 'react-markdown'; // ✅ Markdown Renderer
 import { voiceTypes, TypeCode, groupColors } from '@/lib/types';
 import { getResult, VoiceResult } from '@/lib/storage';
 import { getBestMatches, getWorstMatches, getCompatibilityTier } from '@/lib/compatibilityMatrix';
@@ -12,6 +13,8 @@ import MBTISelector from '@/components/result/MBTISelector';
 import SoloIdentityCard from '@/components/result/SoloIdentityCard';
 import { VideoPlayerSection } from '@/components/video/VideoPlayerSection';
 import { MBTIType } from '@/lib/mbti';
+import { isFirebaseConfigured, getDb } from '@/lib/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
 
@@ -52,6 +55,35 @@ export default function ResultPage() {
             }
         }
         loadResult();
+    }, [resultId]);
+
+    // ✅ Real-time updates: Listen for AI analysis completion
+    useEffect(() => {
+        if (!isFirebaseConfigured() || !resultId) return;
+
+        const db = getDb();
+        const resultRef = doc(db, 'results', resultId);
+
+        const unsubscribe = onSnapshot(resultRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.data();
+                // Update result state when aiAnalysis or premium status changes
+                setResult((prev) => {
+                    if (!prev) return prev;
+                    return {
+                        ...prev,
+                        aiAnalysis: data.aiAnalysis,
+                        aiAnalysisError: data.aiAnalysisError, // Also track errors
+                        isPremium: data.isPremium,
+                        vaultEnabled: data.vaultEnabled,
+                    } as VoiceResult; // Cast to bypass type check for now if interface incomplete
+                });
+            }
+        }, (error) => {
+            console.error('Firestore listener error:', error);
+        });
+
+        return () => unsubscribe();
     }, [resultId]);
 
     const handleCheckout = async (type: 'unlock' | 'vault') => {
@@ -363,29 +395,57 @@ export default function ResultPage() {
                                 </div>
 
                                 {/* AI AUDIT REPORT (PREMIUM) */}
+                                {/* AI AUDIT REPORT (PREMIUM) */}
                                 {(result.isPremium || result.aiAnalysis) && (
                                     <div className="w-full mb-12">
                                         <div className="flex items-center gap-3 mb-6 px-1">
                                             <div className="w-1 h-6 bg-cyan-500" />
                                             <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em]">
-                                                Identity Audit ($10)
+                                                AI Identity Audit
                                             </h2>
                                         </div>
 
                                         {result.aiAnalysis ? (
                                             <div className="bg-black/50 border border-cyan-500/30 rounded-2xl p-6 md:p-8 text-left space-y-4 shadow-[0_0_30px_rgba(6,182,212,0.15)]">
-                                                <div className="prose prose-invert prose-sm max-w-none font-mono whitespace-pre-wrap text-gray-300 leading-relaxed text-sm">
-                                                    {result.aiAnalysis}
+                                                <div className="prose prose-invert prose-sm max-w-none">
+                                                    <ReactMarkdown
+                                                        components={{
+                                                            h1: ({ node, ...props }) => <h1 className="text-2xl font-bold text-cyan-400 uppercase tracking-widest mb-4" {...props} />,
+                                                            h2: ({ node, ...props }) => <h2 className="text-xl font-bold text-white uppercase tracking-wide mt-6 mb-3" {...props} />,
+                                                            h3: ({ node, ...props }) => <h3 className="text-lg font-semibold text-gray-200 mt-4 mb-2" {...props} />,
+                                                            p: ({ node, ...props }) => <p className="text-gray-300 leading-relaxed mb-3" {...props} />,
+                                                            ul: ({ node, ...props }) => <ul className="list-disc list-inside space-y-2 text-gray-300 ml-2" {...props} />,
+                                                            ol: ({ node, ...props }) => <ol className="list-decimal list-inside space-y-2 text-gray-300 ml-2" {...props} />,
+                                                            li: ({ node, ...props }) => <li className="text-gray-300" {...props} />,
+                                                            strong: ({ node, ...props }) => <strong className="text-cyan-400 font-bold" {...props} />,
+                                                            em: ({ node, ...props }) => <em className="text-pink-400 italic" {...props} />,
+                                                            code: ({ node, ...props }) => <code className="bg-white/10 px-2 py-1 rounded text-cyan-300 text-xs font-mono" {...props} />,
+                                                        }}
+                                                    >
+                                                        {result.aiAnalysis}
+                                                    </ReactMarkdown>
                                                 </div>
                                                 <div className="pt-4 border-t border-white/5 text-right">
-                                                    <span className="text-[10px] text-cyan-500/70 uppercase tracking-widest font-bold">Generated by Gemini 1.5 Pro</span>
+                                                    <span className="text-[10px] text-cyan-500/70 uppercase tracking-widest font-bold">Generated by Gemini AI</span>
                                                 </div>
                                             </div>
+                                        ) : (result as any).aiAnalysisError ? (
+                                            <div className="text-center p-12 border border-dashed border-red-500/30 rounded-xl bg-gradient-to-br from-red-500/5 to-transparent">
+                                                <div className="text-4xl mb-4">⚠️</div>
+                                                <div className="text-sm font-bold text-red-400 uppercase tracking-widest mb-3">Analysis Error</div>
+                                                <div className="text-gray-400 text-xs max-w-md mx-auto leading-relaxed mb-4">
+                                                    {(result as any).aiAnalysisError}
+                                                </div>
+                                                <a href="mailto:support@etchvox.com" className="text-cyan-400 text-xs underline hover:text-cyan-300">
+                                                    Contact Support
+                                                </a>
+                                            </div>
                                         ) : (
-                                            <div className="text-center p-12 border border-dashed border-white/10 rounded-xl bg-white/5 animate-pulse">
-                                                <div className="text-xs font-bold text-cyan-400 uppercase tracking-widest mb-3">⚠️ Audit In Progress...</div>
-                                                <div className="text-gray-500 text-[10px] max-w-xs mx-auto">
-                                                    Your vocal DNA is being decoded by the neural engine. This takes about 10-15 seconds. Please reload the page shortly.
+                                            <div className="text-center p-12 border border-dashed border-cyan-500/30 rounded-xl bg-gradient-to-br from-cyan-500/5 to-transparent">
+                                                <div className="w-16 h-16 mx-auto mb-4 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+                                                <div className="text-sm font-bold text-cyan-400 uppercase tracking-widest mb-3">🧬 Neural Analysis In Progress</div>
+                                                <div className="text-gray-400 text-xs max-w-xs mx-auto leading-relaxed">
+                                                    Your vocal DNA is being decoded by the AI engine. This typically takes 10-20 seconds. The report will appear automatically—no need to reload.
                                                 </div>
                                             </div>
                                         )}
