@@ -240,7 +240,7 @@ export default function CoupleResultPage() {
                                 <div className={`text-2xl font-bold`} style={{ color: compatTier.color }}>
                                     {compatTier.emoji} {compatTier.tier}
                                 </div>
-                                <p className="text-gray-400 text-base max-w-md mx-auto leading-relaxed">
+                                <p className="text-gray-400 text-sm max-w-sm mx-auto leading-relaxed mt-4">
                                     This score reflects your vocal chemistry based on pitch harmony, tempo sync, and energy matching.
                                 </p>
                             </div>
@@ -353,7 +353,7 @@ export default function CoupleResultPage() {
                                         const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
                                         window.open(url, '_blank');
                                     }}
-                                    className="share-btn flex flex-col items-center gap-2 p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-500/40 transition-all"
+                                    className="share-btn flex flex-col items-center justify-center text-center gap-2 p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-500/40 transition-all"
                                 >
                                     <span className="text-3xl">🐦</span>
                                     <span className="text-sm font-bold text-gray-200">Twitter/X</span>
@@ -366,7 +366,7 @@ export default function CoupleResultPage() {
                                         navigator.clipboard.writeText(text);
                                         alert('Copied to clipboard!');
                                     }}
-                                    className="share-btn flex flex-col items-center gap-2 p-4 rounded-xl bg-gradient-to-br from-gray-500/10 to-gray-600/10 hover:from-gray-500/20 hover:to-gray-600/20 border border-gray-500/20 hover:border-gray-500/40 transition-all"
+                                    className="share-btn flex flex-col items-center justify-center text-center gap-2 p-4 rounded-xl bg-gradient-to-br from-gray-500/10 to-gray-600/10 hover:from-gray-500/20 hover:to-gray-600/20 border border-gray-500/20 hover:border-gray-500/40 transition-all"
                                 >
                                     <span className="text-3xl">📋</span>
                                     <span className="text-sm font-bold text-gray-200">Copy Text</span>
@@ -386,7 +386,7 @@ export default function CoupleResultPage() {
                                                 console.log('Share cancelled');
                                             }
                                         }}
-                                        className="share-btn flex flex-col items-center gap-2 p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-500/40 transition-all"
+                                        className="share-btn flex flex-col items-center justify-center text-center gap-2 p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-500/40 transition-all"
                                     >
                                         <span className="text-3xl">📤</span>
                                         <span className="text-sm font-bold text-gray-200">Share</span>

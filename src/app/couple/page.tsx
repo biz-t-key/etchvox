@@ -266,19 +266,19 @@ export default function CoupleRecordPage() {
                         )}
 
                         {/* Privacy Consent - Required */}
-                        <div className="glass rounded-2xl p-8 mb-6 border-2 border-white/10">
+                        <div className="glass rounded-xl p-6 mb-6 border-2 border-white/5 bg-white/5 max-w-xl mx-auto">
                             <div className="flex items-start gap-4">
                                 <input
                                     type="checkbox"
                                     id="couple-consent"
                                     checked={consentGiven}
                                     onChange={(e) => setConsentGiven(e.target.checked)}
-                                    className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0"
+                                    className="mt-1 w-5 h-5 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-cyan-500"
                                 />
-                                <label htmlFor="couple-consent" className="text-base text-gray-200 leading-relaxed cursor-pointer select-none">
-                                    We consent to our voices being <strong className="text-white">recorded, analyzed, and stored</strong> together on EtchVox servers.
+                                <label htmlFor="couple-consent" className="text-sm text-gray-400 leading-relaxed cursor-pointer select-none text-left block">
+                                    We consent to our voices being <strong className="text-gray-200">recorded, analyzed, and stored</strong> together on EtchVox servers.
                                     Our voice data and compatibility results will be kept unless we request deletion.
-                                    {' '}<a href="/privacy" target="_blank" className="text-cyan-400 underline hover:text-cyan-300 font-semibold">Privacy Policy</a>
+                                    {' '}<a href="/privacy" target="_blank" className="text-cyan-500 hover:text-cyan-400 underline decoration-1 underline-offset-4">Privacy Policy</a>
                                 </label>
                             </div>
                         </div>

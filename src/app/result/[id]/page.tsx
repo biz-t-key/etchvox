@@ -197,8 +197,8 @@ export default function ResultPage() {
 
                             {displayStage === 'metrics' && (
                                 <div className="mt-8 text-center animate-bounce">
-                                    <div className="text-gray-400 text-sm mb-2 uppercase tracking-[0.2em]">Processing Detailed Report...</div>
-                                    <div className="text-2xl">⬇️</div>
+                                    <div className="text-gray-400 text-xs mb-2 uppercase tracking-[0.2em]">Processing Detailed Report...</div>
+                                    <div className="text-xl">⬇️</div>
                                 </div>
                             )}
                         </div>
@@ -367,14 +367,14 @@ export default function ResultPage() {
                                     <div className="bg-gradient-to-br from-cyan-900/40 via-black to-magenta-900/40 border border-white/10 rounded-3xl p-10 md:p-12 text-center relative overflow-hidden group">
                                         <div className="absolute inset-0 bg-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                                         <div className="relative z-10">
-                                            <div className="text-5xl mb-4">⏳</div>
-                                            <h3 className="text-2xl font-black text-white mb-3 uppercase tracking-tight">
-                                                You Will Never Sound Like "Today" Again.
+                                            <div className="text-4xl mb-6">⏳</div>
+                                            <h3 className="text-xl md:text-2xl font-black text-white mb-4 uppercase tracking-tight leading-tight">
+                                                You Will Never Sound Like <br />"Today" Again.
                                             </h3>
-                                            <p className="text-gray-300 text-base mb-6 leading-relaxed max-w-lg mx-auto italic">
+                                            <p className="text-gray-300 text-sm md:text-base mb-8 leading-loose max-w-md mx-auto italic font-medium">
                                                 "Freeze your vibe. Before life changes it."
                                             </p>
-                                            <p className="text-gray-400 text-sm mb-8 leading-relaxed max-w-md mx-auto">
+                                            <p className="text-gray-400 text-xs md:text-sm mb-8 leading-relaxed max-w-sm mx-auto">
                                                 Your voice decays by <strong className="text-cyan-400">0.5%</strong> every year.
                                                 Stress, aging, and environmental damage are permanent.
                                                 Lock this moment in <strong className="text-magenta-400">digital amber</strong> before it's too late.
@@ -405,7 +405,7 @@ export default function ResultPage() {
                                             <button
                                                 onClick={() => handleCheckout('vault')}
                                                 disabled={processingPayment}
-                                                className="w-full max-w-sm mx-auto btn-amber py-6 rounded-full text-xl sm:text-2xl uppercase tracking-tight transition-all transform hover:scale-105 disabled:opacity-50 font-black"
+                                                className="w-full max-w-sm mx-auto btn-amber py-5 rounded-full text-lg md:text-xl uppercase tracking-widest transition-all transform hover:scale-105 disabled:opacity-50 font-black shadow-[0_0_40px_rgba(212,165,116,0.2)]"
                                             >
                                                 {processingPayment ? 'PRESERVING...' : '💎 FREEZE MY VIBE — $10'}
                                             </button>

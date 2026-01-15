@@ -241,13 +241,13 @@ export default function RecordPage() {
                             </p>
                         </div>
 
-                        <div className="glass rounded-2xl p-10 md:p-12 space-y-6">
-                            <h2 className="text-2xl font-semibold">Instructions</h2>
-                            <ul className="text-left text-gray-300 space-y-4 text-lg max-w-md mx-auto">
-                                <li>• Find a quiet place</li>
-                                <li>• Hold device 30cm from mouth</li>
-                                <li>• Read naturally (don't act)</li>
-                                <li>• 3 different prompts</li>
+                        <div className="glass rounded-2xl p-8 space-y-4 max-w-lg mx-auto">
+                            <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500">Instructions</h2>
+                            <ul className="text-left text-gray-300 space-y-3 text-base font-medium max-w-sm mx-auto pl-4 list-disc marker:text-cyan-500">
+                                <li className="pl-2">Find a quiet place</li>
+                                <li className="pl-2">Hold device 30cm from mouth</li>
+                                <li className="pl-2">Read naturally (don't act)</li>
+                                <li className="pl-2">3 different prompts</li>
                             </ul>
                         </div>
 
@@ -258,19 +258,19 @@ export default function RecordPage() {
                         )}
 
                         {/* Privacy Consent - Required */}
-                        <div className="glass rounded-2xl p-8 border-2 border-white/10">
+                        <div className="glass rounded-xl p-6 border-2 border-white/5 bg-white/5 max-w-xl mx-auto">
                             <div className="flex items-start gap-4">
                                 <input
                                     type="checkbox"
                                     id="consent"
                                     checked={consentGiven}
                                     onChange={(e) => setConsentGiven(e.target.checked)}
-                                    className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0"
+                                    className="mt-1 w-5 h-5 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-cyan-500"
                                 />
-                                <label htmlFor="consent" className="text-base text-gray-200 leading-relaxed cursor-pointer select-none">
-                                    I consent to my voice being <strong className="text-white">recorded, analyzed, and stored</strong> on EtchVox servers.
+                                <label htmlFor="consent" className="text-sm text-gray-400 leading-relaxed cursor-pointer select-none text-left block">
+                                    I consent to my voice being <strong className="text-gray-200">recorded, analyzed, and stored</strong> on EtchVox servers.
                                     My voice data and analysis results will be kept unless I request deletion.
-                                    {' '}<Link href="/privacy" className="text-cyan-400 underline hover:text-cyan-300 font-semibold">Privacy Policy</Link>
+                                    {' '}<Link href="/privacy" className="text-cyan-500 hover:text-cyan-400 underline decoration-1 underline-offset-4">Privacy Policy</Link>
                                 </label>
                             </div>
                         </div>
@@ -278,9 +278,9 @@ export default function RecordPage() {
                         <button
                             onClick={startRecording}
                             disabled={!consentGiven}
-                            className="btn-metallic text-2xl px-16 py-7 rounded-full font-bold transition-all hover:scale-105 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
+                            className="btn-metallic text-lg md:text-xl px-12 py-5 rounded-full font-bold transition-all hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 min-w-[280px]"
                         >
-                            <span className="mr-3">🎤</span>
+                            <span className="mr-3 text-2xl">🎤</span>
                             START RECORDING
                         </button>
 
