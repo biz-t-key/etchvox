@@ -100,8 +100,19 @@ export async function POST(req: NextRequest) {
 
                         console.log(`Updated result ${resultId} with payment info & AI Analysis`);
                     }
-                } catch (err) {
+                } catch (err: any) {
                     console.error('Firestore update/AI generation error:', err);
+                    // ✅ Save error message to Firestore so user can see what happened
+                    try {
+                        const db = getDb();
+                        const resultRef = doc(db, 'results', resultId);
+                        await updateDoc(resultRef, {
+                            isPremium: true,
+                            aiAnalysisError: `AI generation failed: ${err.message || 'Unknown error'}. Please contact support.`
+                        });
+                    } catch (updateErr) {
+                        console.error('Failed to save error state:', updateErr);
+                    }
                 }
             }
         }

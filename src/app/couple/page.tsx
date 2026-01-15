@@ -159,9 +159,28 @@ export default function CouplePage() {
             userB: finalUserB.audioBlob
         });
 
-        // Redirect to Payment/Result (For now, go to result page with couple params)
-        // In production, this would go to Stripe Checkout
-        router.push(`/result/${coupleResultId}?type=couple`);
+        // ✅ Redirect to Stripe Checkout for $15 payment
+        try {
+            const response = await fetch('/api/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    resultId: coupleResultId,
+                    type: 'couple', // Important: tells webhook this is couple analysis
+                    successUrl: `${window.location.origin}/result/${coupleResultId}?payment=success`,
+                    cancelUrl: `${window.location.origin}/couple?canceled=true`
+                })
+            });
+
+            if (!response.ok) throw new Error('Checkout failed');
+
+            const { url } = await response.json();
+            window.location.href = url; // Redirect to Stripe
+        } catch (error) {
+            console.error('Payment error:', error);
+            alert('Payment initialization failed. Please try again.');
+            setPhase('profileB'); // Go back to allow retry
+        }
     };
 
     // --- UI COMPONENTS ---

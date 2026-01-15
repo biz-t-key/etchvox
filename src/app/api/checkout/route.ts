@@ -7,22 +7,40 @@ export async function POST(req: NextRequest) {
         apiVersion: '2025-01-27.acacia' as any,
     });
     try {
-        const { resultId, type, priceId } = await req.json();
+        const { resultId, type, priceId, successUrl, cancelUrl } = await req.json();
 
         // Validate
         if (!resultId || !type) {
             return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
         }
 
-        // Determine price and product details
-        const isVault = type === 'vault';
-        const amount = isVault ? 1000 : 499; // $10.00 or $4.99
-        const productName = isVault
-            ? 'EtchVox Vault - Lifetime Access'
-            : 'EtchVox Full Report';
-        const description = isVault
-            ? 'Preserve your voice forever. Track aging. Raw audio included.'
-            : 'Full roast, detailed metrics, and waveform visualization.';
+        // Determine price and product details based on type
+        let amount: number;
+        let productName: string;
+        let description: string;
+
+        switch (type) {
+            case 'couple':
+                amount = 1500; // $15.00
+                productName = 'EtchVox Couple Resonance Report';
+                description = 'AI-powered relationship analysis using vocal signatures. Includes SCM profiling and sync score.';
+                break;
+            case 'vault':
+                amount = 1000; // $10.00
+                productName = 'EtchVox Vault - Lifetime Access';
+                description = 'Preserve your voice forever. Track aging. Raw audio included.';
+                break;
+            case 'solo':
+            default:
+                amount = 1000; // $10.00
+                productName = 'EtchVox Solo Identity Audit';
+                description = 'AI Gap Analysis: Your MBTI vs Voice Archetype. Full roast included.';
+        }
+
+        // Use custom URLs if provided, otherwise use defaults
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+        const finalSuccessUrl = successUrl || `${baseUrl}/result/${resultId}?payment=success&type=${type}`;
+        const finalCancelUrl = cancelUrl || `${baseUrl}/result/${resultId}?payment=cancel`;
 
         // Create Checkout Session
         const session = await stripe.checkout.sessions.create({
@@ -34,7 +52,7 @@ export async function POST(req: NextRequest) {
                         product_data: {
                             name: productName,
                             description: description,
-                            images: [`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/og?type=HFEC&id=${resultId}`],
+                            images: [`${baseUrl}/api/og?type=HFEC&id=${resultId}`],
                         },
                         unit_amount: amount,
                     },
@@ -42,11 +60,11 @@ export async function POST(req: NextRequest) {
                 },
             ],
             mode: 'payment',
-            success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/result/${resultId}?payment=success&type=${type}`,
-            cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/result/${resultId}?payment=cancel`,
+            success_url: finalSuccessUrl,
+            cancel_url: finalCancelUrl,
             metadata: {
                 resultId,
-                type,
+                type, // ✅ This will be used in webhook
             },
             allow_promotion_codes: true,
         });
