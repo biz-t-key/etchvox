@@ -53,10 +53,33 @@ export default function CoupleResultPage() {
         }
     }, [resultId]);
 
-    if (loading || !result) {
+    if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-black">
                 <div className="w-12 h-12 border-4 border-cyan-500 border-t-magenta-500 rounded-full animate-spin" />
+            </div>
+        );
+    }
+
+    // No result found - show friendly error
+    if (!result) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-black px-6">
+                <div className="text-center max-w-md space-y-8">
+                    <div className="text-6xl">💔</div>
+                    <h1 className="text-3xl font-bold">
+                        <span className="neon-text-magenta">Result Not Found</span>
+                    </h1>
+                    <p className="text-gray-400 text-lg leading-relaxed">
+                        This couple result doesn't exist or has expired. Try recording a new session together!
+                    </p>
+                    <Link
+                        href="/couple"
+                        className="inline-block btn-primary px-8 py-4 rounded-full text-lg font-bold"
+                    >
+                        💕 Try Couple Mode
+                    </Link>
+                </div>
             </div>
         );
     }
@@ -318,18 +341,62 @@ export default function CoupleResultPage() {
                             </div>
                         )}
 
-                        {/* Share */}
-                        <div className="text-center space-y-4">
-                            <button
-                                onClick={() => {
-                                    const text = `Our voice compatibility: "${duoIdentity.label}" — ${duoIdentity.tagline}\n\nScore: ${result.matrixScore}/100 (${compatTier.tier})\n\nTest yours at EtchVox!`;
-                                    navigator.clipboard.writeText(text);
-                                    alert('Copied to clipboard!');
-                                }}
-                                className="btn-primary px-8 py-4 rounded-full"
-                            >
-                                📋 Copy Our Result
-                            </button>
+                        {/* Share Section */}
+                        <div className="glass rounded-2xl p-8 space-y-6">
+                            <h3 className="text-lg font-bold text-center">Share Your Result</h3>
+
+                            <div className="flex flex-wrap justify-center gap-4">
+                                {/* Twitter/X */}
+                                <button
+                                    onClick={() => {
+                                        const text = `Our voice compatibility: "${duoIdentity.label}" — ${duoIdentity.tagline}\n\nScore: ${result.matrixScore}/100 (${compatTier.tier})\n\nTest yours at EtchVox!`;
+                                        const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+                                        window.open(url, '_blank');
+                                    }}
+                                    className="share-btn flex flex-col items-center gap-2 p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border border-blue-500/20 hover:border-blue-500/40 transition-all"
+                                >
+                                    <span className="text-3xl">🐦</span>
+                                    <span className="text-sm font-bold text-gray-200">Twitter/X</span>
+                                </button>
+
+                                {/* Copy */}
+                                <button
+                                    onClick={() => {
+                                        const text = `Our voice compatibility: "${duoIdentity.label}" — ${duoIdentity.tagline}\n\nScore: ${result.matrixScore}/100 (${compatTier.tier})\n\nTest yours at EtchVox!`;
+                                        navigator.clipboard.writeText(text);
+                                        alert('Copied to clipboard!');
+                                    }}
+                                    className="share-btn flex flex-col items-center gap-2 p-4 rounded-xl bg-gradient-to-br from-gray-500/10 to-gray-600/10 hover:from-gray-500/20 hover:to-gray-600/20 border border-gray-500/20 hover:border-gray-500/40 transition-all"
+                                >
+                                    <span className="text-3xl">📋</span>
+                                    <span className="text-sm font-bold text-gray-200">Copy Text</span>
+                                </button>
+
+                                {/* Native Share (if supported) */}
+                                {typeof navigator !== 'undefined' && navigator.share && (
+                                    <button
+                                        onClick={async () => {
+                                            try {
+                                                await navigator.share({
+                                                    title: 'EtchVox Couple Result',
+                                                    text: `Our voice compatibility: "${duoIdentity.label}" — Score: ${result.matrixScore}/100`,
+                                                    url: window.location.href,
+                                                });
+                                            } catch (err) {
+                                                console.log('Share cancelled');
+                                            }
+                                        }}
+                                        className="share-btn flex flex-col items-center gap-2 p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-500/40 transition-all"
+                                    >
+                                        <span className="text-3xl">📤</span>
+                                        <span className="text-sm font-bold text-gray-200">Share</span>
+                                    </button>
+                                )}
+                            </div>
+
+                            <p className="text-gray-500 text-sm text-center">
+                                📸 Screenshot the score card above for Instagram Stories!
+                            </p>
                         </div>
 
                         {/* Actions - Larger buttons */}

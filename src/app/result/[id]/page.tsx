@@ -30,6 +30,7 @@ export default function ResultPage() {
     const [processingPayment, setProcessingPayment] = useState(false);
     const [displayStage, setDisplayStage] = useState<DisplayStage>('label');
     const [selectedMBTI, setSelectedMBTI] = useState<MBTIType | null>(null);
+    const [mbtiSkipped, setMbtiSkipped] = useState(false);
 
     // Check for payment success
     useEffect(() => {
@@ -206,11 +207,17 @@ export default function ResultPage() {
                         {displayStage === 'full' && (
                             <div className="animate-slide-up space-y-20 pb-20">
 
-                                {/* 📸 NEW: Share Card Section */}
+                                {/* 📸 Share Card Section */}
                                 <div className="space-y-6">
-                                    {!selectedMBTI ? (
-                                        <MBTISelector onSelect={(mbti) => setSelectedMBTI(mbti)} />
-                                    ) : (
+                                    {!selectedMBTI && !mbtiSkipped ? (
+                                        <MBTISelector onSelect={(mbti) => {
+                                            if (mbti === null) {
+                                                setMbtiSkipped(true);
+                                            } else {
+                                                setSelectedMBTI(mbti);
+                                            }
+                                        }} />
+                                    ) : selectedMBTI ? (
                                         <div className="space-y-6 animate-scale-in">
                                             <div className="flex items-center justify-between">
                                                 <h3 className="text-lg font-bold text-white uppercase tracking-widest">
@@ -232,6 +239,35 @@ export default function ResultPage() {
                                                 </p>
                                                 <p className="text-[10px] text-gray-500 mt-1 uppercase tracking-widest">
                                                     etchvox // generated_by_etchvox
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        /* MBTI Skipped - Show voice type only */
+                                        <div className="space-y-6 animate-scale-in">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="text-lg font-bold text-white uppercase tracking-widest">
+                                                    Your Voice Type
+                                                </h3>
+                                                <button
+                                                    onClick={() => setMbtiSkipped(false)}
+                                                    className="text-xs text-gray-500 hover:text-white transition-colors"
+                                                >
+                                                    [ Add MBTI ]
+                                                </button>
+                                            </div>
+
+                                            <div className="glass rounded-2xl p-8 text-center">
+                                                <div className="text-6xl mb-4">{voiceType.icon}</div>
+                                                <h2 className="text-3xl font-black uppercase mb-2" style={{ color: colors.primary }}>
+                                                    {voiceType.name}
+                                                </h2>
+                                                <p className="text-gray-400 italic">"{voiceType.catchphrase}"</p>
+                                            </div>
+
+                                            <div className="text-center p-4 bg-white/5 rounded-xl border border-white/10">
+                                                <p className="text-sm text-gray-300 font-medium">
+                                                    📸 Screenshot & Share on Stories
                                                 </p>
                                             </div>
                                         </div>

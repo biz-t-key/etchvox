@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { coupleSteps, totalDuration, getStepByTime, getAlternatingWordIndex, CoupleStep } from '@/lib/coupleScripts';
 import ParticleVisualizer from '@/components/recording/ParticleVisualizer';
 
-type Phase = 'intro' | 'input' | 'recording' | 'processing' | 'complete';
+type Phase = 'input' | 'recording' | 'processing' | 'complete';
 
 interface UserInfo {
     name: string;
@@ -15,7 +15,7 @@ interface UserInfo {
 
 export default function CoupleRecordPage() {
     const router = useRouter();
-    const [phase, setPhase] = useState<Phase>('intro');
+    const [phase, setPhase] = useState<Phase>('input');
     const [userA, setUserA] = useState<UserInfo>({ name: '', job: '', accent: 'us' });
     const [userB, setUserB] = useState<UserInfo>({ name: '', job: '', accent: 'us' });
     const [currentStep, setCurrentStep] = useState<CoupleStep | null>(null);
@@ -23,6 +23,7 @@ export default function CoupleRecordPage() {
     const [stepElapsed, setStepElapsed] = useState(0);
     const [error, setError] = useState<string | null>(null);
     const [consentGiven, setConsentGiven] = useState(false);
+    const [countdown, setCountdown] = useState<number | null>(null);
 
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioContextRef = useRef<AudioContext | null>(null);
@@ -83,6 +84,17 @@ export default function CoupleRecordPage() {
 
                 const step = getStepByTime(elapsed);
                 if (step) {
+                    // Check if transitioning TO unison phase - show countdown
+                    const prevStep = getStepByTime(elapsed - 0.1);
+                    if (step.phase === 'unison' && prevStep?.phase !== 'unison' && countdown === null) {
+                        // Start countdown
+                        setCountdown(3);
+                        setTimeout(() => setCountdown(2), 1000);
+                        setTimeout(() => setCountdown(1), 2000);
+                        setTimeout(() => setCountdown(0), 3000); // 0 = GO!
+                        setTimeout(() => setCountdown(null), 3500);
+                    }
+
                     setCurrentStep(step);
 
                     // Calculate step-local elapsed time
@@ -181,48 +193,39 @@ export default function CoupleRecordPage() {
         <div className="min-h-screen bg-black py-12 px-6">
             <div className="max-w-2xl mx-auto">
 
-                {/* Intro Phase */}
-                {phase === 'intro' && (
-                    <div className="text-center fade-in">
-                        <h1 className="text-3xl font-bold mb-4">
-                            <span className="neon-text-cyan">Couple</span>{' '}
-                            <span className="neon-text-magenta">Mode</span>
-                        </h1>
-                        <p className="text-gray-400 mb-8">
-                            Discover your vocal compatibility. Record together on the same device.
-                        </p>
-
-                        <div className="glass rounded-xl p-6 mb-8 text-left">
-                            <h2 className="font-semibold mb-4">How it works:</h2>
-                            <ol className="text-gray-300 space-y-3 text-sm">
-                                <li>1️⃣ Each person introduces themselves (5 sec each)</li>
-                                <li>2️⃣ Read a sentence TOGETHER in sync (10 sec)</li>
-                                <li>3️⃣ Act out a dramatic scene (4 sec each)</li>
-                                <li>4️⃣ Speed challenge - alternate words! (8 sec)</li>
-                            </ol>
-                            <p className="text-gray-500 text-xs mt-4">
-                                Total recording time: ~36 seconds
+                {/* Input Phase - Now includes intro info */}
+                {phase === 'input' && (
+                    <div className="fade-in space-y-10">
+                        {/* Header */}
+                        <div className="text-center space-y-4">
+                            <h1 className="text-4xl md:text-5xl font-bold">
+                                <span className="neon-text-cyan">Couple</span>{' '}
+                                <span className="neon-text-magenta">Mode</span>
+                            </h1>
+                            <p className="text-gray-400 text-lg">
+                                Discover your vocal compatibility together
                             </p>
                         </div>
 
-                        <button
-                            onClick={() => setPhase('input')}
-                            className="btn-primary px-8 py-4 rounded-full text-lg"
-                        >
-                            Let's Start 💕
-                        </button>
-                    </div>
-                )}
-
-                {/* Input Phase */}
-                {phase === 'input' && (
-                    <div className="fade-in space-y-8">
-                        <div className="text-center space-y-4">
-                            <h2 className="text-3xl font-bold">Who's playing?</h2>
-                            <p className="text-gray-400 text-lg">Enter your names to continue</p>
+                        {/* Compact How it works */}
+                        <div className="glass rounded-2xl p-6 text-center">
+                            <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-300">
+                                <span>🎤 Intro (5s each)</span>
+                                <span>→</span>
+                                <span>🎵 Read Together (10s)</span>
+                                <span>→</span>
+                                <span>🎭 Drama (4s each)</span>
+                                <span>→</span>
+                                <span>⚡ Speed Round (8s)</span>
+                            </div>
+                            <p className="text-gray-500 text-xs mt-3">Total: ~36 seconds</p>
                         </div>
 
-                        {/* Two-column layout on desktop, stack on mobile */}
+                        {/* Name Input Cards */}
+                        <div className="text-center">
+                            <h2 className="text-2xl font-bold mb-6">Who's playing?</h2>
+                        </div>
+
                         <div className="grid md:grid-cols-2 gap-6">
                             {/* Person A Card */}
                             <div className="rounded-2xl p-8 border-2 border-cyan-500/40 bg-cyan-500/5">
@@ -327,6 +330,22 @@ export default function CoupleRecordPage() {
                                 <span className="mr-2">🎤</span>{userB.name || 'B'}
                             </div>
                         </div>
+
+                        {/* Countdown Overlay for Unison */}
+                        {countdown !== null && (
+                            <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+                                <div className="text-center">
+                                    <div className="text-9xl font-black animate-pulse">
+                                        {countdown === 0 ? (
+                                            <span className="bg-gradient-to-r from-cyan-400 to-magenta-400 bg-clip-text text-transparent">GO!</span>
+                                        ) : (
+                                            <span className="text-white">{countdown}</span>
+                                        )}
+                                    </div>
+                                    <p className="text-gray-400 text-xl mt-4">Read TOGETHER!</p>
+                                </div>
+                            </div>
+                        )}
 
                         {/* UI Text - Larger */}
                         <div className="mono text-base text-cyan-400 mb-6 animate-pulse">

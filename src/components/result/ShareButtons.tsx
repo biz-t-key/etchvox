@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface ShareButtonsProps {
     resultId: string;
@@ -12,6 +12,14 @@ interface ShareButtonsProps {
 
 export default function ShareButtons({ resultId, typeName, typeIcon, catchphrase, typeCode }: ShareButtonsProps) {
     const [copied, setCopied] = useState<'bio' | 'link' | null>(null);
+    const [canShare, setCanShare] = useState(false);
+
+    // Check for Web Share API support on mount
+    useEffect(() => {
+        if (typeof navigator !== 'undefined' && navigator.share) {
+            setCanShare(true);
+        }
+    }, []);
 
     const baseUrl = typeof window !== 'undefined'
         ? window.location.origin
@@ -102,6 +110,27 @@ export default function ShareButtons({ resultId, typeName, typeIcon, catchphrase
                     <span className="text-4xl">🎵</span>
                     <span className="text-sm font-bold text-gray-200">TikTok</span>
                 </button>
+
+                {/* Native Share (if supported) */}
+                {canShare && (
+                    <button
+                        onClick={async () => {
+                            try {
+                                await navigator.share({
+                                    title: 'My EtchVox Voice Type',
+                                    text: fullShareText,
+                                    url: shareUrl,
+                                });
+                            } catch (err) {
+                                console.log('Share cancelled');
+                            }
+                        }}
+                        className="share-btn flex flex-col items-center gap-2 p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-500/40 transition-all"
+                    >
+                        <span className="text-4xl">📤</span>
+                        <span className="text-sm font-bold text-gray-200">Share</span>
+                    </button>
+                )}
             </div>
 
             {/* Link Copy */}

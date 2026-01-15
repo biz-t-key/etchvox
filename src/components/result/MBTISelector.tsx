@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { MBTIType, mbtiTypes, mbtiGroups, mbtiOrder } from '@/lib/mbti';
 
 interface MBTISelectorProps {
-    onSelect: (mbti: MBTIType) => void;
+    onSelect: (mbti: MBTIType | null) => void;
 }
 
 export default function MBTISelector({ onSelect }: MBTISelectorProps) {
@@ -90,7 +90,17 @@ export default function MBTISelector({ onSelect }: MBTISelectorProps) {
                 </div>
             </div>
 
-            <p className="text-center text-gray-600 text-xs">
+            {/* Skip Option */}
+            <div className="text-center mt-6">
+                <button
+                    onClick={() => onSelect(null)}
+                    className="text-gray-400 hover:text-white text-base py-3 px-6 rounded-full border border-gray-700 hover:border-gray-500 transition-all"
+                >
+                    🤷 I don't know my MBTI — Skip
+                </button>
+            </div>
+
+            <p className="text-center text-gray-600 text-xs mt-6">
                 "MBTI is who you <strong>think</strong> you are. <br />
                 EtchVox is who you <strong>sound</strong> like."
             </p>
