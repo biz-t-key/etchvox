@@ -1,7 +1,3 @@
-// Solo Identity Matrix: 256 unique combinations of MBTI × Voice Type
-// Brand: EtchVox
-// "MBTI is who you think you are. EtchVox is who you sound like."
-
 import { TypeCode } from './types';
 import { MBTIType } from './mbti';
 
@@ -12,85 +8,10 @@ export interface SoloIdentity {
     roast: string;
 }
 
-// Voice Type Traits for dynamic generation
-const voiceTraits: Record<TypeCode, { adj: string; noun: string; vibe: string; roastFragment: string }> = {
-    HFEC: { adj: "Electric", noun: "Idol", vibe: "High Energy", roastFragment: "you sound like a chaotic anime protagonist" },
-    HFED: { adj: "Dramatic", noun: "Diva", vibe: "Theatrical", roastFragment: "your voice demands a spotlight even in a dark room" },
-    HSEC: { adj: "Magnetic", noun: "Influencer", vibe: "Charming", roastFragment: "you could sell ice to a polar bear" },
-    HSED: { adj: "Radioactive", noun: "Star", vibe: "Explosive", roastFragment: "you have zero indoor voice and zero regrets" },
-    HFCC: { adj: "Cybernetic", noun: "Android", vibe: "Neon", roastFragment: "you process emotions like a GPU processes textures" },
-    HFCD: { adj: "Glitched", noun: "Hacker", vibe: "Broken Tech", roastFragment: "you sound like a corrupted save file" },
-    HSCC: { adj: "Velvet", noun: "Operator", vibe: "Smooth", roastFragment: "you speak in ASMR and secrets" },
-    HSCD: { adj: "Imperial", noun: "Royal", vibe: "Commanding", roastFragment: "you don't ask for things, you announce them" },
-    LFEC: { adj: "Thunderous", noun: "Titan", vibe: "Heavy", roastFragment: "your voice has its own gravitational pull" },
-    LFED: { adj: "Operatic", noun: "Phantom", vibe: "Tragic", roastFragment: "you make ordering pizza sound like a Shakespearean soliloquy" },
-    LSEC: { adj: "Cinematic", noun: "Narrator", vibe: "Epic", roastFragment: "you sound like the voiceover for a summer blockbuster" },
-    LSED: { adj: "Noir", noun: "Detective", vibe: "Shadowy", roastFragment: "you sound like a monologue in a rain-slicked alleyway" },
-    LFCC: { adj: "Absolute", noun: "Monolith", vibe: "Cold", roastFragment: "you deliver facts like a printer delivers paper: flat and necessary" },
-    LFCD: { adj: "Abyssal", noun: "Leviathan", vibe: "Deep", roastFragment: "you sound like you're speaking from the bottom of a well" },
-    LSCC: { adj: "Iron", noun: "Butler", vibe: "Service", roastFragment: "you are terrifyingly polite and efficient" },
-    LSCD: { adj: "Subsonic", noun: "Cryptid", vibe: "Hidden", roastFragment: "your voice is less a sound and more a vibration in the floorboards" },
-};
-
-const mbtiThemes: Record<MBTIType, { archetype: string; flaw: string }> = {
-    INTJ: { archetype: "Mastermind", flaw: "overthinking" },
-    INTP: { archetype: "Architect", flaw: "buffering" },
-    ENTJ: { archetype: "Commander", flaw: "dominating" },
-    ENTP: { archetype: "Visionary", flaw: "trolling" },
-    INFJ: { archetype: "Sage", flaw: "judging" },
-    INFP: { archetype: "Dreamer", flaw: "zoning out" },
-    ENFJ: { archetype: "Mentor", flaw: "preaching" },
-    ENFP: { archetype: "Muse", flaw: "spiraling" },
-    ISTJ: { archetype: "Inspector", flaw: "auditing" },
-    ISFJ: { archetype: "Protector", flaw: "worrying" },
-    ESTJ: { archetype: "Director", flaw: "micromanaging" },
-    ESFJ: { archetype: "Provider", flaw: "gossiping" },
-    ISTP: { archetype: "Craftsman", flaw: "disassembling" },
-    ISFP: { archetype: "Artist", flaw: "sulking" },
-    ESTP: { archetype: "Dynamo", flaw: "reckless driving" },
-    ESFP: { archetype: "Performer", flaw: "scene-stealing" },
-};
-
-export function getSoloIdentity(mbti: MBTIType, voiceType: TypeCode): SoloIdentity {
-    const key = `${mbti}_${voiceType}`;
-
-    // 1. Check for manual override (Legacy Data)
-    if (soloIdentityMatrix[key]) {
-        return soloIdentityMatrix[key];
-    }
-
-    // 2. Generate Dynamic Identity
-    const vTrait = voiceTraits[voiceType];
-    const mTheme = mbtiThemes[mbti];
-
-    // Brand Name Generation: "The [Voice Adjective] [MBTI Archetype]"
-    // e.g., "The Electric Mastermind", "The Noir Performer"
-    const BrandName = `The ${vTrait.adj} ${mTheme.archetype}`;
-
-    // Roast Generation
-    // Logic: Combine MBTI flaw with Voice Type characteristic
-    // e.g. "As a [MBTI], you are prone to [flaw], and [voice roast fragment]."
-
-    // Personalized touches based on Voice Group
-    let prefix = "";
-    if (voiceType.startsWith('H')) {
-        prefix = `You have the brain of a ${mbti} but the energy of a nuclear reactor.`;
-    } else {
-        prefix = `You are a ${mbti} operating in stealth mode.`;
-    }
-
-    const Roast = `${prefix} You're constantly ${mTheme.flaw}, and ${vTrait.roastFragment}. It's a dangerous combination.`;
-
-    return {
-        mbti,
-        voiceType,
-        brandName: BrandName,
-        roast: Roast
-    };
-}
-
-const soloIdentityMatrix: Record<string, SoloIdentity> = {
-    // I. Analysts (NT) Group - INTJ
+// 1. Fully Specific Data (Legacy/High Quality Roasts)
+// Used when available.
+const specificIdentities: Record<string, SoloIdentity> = {
+    // NT Group (Analyst) - Full Data from User
     INTJ_HFEC: { mbti: 'INTJ', voiceType: 'HFEC', brandName: 'The Rave Scholar', roast: "You’re attempting to explain the Heat Death of the Universe in a mosh pit, but your voice is so neon that everyone just thinks you’re asking where the MDMA is." },
     INTJ_HFED: { mbti: 'INTJ', voiceType: 'HFED', brandName: 'The Cynical Cheerleader', roast: "You’re shouting for the team, but your subtext is a 45-minute lecture on why sports are a bread-and-circus distraction for the masses." },
     INTJ_HSEC: { mbti: 'INTJ', voiceType: 'HSEC', brandName: 'The Strategic Sunshine', roast: "You have the mind of a grandmaster and the voice of a puppy; you’re basically a nuclear silo disguised as a petting zoo." },
@@ -108,7 +29,6 @@ const soloIdentityMatrix: Record<string, SoloIdentity> = {
     INTJ_LSCC: { mbti: 'INTJ', voiceType: 'LSCC', brandName: 'The Tactical Servant', roast: "You serve your own intellect with such precision that you’ve become a high-end valet for a ghost." },
     INTJ_LSCD: { mbti: 'INTJ', voiceType: 'LSCD', brandName: 'The Sunken Brain', roast: "Your thoughts are so heavy they’ve reached the bottom of the ocean, and your voice is just the crushing pressure of the water above them." },
 
-    // INTP: The Logician
     INTP_HFEC: { mbti: 'INTP', voiceType: 'HFEC', brandName: 'The Glitched Idol', roast: "You are a scientific calculator wearing a sequin dress; you’re emitting 10,000 lumens of charisma, but your eyes are still running a diagnostic on the crowd." },
     INTP_HFED: { mbti: 'INTP', voiceType: 'HFED', brandName: 'The Error Code', roast: "You’re trying to be enthusiastic, but your vocal energy is just a blue-screen-of-death screaming for a reboot." },
     INTP_HSEC: { mbti: 'INTP', voiceType: 'HSEC', brandName: 'The Accidental Joy', roast: "You hate people on principle, but your voice is so naturally charming that strangers keep trying to tell you their life stories." },
@@ -126,13 +46,12 @@ const soloIdentityMatrix: Record<string, SoloIdentity> = {
     INTP_LSCC: { mbti: 'INTP', voiceType: 'LSCC', brandName: 'The Logic Slave', roast: "Your voice is a perfectly subservient tool for your brain; unfortunately, your brain is a very demanding master." },
     INTP_LSCD: { mbti: 'INTP', voiceType: 'LSCD', brandName: 'The Infinite Loop', roast: "You’ve dived so deep into your own thoughts that you forgot how to breathe at the surface; you’re just a slow, heavy vibration in the dark." },
 
-    // ENTJ: The Commander
     ENTJ_HFEC: { mbti: 'ENTJ', voiceType: 'HFEC', brandName: 'The Charismatic Tyrant', roast: "You’re a cult leader in the making; you sell world domination like it’s a catchy summer hit." },
     ENTJ_HFED: { mbti: 'ENTJ', voiceType: 'HFED', brandName: 'The Propaganda Chief', roast: "You don't motivate people; you weaponize their enthusiasm for your own quarterly goals." },
     ENTJ_HSEC: { mbti: 'ENTJ', voiceType: 'HSEC', brandName: 'The Iron Puppy', roast: "You fire people with the efficiency of a CEO and then immediately ask for a belly rub; your need for validation is exhausting." },
     ENTJ_HSED: { mbti: 'ENTJ', voiceType: 'HSED', brandName: 'The Public Figure', roast: "You’ve successfully branded your thirst for power as 'leadership coaching.' Your voice is a high-gloss LinkedIn post." },
     ENTJ_HFCC: { mbti: 'ENTJ', voiceType: 'HFCC', brandName: 'The Efficient Executor', roast: "You are a guillotine with an integrated spreadsheet; you cut through human mess with zero friction and zero pulse." },
-    ENTJ_HFCD: { mbti: 'ENTJ', voiceType: 'HFCD', brandName: 'The CTO (Chief Terror Officer)', roast: "You manage the office like a server farm; you have zero tolerance for 'emotional latency' in your staff." },
+    ENTJ_HFCD: { mbti: 'ENTJ', voiceType: 'HFCD', brandName: 'The CTO', roast: "You manage the office like a server farm; you have zero tolerance for 'emotional latency' in your staff." },
     ENTJ_HSCC: { mbti: 'ENTJ', voiceType: 'HSCC', brandName: 'The Velvet Dictator', roast: "You issue orders so softly that people don't realize they've been conquered until they're already wearing your uniform." },
     ENTJ_HSCD: { mbti: 'ENTJ', voiceType: 'HSCD', brandName: 'The Crown Prince', roast: "You speak as if the air around you should be grateful for the privilege of carrying your commands." },
     ENTJ_LFEC: { mbti: 'ENTJ', voiceType: 'LFEC', brandName: 'The Absolute Leader', roast: "Your voice is a blunt force object; you don't use words to communicate, you use them to occupy territory." },
@@ -144,9 +63,8 @@ const soloIdentityMatrix: Record<string, SoloIdentity> = {
     ENTJ_LSCC: { mbti: 'ENTJ', voiceType: 'LSCC', brandName: 'The Self-Made Servant', roast: "You are a man who has mastered himself so thoroughly that you’ve become your own most efficient employee." },
     ENTJ_LSCD: { mbti: 'ENTJ', voiceType: 'LSCD', brandName: 'The Nuclear Sub', roast: "You are a massive, hidden engine of power; you don't make noise, you just displace the entire ocean when you move." },
 
-    // ENTP: The Debater
     ENTP_HFEC: { mbti: 'ENTP', voiceType: 'HFEC', brandName: 'The Satirical Idol', roast: "You’re a stand-up comedian who accidentally became famous; you’re mocking the spotlight while standing directly in it." },
-    ENTP_HFED: { mbti: 'ENTP', voiceType: 'HFED', brandName: "The Devil's Advocate", roast: "You’re not cheering for the team; you’re cheering for the chaos that ensues when the team loses." },
+    ENTP_HFED: { mbti: 'ENTP', voiceType: 'HFED', brandName: 'The Devil\'s Advocate', roast: "You’re not cheering for the team; you’re cheering for the chaos that ensues when the team loses." },
     ENTP_HSEC: { mbti: 'ENTP', voiceType: 'HSEC', brandName: 'The Mischievous Pup', roast: "You say the most offensive things imaginable, but your voice is so friendly that people just think they misheard you." },
     ENTP_HSED: { mbti: 'ENTP', voiceType: 'HSED', brandName: 'The Viral Contrarian', roast: "Your entire personality is a 'Hot Take' designed to trigger an algorithm. You’re a human clickbait headline." },
     ENTP_HFCC: { mbti: 'ENTP', voiceType: 'HFCC', brandName: 'The Cynical Bot', roast: "You’re a Turing test designed to fail on purpose just to see how the examiner reacts." },
@@ -162,11 +80,144 @@ const soloIdentityMatrix: Record<string, SoloIdentity> = {
     ENTP_LSCC: { mbti: 'ENTP', voiceType: 'LSCC', brandName: 'The Rebellious Valet', roast: "You are perfectly polite while explaining exactly why your boss is an idiot. It’s a work of art." },
     ENTP_LSCD: { mbti: 'ENTP', voiceType: 'LSCD', brandName: 'The Dark Irony', roast: "You’ve found the punchline at the bottom of the ocean, and now you’re just waiting for the rest of the world to drown so they can hear it." },
 
-    // Sample placeholders for other groups to prevent build failure
-    INFJ_LFEC: { mbti: 'INFJ', voiceType: 'LFEC', brandName: 'The Moral Crusader', roast: "You're leading a revolution of kindness, but your voice has the cold edge of a guilotine." },
+    // Special User Requests & Sparse Data with Roasts
     INFP_LFEC: { mbti: 'INFP', voiceType: 'LFEC', brandName: 'The Iron Lamb', roast: "You try to be a pacifist, but your voice sounds like it's about to annex a small country just for the aesthetic." },
     ISTJ_HFEC: { mbti: 'ISTJ', voiceType: 'HFEC', brandName: 'The Scripted Idol', roast: "You've practiced your spontaneity so much that your 'fun' sounds like a perfectly executed audit." },
     ESFP_LSCD: { mbti: 'ESFP', voiceType: 'LSCD', brandName: 'The Glitter Abyss', roast: "You’re a disco ball dropped into the Mariana Trench—shiny on the surface, but anyone who dives deeper finds a darkness that hasn't seen light in three million years." },
 };
 
-export default soloIdentityMatrix;
+// 2. Brand Name Lookup Matrix (Complete Coverage 256)
+// Used when full specific data is missing.
+const brandNameMatrix: Record<string, string> = {
+    // INFJ
+    INFJ_HFEC: 'The Messiah Icon', INFJ_HFED: 'The Spiritual Rally', INFJ_HSEC: 'The Holy Puppy', INFJ_HSED: 'The Enlightened Feed',
+    INFJ_HFCC: 'The Stoic Saint', INFJ_HFCD: 'The Social Architect', INFJ_HSCC: 'The Guardian Breath', INFJ_HSCD: 'The Priest King',
+    INFJ_LFEC: 'The Moral Crusader', INFJ_LFED: 'The Divine Requiem', INFJ_LSEC: 'The Prophecy', INFJ_LSED: 'The Soul Healer',
+    INFJ_LFCC: 'The Ethical Truth', INFJ_LFCD: 'The Eternal Sage', INFJ_LSCC: 'The Martyr Servant', INFJ_LSCD: 'The Ocean of Empathy',
+
+    // INFP
+    INFP_HFEC: 'The Dreamy Idol', INFP_HFED: 'The Clumsy Cheer', INFP_HSEC: 'The Gentle Dreamer', INFP_HSED: 'The Vulnerable Brand',
+    INFP_HFCC: 'The Hollow Shell', INFP_HFCD: 'The Nostalgic Coder', INFP_HSCC: 'The Fragile Whisper', INFP_HSCD: 'The Fallen Prince',
+    INFP_LFEC: 'The Iron Lamb', INFP_LFED: 'The Internal Opera', INFP_LSEC: 'The Indie Film', INFP_LSED: 'The Bedroom Radio',
+    INFP_LFCC: 'The Poetic Fact', INFP_LFCD: 'The Melancholy Monk', INFP_LSCC: 'The Devoted Ghost', INFP_LSCD: 'The Sunken Dream',
+
+    // ENFJ
+    ENFJ_HFEC: 'The Beloved Leader', ENFJ_HFED: 'The High-Vibe Mentor', ENFJ_HSEC: 'The Warm Guardian', ENFJ_HSED: 'The Social Healer',
+    ENFJ_HFCC: 'The Burnout Hero', ENFJ_HFCD: 'The Humanistic Engineer', ENFJ_HSCC: 'The Comforting Voice', ENFJ_HSCD: 'The Benevolent King',
+    ENFJ_LFEC: 'The Noble General', ENFJ_LFED: 'The Heroic Aria', ENFJ_LSEC: 'The Hero’s Return', ENFJ_LSED: 'The Heart Radio',
+    ENFJ_LFCC: 'The Inspirational News', ENFJ_LFCD: 'The Guiding Light', ENFJ_LSCC: 'The Idealistic Servant', ENFJ_LSCD: 'The Collective Soul',
+
+    // ENFP
+    ENFP_HFEC: 'The Chaotic Muse', ENFP_HFED: 'The Eternal Party', ENFP_HSEC: 'The Happy Explorer', ENFP_HSED: 'The Rainbow Brand',
+    ENFP_HFCC: 'The Battery Empty', ENFP_HFCD: 'The Creative Hacker', ENFP_HSCC: 'The Playful Whisper', ENFP_HSCD: 'The Bohemian Prince',
+    ENFP_LFEC: 'The Freedom Fighter', ENFP_LFED: 'The Wild Fantasy', ENFP_LSEC: 'The Adventure Teaser', ENFP_LSED: 'The Moon Child',
+    ENFP_LFCC: 'The Gossip Fact', ENFP_LFCD: 'The Naive Genius', ENFP_LSCC: 'The Eccentric Valet', ENFP_LSCD: 'The Dreamy Abyss',
+
+    // ISTJ
+    ISTJ_HFEC: 'The Scripted Idol', ISTJ_HFED: 'The Standard Cheer', ISTJ_HSEC: 'The Disciplined Pup', ISTJ_HSED: 'The Verified Data',
+    ISTJ_HFCC: 'The Dead Letter', ISTJ_HFCD: 'The Senior Architect', ISTJ_HSCC: 'The Precise Breath', ISTJ_HSCD: 'The Tradition Keeper',
+    ISTJ_LFEC: 'The Strict Sergeant', ISTJ_LFED: 'The Formal Drama', ISTJ_LSEC: 'The Realistic Plot', ISTJ_LSED: 'The Clockwork Radio',
+    ISTJ_LFCC: 'The Definitive Report', ISTJ_LFCD: 'The Objective Wisdom', ISTJ_LSCC: 'The Invisible Hand', ISTJ_LSCD: 'The Silent Anchor',
+
+    // ISFJ
+    ISFJ_HFEC: 'The Protective Star', ISFJ_HFED: 'The Anxious Cheer', ISFJ_HSEC: 'The Pure Devotion', ISFJ_HSED: 'The Humble Brand',
+    ISFJ_HFCC: 'The Numb Caretaker', ISFJ_HFCD: 'The Reliable Support', ISFJ_HSCC: 'The Maternal Whisper', ISFJ_HSCD: 'The Gracious Lady',
+    ISFJ_LFEC: 'The Protective Wall', ISFJ_LFED: 'The Tragic Sacrifice', ISFJ_LSEC: 'The Family Drama', ISFJ_LSED: 'The Midnight Nurse',
+    ISFJ_LFCC: 'The Community Bulletin', ISFJ_LFCD: 'The Modest Scholar', ISFJ_LSCC: 'The Eternal Valet', ISFJ_LSCD: 'The Deep Connection',
+
+    // ESTJ
+    ESTJ_HFEC: 'The Corporate Idol', ESTJ_HFED: 'The Motivation Speaker', ESTJ_HSEC: 'The Trained Leader', ESTJ_HSED: 'The Power Icon',
+    ESTJ_HFCC: 'The Bureaucrat', ESTJ_HFCD: 'The System Manager', ESTJ_HSCC: 'The Structured Peace', ESTJ_HSCD: 'The Iron Monarch',
+    ESTJ_LFEC: 'The Supreme General', ESTJ_LFED: 'The Triumphant Anthem', ESTJ_LSEC: 'The Success Story', ESTJ_LSED: 'The Night Watchman',
+    ESTJ_LFCC: 'The Official News', ESTJ_LFCD: 'The Traditionalist', ESTJ_LSCC: 'The Perfect Chief', ESTJ_LSCD: 'The Submerged Power',
+
+    // ESFJ
+    ESFJ_HFEC: 'The Social Butterfly', ESFJ_HFED: 'The Community Cheer', ESFJ_HSEC: 'The Popular Pup', ESFJ_HSED: 'The Lifestyle Guru',
+    ESFJ_HFCC: 'The Social Fatigue', ESFJ_HFCD: 'The Networking Expert', ESFJ_HSCC: 'The Social Tonic', ESFJ_HSCD: 'The Social Queen',
+    ESFJ_LFEC: 'The Social Enforcer', ESFJ_LFED: 'The Social Drama', ESFJ_LSEC: 'The Rom-Com Teaser', ESFJ_LSED: 'The Request Line',
+    ESFJ_LFCC: 'The Harmony News', ESFJ_LFCD: 'The Moral Compass', ESFJ_LSCC: 'The Attentive Host', ESFJ_LSCD: 'The Emotional Anchor',
+
+    // ISTP
+    ISTP_HFEC: 'The Accidental Star', ISTP_HFED: 'The High-Speed Logic', ISTP_HSEC: 'The Lone Wolf Pup', ISTP_HSED: 'The Skill Flex',
+    ISTP_HFCC: 'The Tool Machine', ISTP_HFCD: 'The Precision Coder', ISTP_HSCC: 'The Tactile Whisper', ISTP_HSCD: 'The Rebel Noble',
+    ISTP_LFEC: 'The Tactician', ISTP_LFED: 'The Raw Emotion', ISTP_LSEC: 'The Thriller Hero', ISTP_LSED: 'The Midnight Garage',
+    ISTP_LFCC: 'The Real-Time Fact', ISTP_LFCD: 'The Practical Wise', ISTP_LSCC: 'The Silent Hand', ISTP_LSCD: 'The Cold Abyss',
+
+    // ISFP
+    ISFP_HFEC: 'The Aesthetic Icon', ISFP_HFED: 'The Sensitive Energy', ISFP_HSEC: 'The Gentle Artist', ISFP_HSED: 'The Visual Muse',
+    ISFP_HFCC: 'The Frozen Soul', ISFP_HFCD: 'The Elegant Coder', ISFP_HSCC: 'The Artistic Whisper', ISFP_HSCD: 'The Artistic Prince',
+    ISFP_LFEC: 'The Passionate Rebel', ISFP_LFED: 'The Bohemian Aria', ISFP_LSEC: 'The Visual Epic', ISFP_LSED: 'The Color of Night',
+    ISFP_LFCC: 'The Subjective Fact', ISFP_LFCD: 'The Intuitive Scholar', ISFP_LSCC: 'The Aesthetic Valet', ISFP_LSCD: 'The Sunken Beauty',
+
+    // ESTP
+    ESTP_HFEC: 'The Wild Star', ESTP_HFED: 'The High-Stakes Hype', ESTP_HSEC: 'The Bold Pup', ESTP_HSED: 'The Hustler Brand',
+    ESTP_HFCC: 'The Burned Out Gambler', ESTP_HFCD: 'The Growth Hacker', ESTP_HSCC: 'The Adrenaline Whisper', ESTP_HSCD: 'The Pirate King',
+    ESTP_LFEC: 'The Frontline Leader', ESTP_LFED: 'The Intense Drama', ESTP_LSEC: 'The Action Thriller', ESTP_LSED: 'The Neon Gambler',
+    ESTP_LFCC: 'The Sensational News', ESTP_LFCD: 'The Street-Wise Sage', ESTP_LSCC: 'The Risky Servant', ESTP_LSCD: 'The Predator Deep',
+
+    // ESFP
+    ESFP_HFEC: 'The Natural Born Idol', ESFP_HFED: 'The Party Monster', ESFP_HSEC: 'The Ultimate Puppy', ESFP_HSED: 'The Spotlight Addict',
+    ESFP_HFCC: 'The Hungover Clown', ESFP_HFCD: 'The Visual Coder', ESFP_HSCC: 'The Sensual Whisper', ESFP_HSCD: 'The Party Prince',
+    ESFP_LFEC: 'The Riot Leader', ESFP_LFED: 'The Grand Comedy', ESFP_LSEC: 'The Blockbuster', ESFP_LSED: 'The Club King',
+    ESFP_LFCC: 'The Entertainment News', ESFP_LFCD: 'The Hedonistic Sage', ESFP_LSCC: 'The Showman Valet', ESFP_LSCD: 'The Glitter Abyss',
+};
+
+// 3. Dynamic Roast Traits (Fallback when specific roast is missing)
+const voiceTraits: Record<TypeCode, { roastFragment: string }> = {
+    HFEC: { roastFragment: "you sound like a chaotic anime protagonist" },
+    HFED: { roastFragment: "your voice demands a spotlight even in a dark room" },
+    HSEC: { roastFragment: "you could sell ice to a polar bear" },
+    HSED: { roastFragment: "you have zero indoor voice and zero regrets" },
+    HFCC: { roastFragment: "you process emotions like a GPU processes textures" },
+    HFCD: { roastFragment: "you sound like a corrupted save file" },
+    HSCC: { roastFragment: "you speak in ASMR and secrets" },
+    HSCD: { roastFragment: "you don't ask for things, you announce them" },
+    LFEC: { roastFragment: "your voice has its own gravitational pull" },
+    LFED: { roastFragment: "you make ordering pizza sound like a Shakespearean soliloquy" },
+    LSEC: { roastFragment: "you sound like the voiceover for a summer blockbuster" },
+    LSED: { roastFragment: "you sound like a monologue in a rain-slicked alleyway" },
+    LFCC: { roastFragment: "you deliver facts like a printer delivers paper: flat and necessary" },
+    LFCD: { roastFragment: "you sound like you're speaking from the bottom of a well" },
+    LSCC: { roastFragment: "you are terrifyingly polite and efficient" },
+    LSCD: { roastFragment: "your voice is less a sound and more a vibration in the floorboards" },
+};
+
+const mbtiThemes: Record<MBTIType, { flaw: string }> = {
+    INTJ: { flaw: "overthinking" }, INTP: { flaw: "buffering" }, ENTJ: { flaw: "dominating" }, ENTP: { flaw: "trolling" },
+    INFJ: { flaw: "judging" }, INFP: { flaw: "zoning out" }, ENFJ: { flaw: "preaching" }, ENFP: { flaw: "spiraling" },
+    ISTJ: { flaw: "auditing" }, ISFJ: { flaw: "worrying" }, ESTJ: { flaw: "micromanaging" }, ESFJ: { flaw: "gossiping" },
+    ISTP: { flaw: "disassembling" }, ISFP: { flaw: "sulking" }, ESTP: { flaw: "reckless driving" }, ESFP: { flaw: "scene-stealing" },
+};
+
+export function getSoloIdentity(mbti: MBTIType, voiceType: TypeCode): SoloIdentity {
+    const key = `${mbti}_${voiceType}`;
+
+    // 1. Check for Fully Specific Identity (Legacy or User Provided)
+    if (specificIdentities[key]) {
+        return specificIdentities[key];
+    }
+
+    // 2. Construct Dynamic Identity (Hybrid)
+    // Use Brand Name from Matrix if available, else Fallback.
+    const brandName = brandNameMatrix[key] || "The Enigma";
+
+    // Dynamic Roast Generation
+    const vTrait = voiceTraits[voiceType];
+    const mTheme = mbtiThemes[mbti];
+
+    let prefix = "";
+    if (voiceType.startsWith('H')) {
+        prefix = `You have the brain of a ${mbti} but the energy of a nuclear reactor.`;
+    } else {
+        prefix = `You are a ${mbti} operating in stealth mode.`;
+    }
+
+    const roast = `${prefix} You're constantly ${mTheme.flaw}, and ${vTrait.roastFragment}. It's a dangerous combination.`;
+
+    return {
+        mbti,
+        voiceType,
+        brandName: brandName,
+        roast: roast
+    };
+}
