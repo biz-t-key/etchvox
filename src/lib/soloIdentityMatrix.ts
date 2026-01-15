@@ -12,9 +12,38 @@ export interface SoloIdentity {
     roast: string;
 }
 
-export function getSoloIdentity(mbti: MBTIType, voiceType: TypeCode): SoloIdentity | undefined {
+export function getSoloIdentity(mbti: MBTIType, voiceType: TypeCode): SoloIdentity {
     const key = `${mbti}_${voiceType}`;
-    return soloIdentityMatrix[key];
+
+    // Direct match
+    if (soloIdentityMatrix[key]) {
+        return soloIdentityMatrix[key];
+    }
+
+    // Dynamic Fallback Generator if specific matrix entry is missing
+    const mbtiNicknames: Record<string, string> = {
+        INTJ: "Architect", INTP: "Logician", ENTJ: "Commander", ENTP: "Debater",
+        INFJ: "Advocate", INFP: "Mediator", ENFJ: "Protagonist", ENFP: "Campaigner",
+        ISTJ: "Logistician", ISFJ: "Defender", ESTJ: "Executive", ESFJ: "Consul",
+        ISTP: "Virtuoso", ISFP: "Adventurer", ESTP: "Entrepreneur", ESFP: "Entertainer"
+    };
+
+    const voiceAdjectives: Record<TypeCode, string> = {
+        HFEC: "Electric", HFED: "Dramatic", HSEC: "Charming", HSED: "Viral",
+        HFCC: "Cybernetic", HFCD: "Glitched", HSCC: "Whispering", HSCD: "Royal",
+        LFEC: "Thunderous", LFED: "Operatic", LSEC: "Cinematic", LSED: "Noir",
+        LFCC: "Objective", LFCD: "Abyssal", LSCC: "Loyal", LSCD: "Subsonic"
+    };
+
+    const nickname = mbtiNicknames[mbti] || "Unknown";
+    const adjective = voiceAdjectives[voiceType] || "Mystery";
+
+    return {
+        mbti,
+        voiceType,
+        brandName: `The ${adjective} ${nickname}`,
+        roast: `A rare fusion of ${mbti}'s mind and a ${voiceType} vocal signature. You break the standard archetype.`
+    };
 }
 
 const soloIdentityMatrix: Record<string, SoloIdentity> = {
