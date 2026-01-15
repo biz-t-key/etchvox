@@ -277,57 +277,38 @@ export default function ResultPage() {
                                 {/* The Roast */}
                                 <div className="bg-black/50 rounded-2xl p-6 md:p-8 border border-white/10 shadow-xl overflow-hidden relative">
                                     <div className="absolute top-0 right-0 p-4 text-[100px] opacity-5 pointer-events-none select-none">🔥</div>
-                                    <h3 className="mono text-cyan-400 text-sm mb-6 tracking-widest uppercase flex items-center gap-2">
+                                    <h3 className="mono text-cyan-400 text-xs mb-4 tracking-widest uppercase flex items-center justify-center gap-2">
                                         <span className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
                                         Behavioral_Profile_Analysis
                                     </h3>
-                                    {isPremium ? (
-                                        <p className="text-gray-200 leading-relaxed text-lg font-medium">
-                                            {voiceType.roast}
-                                        </p>
-                                    ) : (
-                                        <div className="relative min-h-[200px] flex items-center justify-center">
-                                            <p className="text-gray-200 leading-relaxed blur-lg select-none text-lg absolute inset-0 p-4">
-                                                {voiceType.roast}
-                                            </p>
-                                            <div className="relative z-10 text-center p-8 glass rounded-2xl border border-white/10 max-w-sm mx-auto">
-                                                <div className="text-6xl mb-4">🔒</div>
-                                                <h4 className="text-2xl font-bold mb-2">UNLOCK</h4>
-                                                <p className="text-sm text-gray-400 mb-6">Full personality analysis</p>
-                                                <button
-                                                    onClick={() => handleCheckout('unlock')}
-                                                    disabled={processingPayment}
-                                                    className="w-full bg-gradient-to-r from-cyan-500 to-magenta-500 hover:from-cyan-400 hover:to-magenta-400 text-white font-bold py-4 px-8 rounded-full shadow-lg shadow-cyan-500/20 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                >
-                                                    {processingPayment ? 'Processing...' : '$4.99'}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
+                                    <p className="text-gray-200 leading-relaxed text-base font-medium text-center">
+                                        {voiceType.roast}
+                                    </p>
                                 </div>
 
                                 {/* Compatibility */}
-                                <div className="glass rounded-2xl p-6 border border-white/10">
-                                    <h3 className="font-semibold mb-6 flex items-center gap-2 text-xl">
+                                {/* Compatibility */}
+                                <div className="glass rounded-2xl p-6 border border-white/10 max-w-xl mx-auto">
+                                    <h3 className="font-semibold mb-6 flex items-center justify-center gap-2 text-lg">
                                         <span className="text-cyan-400">🧬</span>
                                         <span>Genetic Voice Matches</span>
                                     </h3>
 
-                                    <div className="grid md:grid-cols-2 gap-6">
+                                    <div className="grid sm:grid-cols-2 gap-6">
                                         {/* Best Matches */}
                                         <div>
-                                            <div className="text-xs font-bold text-green-400 mb-4 uppercase tracking-[0.2em]">Highest Compatibility</div>
-                                            <div className="space-y-3">
+                                            <div className="text-[10px] font-bold text-green-400 mb-3 uppercase tracking-[0.2em] text-center">Highest Compatibility</div>
+                                            <div className="space-y-2">
                                                 {bestMatches.slice(0, 3).map(({ type, score }) => {
                                                     const matchType = voiceTypes[type];
                                                     const tier = getCompatibilityTier(score);
                                                     return (
-                                                        <div key={type} className="flex items-center justify-between bg-white/5 hover:bg-white/10 transition-colors border border-white/5 rounded-xl p-3">
-                                                            <div className="flex items-center gap-3">
-                                                                <span className="text-2xl">{matchType.icon}</span>
-                                                                <span className="font-medium">{matchType.name}</span>
+                                                        <div key={type} className="flex items-center justify-between bg-white/5 border border-white/5 rounded-lg p-2 px-3">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-xl">{matchType.icon}</span>
+                                                                <span className="text-xs font-bold text-gray-300">{matchType.name}</span>
                                                             </div>
-                                                            <span className="mono text-xs font-bold px-2 py-1 rounded-full bg-black/40" style={{ color: tier.color }}>{tier.emoji} {score}%</span>
+                                                            <span className="mono text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-black/40" style={{ color: tier.color }}>{tier.emoji} {score}%</span>
                                                         </div>
                                                     );
                                                 })}
@@ -336,18 +317,18 @@ export default function ResultPage() {
 
                                         {/* Worst Matches */}
                                         <div>
-                                            <div className="text-xs font-bold text-red-400 mb-4 uppercase tracking-[0.2em]">Immediate Conflict</div>
-                                            <div className="space-y-3">
+                                            <div className="text-[10px] font-bold text-red-400 mb-3 uppercase tracking-[0.2em] text-center">Immediate Conflict</div>
+                                            <div className="space-y-2">
                                                 {worstMatches.slice(0, 3).map(({ type, score }) => {
                                                     const matchType = voiceTypes[type];
                                                     const tier = getCompatibilityTier(score);
                                                     return (
-                                                        <div key={type} className="flex items-center justify-between bg-white/5 hover:bg-white/10 transition-colors border border-white/5 rounded-xl p-3">
-                                                            <div className="flex items-center gap-3">
-                                                                <span className="text-2xl">{matchType.icon}</span>
-                                                                <span className="font-medium">{matchType.name}</span>
+                                                        <div key={type} className="flex items-center justify-between bg-white/5 border border-white/5 rounded-lg p-2 px-3">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-xl">{matchType.icon}</span>
+                                                                <span className="text-xs font-bold text-gray-300">{matchType.name}</span>
                                                             </div>
-                                                            <span className="mono text-xs font-bold px-2 py-1 rounded-full bg-black/40" style={{ color: tier.color }}>{tier.emoji} {score}%</span>
+                                                            <span className="mono text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-black/40" style={{ color: tier.color }}>{tier.emoji} {score}%</span>
                                                         </div>
                                                     );
                                                 })}
@@ -356,62 +337,35 @@ export default function ResultPage() {
                                     </div>
                                 </div>
 
-                                {/* Vault Promotion / Download */}
+                                {/* Video Export Promotion */}
                                 {result.vaultEnabled ? (
-                                    <VaultDownloadSection
-                                        audioUrl={result.audioUrl || ''}
-                                        resultId={result.id}
-                                        createdAt={result.createdAt}
-                                    />
+                                    <div className="text-center p-6 bg-green-500/10 border border-green-500 rounded-2xl">
+                                        <div className="text-2xl mb-2">✅</div>
+                                        <h3 className="text-lg font-bold text-green-400">Video Unlocked & Saved</h3>
+                                        <p className="text-sm text-gray-400 mt-2">Check your email for the download link.</p>
+                                    </div>
                                 ) : (
-                                    <div className="bg-gradient-to-br from-cyan-900/40 via-black to-magenta-900/40 border border-white/10 rounded-3xl p-10 md:p-12 text-center relative overflow-hidden group">
+                                    <div className="bg-gradient-to-br from-cyan-900/40 via-black to-magenta-900/40 border border-white/10 rounded-2xl p-8 text-center relative overflow-hidden group max-w-xl mx-auto">
                                         <div className="absolute inset-0 bg-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                                         <div className="relative z-10">
-                                            <div className="text-4xl mb-6">⏳</div>
-                                            <h3 className="text-xl md:text-2xl font-black text-white mb-4 uppercase tracking-tight leading-tight">
-                                                You Will Never Sound Like <br />"Today" Again.
+                                            <div className="text-5xl mb-4 transform group-hover:scale-110 transition-transform duration-500">🎥</div>
+                                            <h3 className="text-xl font-black text-white mb-2 uppercase tracking-tight">
+                                                Export Your Result Video
                                             </h3>
-                                            <p className="text-gray-300 text-sm md:text-base mb-8 leading-loose max-w-md mx-auto italic font-medium">
-                                                "Freeze your vibe. Before life changes it."
+                                            <p className="text-gray-300 text-sm mb-6 max-w-sm mx-auto leading-relaxed">
+                                                Get a high-quality, watermark-free video of your analysis to share on Reels & TikTok. Save this moment forever.
                                             </p>
-                                            <p className="text-gray-400 text-xs md:text-sm mb-8 leading-relaxed max-w-sm mx-auto">
-                                                Your voice decays by <strong className="text-cyan-400">0.5%</strong> every year.
-                                                Stress, aging, and environmental damage are permanent.
-                                                Lock this moment in <strong className="text-magenta-400">digital amber</strong> before it's too late.
-                                            </p>
-
-                                            <div className="bg-white/5 rounded-2xl p-5 mb-8 max-w-md mx-auto border border-white/10">
-                                                <div className="text-xs font-bold text-green-400 mb-3 uppercase tracking-[0.2em]">What's Preserved:</div>
-                                                <div className="space-y-2 text-[11px] text-gray-300 text-left">
-                                                    <div className="flex items-start gap-2">
-                                                        <span className="text-green-400 font-bold">✓</span>
-                                                        <span><strong>48kHz studio quality</strong> — Beyond CD standard</span>
-                                                    </div>
-                                                    <div className="flex items-start gap-2">
-                                                        <span className="text-green-400 font-bold">✓</span>
-                                                        <span><strong>Raw background ambience</strong> — Coffee shop noise, wind, breath</span>
-                                                    </div>
-                                                    <div className="flex items-start gap-2">
-                                                        <span className="text-green-400 font-bold">✓</span>
-                                                        <span><strong>Zero post-processing</strong> — No noise reduction, no auto-gain</span>
-                                                    </div>
-                                                    <div className="flex items-start gap-2">
-                                                        <span className="text-green-400 font-bold">✓</span>
-                                                        <span><strong>Lifetime cloud backup</strong> — Access forever, download anytime</span>
-                                                    </div>
-                                                </div>
-                                            </div>
 
                                             <button
-                                                onClick={() => handleCheckout('vault')}
+                                                onClick={() => handleCheckout('unlock')}
                                                 disabled={processingPayment}
-                                                className="w-full max-w-sm mx-auto btn-amber py-5 rounded-full text-lg md:text-xl uppercase tracking-widest transition-all transform hover:scale-105 disabled:opacity-50 font-black shadow-[0_0_40px_rgba(212,165,116,0.2)]"
+                                                className="w-full max-w-xs mx-auto btn-primary py-4 rounded-full text-base font-bold uppercase tracking-widest transition-all transform hover:scale-105 disabled:opacity-50 shadow-lg shadow-cyan-500/20"
                                             >
-                                                {processingPayment ? 'PRESERVING...' : '💎 FREEZE MY VIBE — $10'}
+                                                {processingPayment ? 'PROCESSING...' : '📥 DOWNLOAD VIDEO — $4.99'}
                                             </button>
 
-                                            <p className="text-gray-300 text-sm font-medium mt-8 italic px-4 leading-relaxed">
-                                                "A digital amber for your voice. You can't rewind time."
+                                            <p className="text-gray-500 text-[10px] mt-4 uppercase tracking-widest">
+                                                Instant Download • High Quality • No Watermark
                                             </p>
                                         </div>
                                     </div>
