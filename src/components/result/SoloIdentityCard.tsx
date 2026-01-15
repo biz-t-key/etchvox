@@ -61,7 +61,7 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
     return (
         <div
             ref={cardRef}
-            className="relative w-[300px] h-[500px] sm:w-[350px] sm:h-[580px] md:w-[400px] md:h-[650px] lg:w-[450px] lg:h-[700px] bg-gradient-to-br from-gray-900 to-black rounded-3xl shadow-2xl overflow-hidden flex flex-col justify-between p-4 sm:p-6 border border-white/10 font-sans"
+            className="relative mx-auto w-[300px] h-[500px] sm:w-[350px] sm:h-[580px] md:w-[400px] md:h-[650px] lg:w-[450px] lg:h-[700px] bg-gradient-to-br from-gray-900 to-black rounded-3xl shadow-2xl overflow-hidden flex flex-col justify-between p-4 sm:p-6 border border-white/10 font-sans group"
         >
             {/* HEADER */}
             <div className="relative z-10 flex items-center justify-between mb-4">
