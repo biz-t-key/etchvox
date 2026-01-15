@@ -22,6 +22,7 @@ export default function CoupleRecordPage() {
     const [elapsedTime, setElapsedTime] = useState(0);
     const [stepElapsed, setStepElapsed] = useState(0);
     const [error, setError] = useState<string | null>(null);
+    const [consentGiven, setConsentGiven] = useState(false);
 
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioContextRef = useRef<AudioContext | null>(null);
@@ -314,18 +315,37 @@ export default function CoupleRecordPage() {
                             </div>
                         )}
 
+                        {/* Privacy Consent - Required */}
+                        <div className="glass rounded-2xl p-8 mb-6 border-2 border-white/10">
+                            <div className="flex items-start gap-4">
+                                <input
+                                    type="checkbox"
+                                    id="couple-consent"
+                                    checked={consentGiven}
+                                    onChange={(e) => setConsentGiven(e.target.checked)}
+                                    className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0"
+                                />
+                                <label htmlFor="couple-consent" className="text-base text-gray-200 leading-relaxed cursor-pointer select-none">
+                                    We consent to our voices being <strong className="text-white">recorded, analyzed, and stored</strong> together on EtchVox servers.
+                                    Our voice data and compatibility results will be kept unless we request deletion.
+                                    {' '}<a href="/privacy" target="_blank" className="text-cyan-400 underline hover:text-cyan-300 font-semibold">Privacy Policy</a>
+                                </label>
+                            </div>
+                        </div>
+
                         <button
                             onClick={startRecording}
-                            disabled={!userA.name || !userB.name}
-                            className="w-full btn-metallic py-6 rounded-full text-xl font-bold disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                            disabled={!userA.name || !userB.name || !consentGiven}
+                            className="w-full btn-metallic py-6 rounded-full text-xl font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                         >
                             <span className="mr-3">🎤</span> START RECORDING TOGETHER
                         </button>
 
-                        <p className="text-gray-500 text-sm max-w-lg mx-auto leading-relaxed mt-6">
-                            Voice data stored for 30 days, then auto-deleted.
-                            {' '}<a href="/privacy" target="_blank" className="text-cyan-400 underline hover:text-cyan-300">Privacy Policy</a>
-                        </p>
+                        {(!userA.name || !userB.name || !consentGiven) && (
+                            <p className="text-amber-400 text-sm font-semibold text-center">
+                                {!userA.name || !userB.name ? '↑ Enter both names' : '↑ Please accept the consent to continue'}
+                            </p>
+                        )}
                     </div>
                 )}
 

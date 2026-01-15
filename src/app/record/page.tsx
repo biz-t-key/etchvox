@@ -40,6 +40,7 @@ export default function RecordPage() {
     const [error, setError] = useState<string | null>(null);
     const [selectedAccent, setSelectedAccent] = useState<string | null>(null);
     const [toxicity, setToxicity] = useState<ToxicityProfile | null>(null);
+    const [consentGiven, setConsentGiven] = useState(false);
 
     const analyzerRef = useRef<VoiceAnalyzer | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -256,18 +257,38 @@ export default function RecordPage() {
                             </div>
                         )}
 
+                        {/* Privacy Consent - Required */}
+                        <div className="glass rounded-2xl p-8 border-2 border-white/10">
+                            <div className="flex items-start gap-4">
+                                <input
+                                    type="checkbox"
+                                    id="consent"
+                                    checked={consentGiven}
+                                    onChange={(e) => setConsentGiven(e.target.checked)}
+                                    className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0"
+                                />
+                                <label htmlFor="consent" className="text-base text-gray-200 leading-relaxed cursor-pointer select-none">
+                                    I consent to my voice being <strong className="text-white">recorded, analyzed, and stored</strong> on EtchVox servers.
+                                    My voice data and analysis results will be kept unless I request deletion.
+                                    {' '}<Link href="/privacy" className="text-cyan-400 underline hover:text-cyan-300 font-semibold">Privacy Policy</Link>
+                                </label>
+                            </div>
+                        </div>
+
                         <button
                             onClick={startRecording}
-                            className="btn-metallic text-2xl px-16 py-7 rounded-full font-bold transition-all hover:scale-105"
+                            disabled={!consentGiven}
+                            className="btn-metallic text-2xl px-16 py-7 rounded-full font-bold transition-all hover:scale-105 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100"
                         >
                             <span className="mr-3">🎤</span>
                             START RECORDING
                         </button>
 
-                        <p className="text-gray-500 text-sm max-w-lg mx-auto leading-relaxed">
-                            Voice data stored for 30 days, then auto-deleted unless you purchase the Vault.
-                            {' '}<Link href="/privacy" className="text-cyan-400 underline hover:text-cyan-300">Privacy Policy</Link>
-                        </p>
+                        {!consentGiven && (
+                            <p className="text-amber-400 text-sm font-semibold animate-pulse">
+                                ↑ Please accept the consent to continue
+                            </p>
+                        )}
                     </div>
                 )}
 
