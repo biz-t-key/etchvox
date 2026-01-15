@@ -73,22 +73,22 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
             </div>
 
             {/* CENTER: Solo Identity Badge & Roast */}
-            <div className="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
-                <div className="bg-black/85 backdrop-blur-2xl border border-white/30 rounded-2xl px-8 py-6 shadow-[0_20px_60px_rgba(0,0,0,0.8)] transform -rotate-1 max-w-[85%] text-center pointer-events-auto">
-                    <div className="text-[10px] text-cyan-400 font-black uppercase tracking-[0.4em] mb-2 opacity-80">
+            <div className="absolute inset-0 flex items-center justify-center p-2 sm:p-4 pointer-events-none">
+                <div className="bg-black/70 backdrop-blur-md border border-white/20 rounded-2xl px-4 py-4 sm:px-8 sm:py-6 shadow-[0_20px_60px_rgba(0,0,0,0.8)] transform -rotate-1 w-[90%] sm:max-w-[85%] text-center pointer-events-auto">
+                    <div className="text-[8px] sm:text-[10px] text-cyan-400 font-black uppercase tracking-[0.3em] mb-1 sm:mb-2 opacity-80">
                         Duo Identity Result
                     </div>
-                    <div className="text-4xl sm:text-5xl md:text-6xl font-black text-white uppercase italic tracking-tighter mb-5 leading-none px-2">
+                    <div className="text-3xl sm:text-4xl md:text-5xl font-black text-white uppercase italic tracking-tighter mb-3 sm:mb-5 leading-none px-1">
                         "{identity.brandName}"
                     </div>
 
-                    <div className="h-[2px] w-12 bg-gradient-to-r from-transparent via-white/40 to-transparent mx-auto mb-4" />
+                    <div className="h-[1px] sm:h-[2px] w-8 sm:w-12 bg-gradient-to-r from-transparent via-white/40 to-transparent mx-auto mb-3 sm:mb-4" />
 
-                    <div className="text-base sm:text-lg md:text-xl text-gray-200 font-semibold italic leading-snug max-w-md mx-auto mb-3 px-3">
+                    <div className="text-sm sm:text-base md:text-lg text-gray-200 font-semibold italic leading-snug max-w-sm sm:max-w-md mx-auto mb-2 sm:mb-3 px-1">
                         {identity.roast || "Bio-analysis complete. Persona mismatch detected."}
                     </div>
 
-                    <div className="text-[8px] text-gray-500 font-mono tracking-widest mt-4 uppercase">
+                    <div className="text-[6px] sm:text-[8px] text-gray-500 font-mono tracking-widest mt-2 sm:mt-4 uppercase">
                         EtchVox // AI_Persona_Audit
                     </div>
                 </div>

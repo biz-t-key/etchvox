@@ -5,9 +5,10 @@ import { MBTIType, mbtiTypes, mbtiGroups, mbtiOrder } from '@/lib/mbti';
 
 interface MBTISelectorProps {
     onSelect: (mbti: MBTIType | null) => void;
+    onSkip?: () => void;
 }
 
-export default function MBTISelector({ onSelect }: MBTISelectorProps) {
+export default function MBTISelector({ onSelect, onSkip }: MBTISelectorProps) {
     const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
 
     // Group MBTIs by their group
@@ -22,7 +23,15 @@ export default function MBTISelector({ onSelect }: MBTISelectorProps) {
 
     return (
         <div className="fade-in max-w-2xl mx-auto">
-            <div className="glass rounded-xl p-5 mb-4">
+            <div className="glass rounded-xl p-5 mb-4 relative">
+                {onSkip && (
+                    <button
+                        onClick={onSkip}
+                        className="absolute top-4 right-4 text-[10px] text-gray-500 hover:text-white uppercase tracking-widest underline decoration-gray-700 underline-offset-4"
+                    >
+                        Skip for now
+                    </button>
+                )}
                 <h2 className="text-sm font-bold text-center mb-1 uppercase tracking-widest text-gray-400">
                     Select Your MBTI
                 </h2>
