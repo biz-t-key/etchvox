@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { VoiceAnalyzer } from '@/lib/analyzer';
 import { generateResultId } from '@/lib/permalink';
 import { saveResult, getSessionId, VoiceResult } from '@/lib/storage';
@@ -39,7 +40,6 @@ export default function RecordPage() {
     const [error, setError] = useState<string | null>(null);
     const [selectedAccent, setSelectedAccent] = useState<string | null>(null);
     const [toxicity, setToxicity] = useState<ToxicityProfile | null>(null);
-    const [consentGiven, setConsentGiven] = useState(false);
 
     const analyzerRef = useRef<VoiceAnalyzer | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -227,60 +227,47 @@ export default function RecordPage() {
                 <div className="absolute bottom-1/3 right-1/3 w-64 h-64 bg-magenta-500/20 rounded-full blur-[100px]" />
             </div>
 
-            <div className="relative z-10 w-full max-w-lg mx-auto text-center">
+            <div className="relative z-10 w-full max-w-2xl mx-auto text-center">
                 {/* Ready Phase */}
                 {phase === 'ready' && (
-                    <div className="fade-in space-y-8">
-                        <div>
-                            <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
+                    <div className="fade-in space-y-12">
+                        <div className="space-y-6">
+                            <h1 className="text-4xl md:text-5xl font-bold leading-tight">
                                 <span className="neon-text-cyan">Voice Analysis</span>
                             </h1>
-                            <p className="text-gray-300 text-lg leading-relaxed">
-                                Read the prompts aloud. The analysis takes about 30 seconds.
+                            <p className="text-gray-300 text-xl md:text-2xl leading-relaxed max-w-xl mx-auto">
+                                Read the prompts aloud. Takes about 30 seconds.
                             </p>
                         </div>
 
-                        <div className="glass rounded-xl p-8">
-                            <h2 className="text-xl font-semibold mb-6">Instructions:</h2>
-                            <ul className="text-left text-gray-300 space-y-3 text-base">
+                        <div className="glass rounded-2xl p-10 md:p-12 space-y-6">
+                            <h2 className="text-2xl font-semibold">Instructions</h2>
+                            <ul className="text-left text-gray-300 space-y-4 text-lg max-w-md mx-auto">
                                 <li>• Find a quiet place</li>
-                                <li>• Hold your device about 30cm from your mouth</li>
-                                <li>• Read each prompt naturally (no need to act)</li>
-                                <li>• You'll see 3 different prompts</li>
+                                <li>• Hold device 30cm from mouth</li>
+                                <li>• Read naturally (don't act)</li>
+                                <li>• 3 different prompts</li>
                             </ul>
                         </div>
 
                         {error && (
-                            <div className="bg-red-500/20 border border-red-500 rounded-lg p-4 text-red-400 text-sm">
+                            <div className="bg-red-500/20 border border-red-500 rounded-xl p-6 text-red-400 text-base">
                                 {error}
                             </div>
                         )}
 
-                        {/* Privacy Consent */}
-                        <div className="glass rounded-xl p-6 space-y-4 text-left">
-                            <div className="flex items-start gap-3">
-                                <input
-                                    type="checkbox"
-                                    id="consent"
-                                    checked={consentGiven}
-                                    onChange={(e) => setConsentGiven(e.target.checked)}
-                                    className="mt-1 w-5 h-5 rounded border-gray-600 bg-black cursor-pointer"
-                                />
-                                <label htmlFor="consent" className="text-sm text-gray-300 leading-relaxed cursor-pointer">
-                                    I consent to my voice being recorded and analyzed. My voice data will be stored for 30 days for result retrieval, then deleted unless I purchase the Vault.
-                                    {' '}<a href="/privacy" target="_blank" className="text-cyan-400 underline hover:text-cyan-300">Privacy Policy</a>
-                                </label>
-                            </div>
-                        </div>
-
                         <button
                             onClick={startRecording}
-                            disabled={!consentGiven}
-                            className="btn-metallic text-xl px-12 py-6 rounded-full font-bold transition-all mt-4 disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="btn-metallic text-2xl px-16 py-7 rounded-full font-bold transition-all hover:scale-105"
                         >
                             <span className="mr-3">🎤</span>
                             START RECORDING
                         </button>
+
+                        <p className="text-gray-500 text-sm max-w-lg mx-auto leading-relaxed">
+                            Voice data stored for 30 days, then auto-deleted unless you purchase the Vault.
+                            {' '}<Link href="/privacy" className="text-cyan-400 underline hover:text-cyan-300">Privacy Policy</Link>
+                        </p>
                     </div>
                 )}
 

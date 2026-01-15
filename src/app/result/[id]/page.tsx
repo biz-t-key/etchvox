@@ -204,7 +204,7 @@ export default function ResultPage() {
 
                         {/* STAGE 3: FULL CONTENT */}
                         {displayStage === 'full' && (
-                            <div className="animate-slide-up space-y-16 pb-20">
+                            <div className="animate-slide-up space-y-20 pb-20">
 
                                 {/* 📸 NEW: Share Card Section */}
                                 <div className="space-y-6">
@@ -374,7 +374,7 @@ export default function ResultPage() {
                                                 {processingPayment ? 'PRESERVING...' : '💎 FREEZE MY VIBE — $10'}
                                             </button>
 
-                                            <p className="text-gray-600 text-[10px] mono mt-4 italic">
+                                            <p className="text-gray-300 text-sm font-medium mt-8 italic px-4 leading-relaxed">
                                                 "A digital amber for your voice. You can't rewind time."
                                             </p>
                                         </div>
@@ -382,7 +382,7 @@ export default function ResultPage() {
                                 )}
 
                                 {/* Share & Footer */}
-                                <div className="space-y-8 pt-8 border-t border-white/5">
+                                <div className="space-y-12 pt-16 border-t border-white/5">
                                     <ShareButtons
                                         resultId={resultId}
                                         typeName={voiceType.name}
@@ -391,10 +391,10 @@ export default function ResultPage() {
                                         typeCode={result.typeCode}
                                     />
 
-                                    <div className="text-center">
-                                        <p className="text-gray-600 text-[10px] mono mb-4">SYSTEM_ID: {result.id} // SESSION: {result.sessionId}</p>
-                                        <Link href="/" className="text-cyan-500/50 hover:text-cyan-400 text-xs uppercase tracking-[0.3em] font-bold transition-colors">
-                                            Repeat Process →
+                                    <div className="text-center space-y-6">
+                                        <p className="text-gray-600 text-xs mono">SYSTEM_ID: {result.id} // SESSION: {result.sessionId}</p>
+                                        <Link href="/" className="inline-block btn-primary px-10 py-4 rounded-full text-base font-bold transition-all hover:scale-105">
+                                            ← New Analysis
                                         </Link>
                                     </div>
                                 </div>
