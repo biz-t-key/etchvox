@@ -16,7 +16,7 @@ export default function ShareButtons({ resultId, typeName, typeIcon, catchphrase
 
     // Check for Web Share API support on mount
     useEffect(() => {
-        if (typeof navigator !== 'undefined' && navigator.share) {
+        if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
             setCanShare(true);
         }
     }, []);
@@ -86,7 +86,7 @@ export default function ShareButtons({ resultId, typeName, typeIcon, catchphrase
                         // Instagram: Can't directly share, open profile
                         alert('Save the result image and share it on Instagram Stories!');
                     }}
-                    className="share-btn flex flex-col items-center gap-2 p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 hover:from-purple-500/20 hover:to-pink-500/20 border border-pink-500/20 hover:border-pink-500/40 transition-all"
+                    className="share-btn flex flex-col items-center justify-center text-center gap-2 p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 hover:from-purple-500/20 hover:to-pink-500/20 border border-pink-500/20 hover:border-pink-500/40 transition-all"
                 >
                     <span className="text-4xl">📸</span>
                     <span className="text-sm font-bold text-gray-200">Instagram</span>
@@ -94,7 +94,7 @@ export default function ShareButtons({ resultId, typeName, typeIcon, catchphrase
 
                 <button
                     onClick={shareToTwitter}
-                    className="share-btn flex flex-col items-center gap-2 p-4 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 hover:border-cyan-500/40 transition-all"
+                    className="share-btn flex flex-col items-center justify-center text-center gap-2 p-4 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 hover:border-cyan-500/40 transition-all"
                 >
                     <span className="text-4xl">𝕏</span>
                     <span className="text-sm font-bold text-gray-200">Twitter/X</span>
@@ -105,7 +105,7 @@ export default function ShareButtons({ resultId, typeName, typeIcon, catchphrase
                         // TikTok: Can't directly share
                         alert('Save the result video (Premium) and share it on TikTok!');
                     }}
-                    className="share-btn flex flex-col items-center gap-2 p-4 rounded-xl bg-gradient-to-br from-cyan-500/10 to-magenta-500/10 hover:from-cyan-500/20 hover:to-magenta-500/20 border border-magenta-500/20 hover:border-magenta-500/40 transition-all"
+                    className="share-btn flex flex-col items-center justify-center text-center gap-2 p-4 rounded-xl bg-gradient-to-br from-cyan-500/10 to-magenta-500/10 hover:from-cyan-500/20 hover:to-magenta-500/20 border border-magenta-500/20 hover:border-magenta-500/40 transition-all"
                 >
                     <span className="text-4xl">🎵</span>
                     <span className="text-sm font-bold text-gray-200">TikTok</span>
@@ -125,7 +125,7 @@ export default function ShareButtons({ resultId, typeName, typeIcon, catchphrase
                                 console.log('Share cancelled');
                             }
                         }}
-                        className="share-btn flex flex-col items-center gap-2 p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-500/40 transition-all"
+                        className="share-btn flex flex-col items-center justify-center text-center gap-2 p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-500/40 transition-all"
                     >
                         <span className="text-4xl">📤</span>
                         <span className="text-sm font-bold text-gray-200">Share</span>

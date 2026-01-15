@@ -115,7 +115,7 @@ export default function HomePage() {
               <div className="space-y-6">
                 <Link
                   href={selectedMode === 'solo' ? '/record' : '/couple'}
-                  className="block btn-metallic text-xl md:text-2xl px-12 py-6 rounded-full font-bold transition-all duration-300 hover:scale-105 w-full text-center"
+                  className="flex justify-center items-center btn-metallic text-xl md:text-2xl px-12 py-6 rounded-full font-bold transition-all duration-300 hover:scale-105 w-full text-center"
                 >
                   <span className="text-3xl mr-3">🎤</span>
                   <span className="relative z-10">START RECORDING</span>
