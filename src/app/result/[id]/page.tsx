@@ -148,35 +148,37 @@ export default function ResultPage() {
 
                 {/* STAGE 2 & 3 CONTENT */}
                 {(displayStage === 'metrics' || displayStage === 'full') && (
-                    <div className="animate-fade-in w-full space-y-12">
+                    <div className="animate-fade-in w-full space-y-20 section-spacing">
                         {/* Metrics Card */}
                         <div
-                            className="glass rounded-2xl p-6 md:p-8 relative overflow-hidden border border-white/10"
-                            style={{ boxShadow: `0 0 50px ${colors.primary}20` }}
+                            className="glass rounded-3xl p-8 relative overflow-hidden border border-white/10"
+                            style={{ boxShadow: `0 0 60px ${colors.primary}10` }}
                         >
-                            <div className="flex flex-col items-center border-b border-white/10 pb-6 mb-6">
-                                <span className="text-6xl mb-4 filter drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]">
+                            <div className="flex flex-col items-center border-b border-white/5 pb-8 mb-8">
+                                <span className="text-6xl mb-4 filter drop-shadow-[0_0_25px_rgba(255,255,255,0.15)]">
                                     {voiceType.icon}
                                 </span>
-                                <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tight mb-2 text-transparent bg-clip-text bg-gradient-to-br from-white to-gray-400">
+                                <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tight mb-2 text-white">
                                     {voiceType.name}
                                 </h1>
-                                <div className="text-xs font-mono text-gray-500 uppercase tracking-[0.2em]">
-                                    {result.typeCode}
+                                <div className="flex items-center gap-3 text-xs font-mono text-gray-500 uppercase tracking-widest">
+                                    <span>ID: {result.typeCode}</span>
+                                    <span className="w-1 h-1 rounded-full bg-gray-700" />
+                                    <span>SESSION_{result.sessionId.slice(-4)}</span>
                                 </div>
                             </div>
 
-                            {/* Meters */}
-                            <div className="grid grid-cols-4 gap-4 text-center">
+                            {/* Meters - Clean & Minimal */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                                 {[
                                     { label: 'Pitch', val: `${Math.round(result.metrics.pitch)} Hz`, color: 'text-cyan-400' },
                                     { label: 'Speed', val: `${Math.round(result.metrics.speed * 100)}%`, color: 'text-white' },
                                     { label: 'Vibe', val: `${Math.round(result.metrics.vibe * 100)}%`, color: 'text-yellow-400' },
                                     { label: 'Sync', val: `${result.metrics.humanityScore}%`, color: colors.primary === '#00FF66' ? 'text-green-400' : 'text-green-500' },
                                 ].map((m) => (
-                                    <div key={m.label} className="bg-black/20 rounded-lg p-2 md:p-3">
-                                        <div className="text-[9px] text-gray-500 uppercase tracking-wider mb-1 font-bold">{m.label}</div>
-                                        <div className={`text-sm md:text-lg font-bold ${m.color} font-mono leading-none`}>{m.val}</div>
+                                    <div key={m.label} className="bg-black/40 rounded-xl p-4 border border-white/5 flex flex-col items-center justify-center h-24">
+                                        <div className="text-[9px] text-gray-500 uppercase tracking-[0.2em] mb-2">{m.label}</div>
+                                        <div className={`text-xl font-bold ${m.color} font-mono`}>{m.val}</div>
                                     </div>
                                 ))}
                             </div>
@@ -184,30 +186,32 @@ export default function ResultPage() {
                             {/* Processing Indicator */}
                             {displayStage === 'metrics' && (
                                 <div className="mt-8 text-center animate-bounce">
-                                    <div className="text-gray-400 text-xs mb-2 uppercase tracking-[0.2em]">Processing Detailed Report...</div>
-                                    <div className="text-xl">⬇️</div>
+                                    <div className="text-gray-500 text-[10px] uppercase tracking-widest">Generating Report</div>
                                 </div>
                             )}
                         </div>
 
                         {displayStage === 'full' && (
-                            <div className="animate-slide-up space-y-12">
+                            <div className="animate-slide-up space-y-20">
                                 {/* MBTI / Truth Card Section */}
                                 <div className="w-full">
-                                    <div className="flex items-center justify-between mb-4 px-2">
-                                        <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
-                                            <span className="w-1.5 h-1.5 bg-cyan-500 rounded-full" />
-                                            YOUR TRUTH CARD
-                                        </h2>
+                                    <div className="flex items-end justify-between mb-6 px-1">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-1 h-6 bg-cyan-500" />
+                                            <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em]">
+                                                Truth Card
+                                            </h2>
+                                        </div>
                                         {selectedMBTI && !isPremium && (
                                             <button
                                                 onClick={() => setSelectedMBTI(null)}
-                                                className="text-[10px] text-gray-500 hover:text-white transition-colors"
+                                                className="text-[10px] text-gray-500 hover:text-white transition-colors uppercase tracking-widest"
                                             >
-                                                [ CHANGE MBTI ]
+                                                Edit
                                             </button>
                                         )}
                                     </div>
+
                                     {!selectedMBTI && !mbtiSkipped ? (
                                         <MBTISelector
                                             onSelect={(mbti) => {
@@ -222,119 +226,157 @@ export default function ResultPage() {
                                     ) : selectedMBTI ? (
                                         <div id="identity-card" className="w-full">
                                             <SoloIdentityCard mbti={selectedMBTI} voiceTypeCode={result.typeCode} />
+                                            <div className="flex justify-center mt-4">
+                                                <div className="flex items-center gap-2 text-[10px] text-gray-500 uppercase tracking-widest border border-white/5 px-4 py-2 rounded-full bg-black/40">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                                                    Screenshot to Save
+                                                </div>
+                                            </div>
                                         </div>
                                     ) : (
                                         <button
                                             onClick={() => setMbtiSkipped(false)}
-                                            className="w-full py-8 border border-dashed border-white/10 rounded-xl text-gray-500 hover:text-white hover:border-white/30 transition-all text-xs uppercase tracking-widest"
+                                            className="w-full py-12 border border-dashed border-white/10 rounded-2xl text-gray-500 hover:text-white hover:border-white/30 transition-all text-xs uppercase tracking-[0.2em]"
                                         >
-                                            + Add MBTI for Identity Card
+                                            + Add Behavioral Data
                                         </button>
                                     )}
                                 </div>
 
-                                {/* Screenshot Callout */}
-                                {selectedMBTI && (
-                                    <div className="text-center">
-                                        <p className="text-[10px] text-gray-500 uppercase tracking-widest animate-pulse">
-                                            📸 Screenshot & Share on Stories
-                                        </p>
-                                        <div className="text-[8px] text-gray-600 font-mono mt-1">
-                                            ETCHVOX // GENERATED_BY_ETCHVOX
-                                        </div>
-                                    </div>
-                                )}
-
                                 {/* THE ROAST (Free) */}
-                                <div className="bg-black/50 rounded-2xl p-6 border border-white/10 relative overflow-hidden group hover:border-cyan-500/30 transition-colors">
-                                    <div className="absolute top-0 right-0 p-4 text-[80px] opacity-5 pointer-events-none select-none group-hover:opacity-10 transition-opacity">🔥</div>
-                                    <h3 className="mono text-cyan-400 text-[10px] mb-3 tracking-widest uppercase flex items-center gap-2">
-                                        <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse" />
-                                        BEHAVIORAL_PROFILE_ANALYSIS
-                                    </h3>
-                                    <p className="text-gray-200 leading-relaxed text-sm font-medium text-left">
-                                        {voiceType.roast}
-                                    </p>
+                                <div>
+                                    <div className="flex items-center gap-3 mb-6 px-1">
+                                        <div className="w-1 h-6 bg-white/20" />
+                                        <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em]">
+                                            Analysis
+                                        </h2>
+                                    </div>
+                                    <div className="bg-black/40 rounded-2xl p-8 border border-white/5 relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 p-4 opacity-10 grayscale text-6xl select-none">🔥</div>
+                                        <p className="text-gray-300 leading-relaxed text-sm md:text-base font-medium relative z-10 w-[90%]">
+                                            {voiceType.roast}
+                                        </p>
+                                    </div>
                                 </div>
 
                                 {/* Genetic Matches */}
                                 <div className="w-full">
-                                    <div className="text-center mb-4 text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] flex justify-center items-center gap-2">
-                                        <span className="text-base">🧬</span> Genetic Voice Matches
+                                    <div className="flex items-center gap-3 mb-6 px-1">
+                                        <div className="w-1 h-6 bg-purple-500" />
+                                        <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em]">
+                                            Matches
+                                        </h2>
                                     </div>
-                                    <div className="grid gap-3">
-                                        <div className="bg-white/5 rounded-lg p-3 border border-white/5 flex items-center justify-between">
-                                            <span className="text-[10px] text-green-400 font-bold uppercase tracking-wider">Highest Compatibility</span>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-lg">{voiceTypes[bestMatches[0].type].icon}</span>
-                                                <span className="text-xs font-bold">{voiceTypes[bestMatches[0].type].name}</span>
-                                                <span className="text-[10px] bg-green-900/40 text-green-400 px-1.5 py-0.5 rounded ml-2">{bestMatches[0].score}%</span>
+
+                                    <div className="grid md:grid-cols-2 gap-6">
+                                        {/* Good Matches */}
+                                        <div className="space-y-4">
+                                            <div className="text-[10px] font-bold text-green-500 uppercase tracking-widest pl-1">Compatible Patterns</div>
+                                            <div className="space-y-2">
+                                                {bestMatches.slice(0, 3).map(({ type, score }) => (
+                                                    <div key={type} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5">
+                                                        <div className="flex items-center gap-3">
+                                                            <span className="text-xl opacity-80">{voiceTypes[type].icon}</span>
+                                                            <span className="text-xs font-bold text-gray-300 tracking-wide">{voiceTypes[type].name}</span>
+                                                        </div>
+                                                        <span className="font-mono text-xs text-green-400">{score}%</span>
+                                                    </div>
+                                                ))}
                                             </div>
                                         </div>
-                                        <div className="bg-white/5 rounded-lg p-3 border border-white/5 flex items-center justify-between">
-                                            <span className="text-[10px] text-red-400 font-bold uppercase tracking-wider">Immediate Conflict</span>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-lg">{voiceTypes[worstMatches[0].type].icon}</span>
-                                                <span className="text-xs font-bold">{voiceTypes[worstMatches[0].type].name}</span>
-                                                <span className="text-[10px] bg-red-900/40 text-red-400 px-1.5 py-0.5 rounded ml-2">{worstMatches[0].score}%</span>
+
+                                        {/* Bad Matches */}
+                                        <div className="space-y-4">
+                                            <div className="text-[10px] font-bold text-red-500 uppercase tracking-widest pl-1">Conflict Patterns</div>
+                                            <div className="space-y-2">
+                                                {worstMatches.slice(0, 3).map(({ type, score }) => (
+                                                    <div key={type} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5">
+                                                        <div className="flex items-center gap-3">
+                                                            <span className="text-xl opacity-80">{voiceTypes[type].icon}</span>
+                                                            <span className="text-xs font-bold text-gray-300 tracking-wide">{voiceTypes[type].name}</span>
+                                                        </div>
+                                                        <span className="font-mono text-xs text-red-500">{score}%</span>
+                                                    </div>
+                                                ))}
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* VIDEO EXPORT (Paid) */}
-                                {showVideo ? (
-                                    <div className="space-y-4">
-                                        <div className="text-center">
-                                            <div className="inline-block bg-green-500/10 border border-green-500 text-green-400 px-3 py-1 rounded-full text-[10px] font-bold mb-2 uppercase tracking-wider">
-                                                Video Export Unlocked
+                                {/* VIDEO EXPORT */}
+                                <div className="w-full">
+                                    <div className="flex items-center gap-3 mb-6 px-1">
+                                        <div className="w-1 h-6 bg-pink-500" />
+                                        <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em]">
+                                            Export
+                                        </h2>
+                                    </div>
+
+                                    {showVideo ? (
+                                        <div className="space-y-4">
+                                            <div className="text-center">
+                                                <div className="inline-block border border-green-500/50 text-green-400 px-3 py-1 rounded text-[10px] font-bold mb-4 uppercase tracking-widest">
+                                                    PREVIEW READY
+                                                </div>
                                             </div>
+                                            <VideoPlayerSection voiceType={voiceType} metrics={result.metrics} />
                                         </div>
-                                        <VideoPlayerSection voiceType={voiceType} metrics={result.metrics} />
-                                    </div>
-                                ) : (
-                                    <div className="bg-gradient-to-b from-gray-900 to-black border border-white/10 rounded-2xl p-6 text-center relative overflow-hidden">
-                                        <div className="text-4xl mb-3">🎥</div>
-                                        <h3 className="text-lg font-black text-white mb-1 uppercase tracking-tight">EXPORT YOUR RESULT VIDEO</h3>
-                                        <p className="text-gray-400 text-xs mb-4 leading-relaxed max-w-xs mx-auto">
-                                            Get a high-quality, watermark-free video of your analysis to share on Reels & TikTok. Save this moment forever.
-                                        </p>
-                                        <button
-                                            onClick={() => handleCheckout('unlock')} // Using 'unlock' as per current setup for $4.99
-                                            disabled={processingPayment}
-                                            className="w-full btn-primary py-3 rounded-full text-sm font-bold uppercase tracking-widest shadow-lg shadow-cyan-500/20"
-                                        >
-                                            {processingPayment ? 'PROCESSING...' : '📥 DOWNLOAD VIDEO — $4.99'}
-                                        </button>
-                                        <div className="text-[8px] text-gray-600 mt-2 uppercase tracking-wide">
-                                            INSTANT DOWNLOAD • HIGH QUALITY • NO WATERMARK
+                                    ) : (
+                                        <div className="bg-gradient-to-br from-gray-900 via-black to-gray-900 border border-white/10 rounded-2xl p-8 text-center relative overflow-hidden group">
+                                            <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                                            <h3 className="text-xl font-bold text-white mb-2 uppercase tracking-wide">Video Export</h3>
+                                            <p className="text-gray-400 text-xs mb-8 leading-relaxed max-w-sm mx-auto">
+                                                Generate a high-definition, loopable video card for your social profiles.
+                                            </p>
+
+                                            <button
+                                                onClick={() => handleCheckout('unlock')}
+                                                disabled={processingPayment}
+                                                className="w-full max-w-xs mx-auto bg-white text-black hover:bg-gray-200 py-3 rounded text-xs font-bold uppercase tracking-[0.2em] transition-all"
+                                            >
+                                                {processingPayment ? 'Processing...' : 'Download — $4.99'}
+                                            </button>
                                         </div>
-                                    </div>
-                                )}
+                                    )}
+                                </div>
 
                                 {/* Footer & Share */}
-                                <div className="pt-8 border-t border-white/5 space-y-8">
-                                    <div className="text-center">
-                                        <div className="text-[10px] text-cyan-500 font-bold mb-2 blink">✨ Perfect for your Bio, Slack status, or just to warn people.</div>
-                                        <div className="bg-white/5 p-3 rounded-lg border border-white/5 font-mono text-[10px] text-left text-gray-300 relative group">
-                                            <div className="absolute top-2 right-2 text-[8px] text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:text-white">COPY</div>
-                                            <div>{voiceType.icon} {voiceType.name}</div>
-                                            <div className="text-gray-500">"{voiceType.catchphrase}"</div>
+                                <div className="pt-20 pb-20 border-t border-white/5 space-y-12">
+                                    <div className="w-full">
+                                        <div className="text-center mb-10">
+                                            <div className="inline-block px-3 py-1 rounded bg-white/5 border border-white/10 text-[10px] text-gray-400 mb-6 uppercase tracking-widest">
+                                                Copy for Bio
+                                            </div>
+
+                                            <div className="text-left bg-black border border-white/10 p-6 rounded-xl max-w-md mx-auto relative group hover:border-cyan-500/50 transition-colors cursor-pointer">
+                                                <div className="flex items-center gap-4 mb-3">
+                                                    <span className="text-2xl filter grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all">{voiceType.icon}</span>
+                                                    <div>
+                                                        <div className="text-white font-bold uppercase text-sm tracking-wide">{voiceType.name}</div>
+                                                        <div className="text-cyan-600 font-mono text-[10px] tracking-widest">TYPE: {result.typeCode}</div>
+                                                    </div>
+                                                </div>
+                                                <div className="text-gray-500 text-xs leading-relaxed pl-1 border-l border-white/10">
+                                                    {voiceType.catchphrase}
+                                                </div>
+                                                <div className="absolute top-4 right-4 text-[9px] text-gray-600 font-bold uppercase tracking-widest group-hover:text-cyan-500">COPY</div>
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <ShareButtons
-                                        resultId={resultId}
-                                        typeName={voiceType.name}
-                                        typeIcon={voiceType.icon}
-                                        catchphrase={voiceType.catchphrase}
-                                        typeCode={result.typeCode}
-                                    />
+                                        <ShareButtons
+                                            resultId={resultId}
+                                            typeName={voiceType.name}
+                                            typeIcon={voiceType.icon}
+                                            catchphrase={voiceType.catchphrase}
+                                            typeCode={result.typeCode}
+                                        />
 
-                                    <div className="text-center pb-12">
-                                        <Link href="/" className="inline-block border border-cyan-500/50 text-cyan-400 px-8 py-3 rounded-full text-xs font-bold hover:bg-cyan-500/10 transition-colors uppercase tracking-widest">
-                                            Start New Analysis
-                                        </Link>
+                                        <div className="text-center mt-16">
+                                            <Link href="/" className="text-[10px] text-gray-600 hover:text-white transition-colors uppercase tracking-[0.2em] border-b border-transparent hover:border-gray-500 pb-1">
+                                                Start New Analysis
+                                            </Link>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
