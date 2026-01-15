@@ -11,7 +11,7 @@ export interface SoloIdentity {
 // 1. Fully Specific Data (Legacy/High Quality Roasts)
 // Used when available.
 const specificIdentities: Record<string, SoloIdentity> = {
-    // NT Group (Analyst) - Full Data from User
+    // I. Analysts (NT) Group - INTJ
     INTJ_HFEC: { mbti: 'INTJ', voiceType: 'HFEC', brandName: 'The Rave Scholar', roast: "You’re attempting to explain the Heat Death of the Universe in a mosh pit, but your voice is so neon that everyone just thinks you’re asking where the MDMA is." },
     INTJ_HFED: { mbti: 'INTJ', voiceType: 'HFED', brandName: 'The Cynical Cheerleader', roast: "You’re shouting for the team, but your subtext is a 45-minute lecture on why sports are a bread-and-circus distraction for the masses." },
     INTJ_HSEC: { mbti: 'INTJ', voiceType: 'HSEC', brandName: 'The Strategic Sunshine', roast: "You have the mind of a grandmaster and the voice of a puppy; you’re basically a nuclear silo disguised as a petting zoo." },
@@ -29,6 +29,7 @@ const specificIdentities: Record<string, SoloIdentity> = {
     INTJ_LSCC: { mbti: 'INTJ', voiceType: 'LSCC', brandName: 'The Tactical Servant', roast: "You serve your own intellect with such precision that you’ve become a high-end valet for a ghost." },
     INTJ_LSCD: { mbti: 'INTJ', voiceType: 'LSCD', brandName: 'The Sunken Brain', roast: "Your thoughts are so heavy they’ve reached the bottom of the ocean, and your voice is just the crushing pressure of the water above them." },
 
+    // INTP: The Logician
     INTP_HFEC: { mbti: 'INTP', voiceType: 'HFEC', brandName: 'The Glitched Idol', roast: "You are a scientific calculator wearing a sequin dress; you’re emitting 10,000 lumens of charisma, but your eyes are still running a diagnostic on the crowd." },
     INTP_HFED: { mbti: 'INTP', voiceType: 'HFED', brandName: 'The Error Code', roast: "You’re trying to be enthusiastic, but your vocal energy is just a blue-screen-of-death screaming for a reboot." },
     INTP_HSEC: { mbti: 'INTP', voiceType: 'HSEC', brandName: 'The Accidental Joy', roast: "You hate people on principle, but your voice is so naturally charming that strangers keep trying to tell you their life stories." },
@@ -46,6 +47,7 @@ const specificIdentities: Record<string, SoloIdentity> = {
     INTP_LSCC: { mbti: 'INTP', voiceType: 'LSCC', brandName: 'The Logic Slave', roast: "Your voice is a perfectly subservient tool for your brain; unfortunately, your brain is a very demanding master." },
     INTP_LSCD: { mbti: 'INTP', voiceType: 'LSCD', brandName: 'The Infinite Loop', roast: "You’ve dived so deep into your own thoughts that you forgot how to breathe at the surface; you’re just a slow, heavy vibration in the dark." },
 
+    // ENTJ: The Commander
     ENTJ_HFEC: { mbti: 'ENTJ', voiceType: 'HFEC', brandName: 'The Charismatic Tyrant', roast: "You’re a cult leader in the making; you sell world domination like it’s a catchy summer hit." },
     ENTJ_HFED: { mbti: 'ENTJ', voiceType: 'HFED', brandName: 'The Propaganda Chief', roast: "You don't motivate people; you weaponize their enthusiasm for your own quarterly goals." },
     ENTJ_HSEC: { mbti: 'ENTJ', voiceType: 'HSEC', brandName: 'The Iron Puppy', roast: "You fire people with the efficiency of a CEO and then immediately ask for a belly rub; your need for validation is exhausting." },
@@ -63,6 +65,7 @@ const specificIdentities: Record<string, SoloIdentity> = {
     ENTJ_LSCC: { mbti: 'ENTJ', voiceType: 'LSCC', brandName: 'The Self-Made Servant', roast: "You are a man who has mastered himself so thoroughly that you’ve become your own most efficient employee." },
     ENTJ_LSCD: { mbti: 'ENTJ', voiceType: 'LSCD', brandName: 'The Nuclear Sub', roast: "You are a massive, hidden engine of power; you don't make noise, you just displace the entire ocean when you move." },
 
+    // ENTP: The Debater
     ENTP_HFEC: { mbti: 'ENTP', voiceType: 'HFEC', brandName: 'The Satirical Idol', roast: "You’re a stand-up comedian who accidentally became famous; you’re mocking the spotlight while standing directly in it." },
     ENTP_HFED: { mbti: 'ENTP', voiceType: 'HFED', brandName: 'The Devil\'s Advocate', roast: "You’re not cheering for the team; you’re cheering for the chaos that ensues when the team loses." },
     ENTP_HSEC: { mbti: 'ENTP', voiceType: 'HSEC', brandName: 'The Mischievous Pup', roast: "You say the most offensive things imaginable, but your voice is so friendly that people just think they misheard you." },
@@ -80,8 +83,43 @@ const specificIdentities: Record<string, SoloIdentity> = {
     ENTP_LSCC: { mbti: 'ENTP', voiceType: 'LSCC', brandName: 'The Rebellious Valet', roast: "You are perfectly polite while explaining exactly why your boss is an idiot. It’s a work of art." },
     ENTP_LSCD: { mbti: 'ENTP', voiceType: 'LSCD', brandName: 'The Dark Irony', roast: "You’ve found the punchline at the bottom of the ocean, and now you’re just waiting for the rest of the world to drown so they can hear it." },
 
-    // Special User Requests & Sparse Data with Roasts
+    // II. Diplomats (NF) Group - INFJ
+    INFJ_HFEC: { mbti: 'INFJ', voiceType: 'HFEC', brandName: 'The Messiah Icon', roast: "You’re performing a sold-out show where the only lyrics are your own martyrdom; you’re selling 'saving the world' as a limited-edition merch drop." },
+    INFJ_HFED: { mbti: 'INFJ', voiceType: 'HFED', brandName: 'The Spiritual Rally', roast: "You’re trying to manifest a revolution, but your voice is just a high-vibe pyramid scheme for collective enlightenment." },
+    INFJ_HSEC: { mbti: 'INFJ', voiceType: 'HSEC', brandName: 'The Holy Puppy', roast: "You have the aura of a saint and the tactical dependency of a newborn; you’re a moral compass that only points toward people who will comfort you." },
+    INFJ_HSED: { mbti: 'INFJ', voiceType: 'HSED', brandName: 'The Enlightened Feed', roast: "You’ve curated your 'inner peace' so thoroughly that your voice is now just an aesthetic filter for your own ego-death." },
+    INFJ_HFCC: { mbti: 'INFJ', voiceType: 'HFCC', brandName: 'The Stoic Saint', roast: "You’ve automated your empathy to the point of absolute zero; you’re a high-speed processor that only outputs 'deeply concerned' silence." },
+    INFJ_HFCD: { mbti: 'INFJ', voiceType: 'HFCD', brandName: 'The Social Architect', roast: "You treat human emotions like a legacy codebase—full of bugs you’re desperate to patch without actually talking to the users." },
+    INFJ_HSCC: { mbti: 'INFJ', voiceType: 'HSCC', brandName: 'The Guardian Breath', roast: "You whisper your boundaries so softly that people keep stepping over them, just so you can feel the tragic thrill of being misunderstood." },
+    INFJ_HSCD: { mbti: 'INFJ', voiceType: 'HSCD', brandName: 'The Priest King', roast: "You rule a kingdom of pure ideals, which is convenient because you don't actually have to manage any real, messy people." },
+    INFJ_LFEC: { mbti: 'INFJ', voiceType: 'LFEC', brandName: 'The Moral Crusader', roast: "You lead with 'love,' but your vocal intensity suggests you’d be happy to burn the city down just to keep the orphans warm." },
+    INFJ_LFED: { mbti: 'INFJ', voiceType: 'LFED', brandName: 'The Divine Requiem', roast: "Every internal conflict you have is a cosmic tragedy; you’re mourning the world's sins while you’re just trying to decide what to have for lunch." },
+    INFJ_LSEC: { mbti: 'INFJ', voiceType: 'LSEC', brandName: 'The Prophecy', roast: "Your voice suggests a great reckoning is coming, but usually, it’s just another 'deep conversation' that leaves everyone exhausted." },
+    INFJ_LSED: { mbti: 'INFJ', voiceType: 'LSED', brandName: 'The Soul Healer', roast: "You sound like you’re trying to cure the listener's trauma with a slow, hypnotic beat, but you’re mostly just self-medicating your own loneliness." },
+    INFJ_LFCC: { mbti: 'INFJ', voiceType: 'LFCC', brandName: 'The Ethical Truth', roast: "You report on humanity's failures with such poise that it’s clear you’ve already decided you’re the only one worth saving." },
+    INFJ_LFCD: { mbti: 'INFJ', voiceType: 'LFCD', brandName: 'The Eternal Sage', roast: "You’ve achieved enlightenment, but your frequency suggests you’re deeply annoyed that the rest of us are still so stupid." },
+    INFJ_LSCC: { mbti: 'INFJ', voiceType: 'LSCC', brandName: 'The Martyr Servant', roast: "You serve others with such aggressive self-sacrifice that everyone around you feels guilty just for existing." },
+    INFJ_LSCD: { mbti: 'INFJ', voiceType: 'LSCD', brandName: 'The Ocean of Empathy', roast: "You’re drowning in the world's pain, but you’ve made the water so deep that no one can actually reach you to help." },
+
+    // INFP: The Mediator
+    INFP_HFEC: { mbti: 'INFP', voiceType: 'HFEC', brandName: 'The Dreamy Idol', roast: "You’re a pop star for an audience of ghosts; your charisma is immense, but it only works in a room full of your own imaginary friends." },
+    INFP_HFED: { mbti: 'INFP', voiceType: 'HFED', brandName: 'The Clumsy Cheer', roast: "You’re rooting for the underdog, but your enthusiasm is so fragile it might shatter if someone actually wins." },
+    INFP_HSEC: { mbti: 'INFP', voiceType: 'HSEC', brandName: 'The Gentle Dreamer', roast: "You have the vocal energy of a cloud, but there’s a thunderstorm of 'unresolved feelings' hidden in the vapor." },
+    INFP_HSED: { mbti: 'INFP', voiceType: 'HSED', brandName: 'The Vulnerable Brand', roast: "You’ve commodified your sensitivity so well that even your tears sound like they were approved by a marketing board." },
+    INFP_HFCC: { mbti: 'INFP', voiceType: 'HFCC', brandName: 'The Hollow Shell', roast: "You’ve retreated so far into your 'safe space' that your voice is now just an automated reply from an empty room." },
+    INFP_HFCD: { mbti: 'INFP', voiceType: 'HFCD', brandName: 'The Nostalgic Coder', roast: "You build digital worlds just to find a place where your 2005 childhood memories can live forever. It’s a very high-tech cemetery." },
+    INFP_HSCC: { mbti: 'INFP', voiceType: 'HSCC', brandName: 'The Fragile Whisper', roast: "Your voice is like glass—beautiful, transparent, and incredibly likely to cut anyone who tries to hold you too tightly." },
+    INFP_HSCD: { mbti: 'INFP', voiceType: 'HSCD', brandName: 'The Fallen Prince', roast: "You possess the dignity of a lost era, but you’re mostly just pouting because the modern world refuses to speak in poetry." },
     INFP_LFEC: { mbti: 'INFP', voiceType: 'LFEC', brandName: 'The Iron Lamb', roast: "You try to be a pacifist, but your voice sounds like it's about to annex a small country just for the aesthetic." },
+    INFP_LFED: { mbti: 'INFP', voiceType: 'LFED', brandName: 'The Internal Opera', roast: "You are the lead in a tragedy that only you can see; the drama is infinite, but the stakes are purely imaginary." },
+    INFP_LSEC: { mbti: 'INFP', voiceType: 'LSEC', brandName: 'The Indie Film', roast: "You sound like the trailer for a movie where nothing happens for two hours, but the lighting is very, very pretty." },
+    INFP_LSED: { mbti: 'INFP', voiceType: 'LSED', brandName: 'The Bedroom Radio', roast: "You sound like you’re broadcasting from under a blanket; it’s intimate, it’s cozy, and it’s completely disconnected from reality." },
+    INFP_LFCC: { mbti: 'INFP', voiceType: 'LFCC', brandName: 'The Poetic Fact', roast: "You deliver the news as a series of metaphors; nobody knows what's actually happening, but everyone feels vaguely sad about it." },
+    INFP_LFCD: { mbti: 'INFP', voiceType: 'LFCD', brandName: 'The Melancholy Monk', roast: "You’ve found wisdom in sadness, but you’re mostly just keeping the sadness around so you can keep feeling wise." },
+    INFP_LSCC: { mbti: 'INFP', voiceType: 'LSCC', brandName: 'The Devoted Ghost', roast: "You are loyal to a version of someone that doesn't exist anymore; you’re serving a memory with terrifying dedication." },
+    INFP_LSCD: { mbti: 'INFP', voiceType: 'LSCD', brandName: 'The Sunken Dream', roast: "Your heart is a heavy stone at the bottom of a lake; your voice is just the ripples on the surface that nobody bothers to count." },
+
+    // Special User Requests & Sparse Data with Roasts
     ISTJ_HFEC: { mbti: 'ISTJ', voiceType: 'HFEC', brandName: 'The Scripted Idol', roast: "You've practiced your spontaneity so much that your 'fun' sounds like a perfectly executed audit." },
     ESFP_LSCD: { mbti: 'ESFP', voiceType: 'LSCD', brandName: 'The Glitter Abyss', roast: "You’re a disco ball dropped into the Mariana Trench—shiny on the surface, but anyone who dives deeper finds a darkness that hasn't seen light in three million years." },
 };
