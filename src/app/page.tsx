@@ -34,11 +34,11 @@ export default function HomePage() {
           </h1>
 
           {/* Tagline */}
-          <div className="space-y-6">
-            <p className="text-xl sm:text-2xl md:text-3xl text-gray-300 font-light leading-relaxed px-4">
+          <div className="space-y-4">
+            <p className="text-base sm:text-lg md:text-xl text-gray-300 font-light leading-relaxed px-4">
               Your Face is 10/10.
             </p>
-            <p className="text-2xl sm:text-3xl md:text-4xl font-bold leading-snug px-4">
+            <p className="text-xl sm:text-2xl md:text-3xl font-bold leading-snug px-4">
               <span className="neon-text-cyan">What about your Voice?</span>
             </p>
           </div>
@@ -53,16 +53,16 @@ export default function HomePage() {
               {/* Solo Mode */}
               <button
                 onClick={() => setSelectedMode('solo')}
-                className="group glass rounded-3xl p-8 md:p-10 border-2 border-cyan-500/30 hover:border-cyan-500/60 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_40px_rgba(0,240,255,0.3)] text-left"
+                className="group glass rounded-3xl p-8 md:p-10 border-2 border-cyan-500/30 hover:border-cyan-500/60 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_40px_rgba(0,240,255,0.3)] text-center flex flex-col items-center w-full"
               >
-                <div className="text-6xl mb-6">🎤</div>
-                <h2 className="text-3xl md:text-4xl font-black mb-4">
+                <div className="text-5xl mb-6 transform group-hover:scale-110 transition-transform">🎤</div>
+                <h2 className="text-2xl md:text-3xl font-black mb-4 uppercase tracking-tight">
                   <span className="neon-text-cyan">SOLO MODE</span>
                 </h2>
-                <p className="text-gray-300 text-lg leading-relaxed mb-4">
+                <p className="text-gray-300 text-base leading-relaxed mb-4 max-w-xs mx-auto">
                   Discover your unique voice type
                 </p>
-                <p className="text-gray-500 text-sm">
+                <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">
                   30 seconds • 16 voice types • Instant analysis
                 </p>
               </button>
@@ -70,17 +70,17 @@ export default function HomePage() {
               {/* Couple Mode */}
               <button
                 onClick={() => setSelectedMode('couple')}
-                className="group glass rounded-3xl p-8 md:p-10 border-2 border-magenta-500/30 hover:border-magenta-500/60 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_40px_rgba(255,0,255,0.3)] text-left relative"
+                className="group glass rounded-3xl p-8 md:p-10 border-2 border-magenta-500/30 hover:border-magenta-500/60 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_40px_rgba(255,0,255,0.3)] text-center flex flex-col items-center relative w-full"
               >
-                <span className="absolute top-4 right-4 text-sm bg-magenta-500/30 text-magenta-300 px-3 py-1 rounded-full font-bold animate-pulse">NEW</span>
-                <div className="text-6xl mb-6">💕</div>
-                <h2 className="text-3xl md:text-4xl font-black mb-4">
+                <span className="absolute top-4 right-4 text-[10px] bg-magenta-500/30 text-magenta-300 px-2 py-1 rounded-full font-bold animate-pulse tracking-widest">NEW</span>
+                <div className="text-5xl mb-6 transform group-hover:scale-110 transition-transform">💕</div>
+                <h2 className="text-2xl md:text-3xl font-black mb-4 uppercase tracking-tight">
                   <span className="neon-text-magenta">COUPLE MODE</span>
                 </h2>
-                <p className="text-gray-300 text-lg leading-relaxed mb-4">
+                <p className="text-gray-300 text-base leading-relaxed mb-4 max-w-xs mx-auto">
                   Test your <span className="text-magenta-400 font-bold">vocal chemistry</span> together
                 </p>
-                <p className="text-gray-500 text-sm">
+                <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">
                   36 seconds • 2 voices • Compatibility score
                 </p>
               </button>
