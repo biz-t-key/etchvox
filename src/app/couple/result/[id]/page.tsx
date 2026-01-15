@@ -80,7 +80,7 @@ export default function CoupleResultPage() {
     const voiceB = voiceTypes[typeB];
 
     return (
-        <div className="min-h-screen bg-black py-8 px-4">
+        <div className="min-h-screen bg-black py-12 px-6">
             <div className="max-w-3xl mx-auto">
 
                 {/* Stage 1: INSTANT LABEL (Big reveal) */}
@@ -188,7 +188,7 @@ export default function CoupleResultPage() {
 
                 {/* Stage 3: FULL REPORT */}
                 {stage === 'full' && (
-                    <div className="fade-in space-y-8 pb-16">
+                    <div className="fade-in space-y-12 pb-20">
 
                         {/* Header with Duo Label */}
                         <div className="text-center space-y-4 pt-8">
@@ -203,20 +203,23 @@ export default function CoupleResultPage() {
                             </p>
                         </div>
 
-                        {/* Matrix Score Card */}
-                        <div className="glass rounded-2xl p-8 relative overflow-hidden">
-                            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-magenta-500/5" />
-                            <div className="relative text-center">
-                                <div className="mono text-gray-500 text-sm mb-2">COMPATIBILITY QUOTIENT</div>
-                                <div className="text-6xl md:text-7xl font-black mb-2">
+                        {/* Matrix Score Card - Hero */}
+                        <div className="glass rounded-3xl p-10 md:p-14 relative overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-magenta-500/10" />
+                            <div className="relative text-center space-y-6">
+                                <div className="mono text-gray-400 text-sm">COMPATIBILITY QUOTIENT</div>
+                                <div className="text-7xl md:text-8xl font-black">
                                     <span className="bg-gradient-to-r from-cyan-400 to-magenta-400 bg-clip-text text-transparent">
                                         {result.matrixScore}
                                     </span>
-                                    <span className="text-2xl text-gray-600">/100</span>
+                                    <span className="text-3xl text-gray-600">/100</span>
                                 </div>
-                                <div className={`text-xl font-bold`} style={{ color: compatTier.color }}>
+                                <div className={`text-2xl font-bold`} style={{ color: compatTier.color }}>
                                     {compatTier.emoji} {compatTier.tier}
                                 </div>
+                                <p className="text-gray-400 text-base max-w-md mx-auto leading-relaxed">
+                                    This score reflects your vocal chemistry based on pitch harmony, tempo sync, and energy matching.
+                                </p>
                             </div>
                         </div>
 
@@ -329,19 +332,19 @@ export default function CoupleResultPage() {
                             </button>
                         </div>
 
-                        {/* Actions */}
-                        <div className="flex gap-4 pt-6">
+                        {/* Actions - Larger buttons */}
+                        <div className="flex gap-6 pt-8">
                             <Link
                                 href="/couple"
-                                className="flex-1 text-center py-3 rounded-lg border border-white/10 hover:bg-white/5 transition-colors"
+                                className="flex-1 text-center py-5 rounded-full border-2 border-white/20 hover:bg-white/10 transition-colors text-lg font-bold"
                             >
-                                Try Again
+                                🔁 Try Again
                             </Link>
                             <Link
                                 href="/"
-                                className="flex-1 text-center py-3 rounded-lg border border-white/10 hover:bg-white/5 transition-colors"
+                                className="flex-1 text-center py-5 rounded-full btn-primary text-lg font-bold"
                             >
-                                Home
+                                ← Home
                             </Link>
                         </div>
 

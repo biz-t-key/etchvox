@@ -178,8 +178,8 @@ export default function CoupleRecordPage() {
     };
 
     return (
-        <div className="min-h-screen bg-black py-8 px-4">
-            <div className="max-w-lg mx-auto">
+        <div className="min-h-screen bg-black py-12 px-6">
+            <div className="max-w-2xl mx-auto">
 
                 {/* Intro Phase */}
                 {phase === 'intro' && (
@@ -216,96 +216,43 @@ export default function CoupleRecordPage() {
 
                 {/* Input Phase */}
                 {phase === 'input' && (
-                    <div className="fade-in">
-                        <h2 className="text-2xl font-bold text-center mb-6">Tell us about yourselves</h2>
-
-                        {/* User A */}
-                        <div className="glass rounded-xl p-4 mb-4">
-                            <div className="flex items-center gap-2 mb-3">
-                                <span className="w-8 h-8 rounded-full bg-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold">A</span>
-                                <span className="font-semibold">Person A</span>
-                            </div>
-                            <div className="space-y-3">
-                                <input
-                                    type="text"
-                                    placeholder="Name"
-                                    value={userA.name}
-                                    onChange={(e) => setUserA({ ...userA, name: e.target.value })}
-                                    className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 focus:border-cyan-500 outline-none"
-                                />
-                                <select
-                                    value={userA.job}
-                                    onChange={(e) => setUserA({ ...userA, job: e.target.value })}
-                                    className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 focus:border-cyan-500 outline-none"
-                                >
-                                    <option value="">Select Job...</option>
-                                    <option value="engineer">Engineer</option>
-                                    <option value="artist">Artist</option>
-                                    <option value="teacher">Teacher</option>
-                                    <option value="doctor">Doctor</option>
-                                    <option value="lawyer">Lawyer</option>
-                                    <option value="founder">Founder</option>
-                                    <option value="student">Student</option>
-                                    <option value="freelancer">Freelancer</option>
-                                    <option value="other">Other</option>
-                                </select>
-                                <select
-                                    value={userA.accent}
-                                    onChange={(e) => setUserA({ ...userA, accent: e.target.value })}
-                                    className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 focus:border-cyan-500 outline-none"
-                                >
-                                    <option value="us">🇺🇸 American</option>
-                                    <option value="uk">🇬🇧 British</option>
-                                    <option value="au">🇦🇺 Australian</option>
-                                    <option value="asia">🌏 Asian</option>
-                                    <option value="eu">🇪🇺 European</option>
-                                    <option value="latam">🌎 Latin American</option>
-                                </select>
-                            </div>
+                    <div className="fade-in space-y-8">
+                        <div className="text-center space-y-4">
+                            <h2 className="text-3xl font-bold">Who's playing?</h2>
+                            <p className="text-gray-400 text-lg">Enter your names to continue</p>
                         </div>
 
-                        {/* User B */}
-                        <div className="glass rounded-xl p-4 mb-6">
-                            <div className="flex items-center gap-2 mb-3">
-                                <span className="w-8 h-8 rounded-full bg-magenta-500/30 flex items-center justify-center text-magenta-400 font-bold">B</span>
-                                <span className="font-semibold">Person B</span>
-                            </div>
-                            <div className="space-y-3">
+                        {/* Two-column layout on desktop, stack on mobile */}
+                        <div className="grid md:grid-cols-2 gap-6">
+                            {/* Person A Card */}
+                            <div className="rounded-2xl p-8 border-2 border-cyan-500/40 bg-cyan-500/5">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <span className="w-12 h-12 rounded-full bg-cyan-500/30 flex items-center justify-center text-cyan-400 font-black text-xl">A</span>
+                                    <span className="text-xl font-bold neon-text-cyan">Person A</span>
+                                </div>
                                 <input
                                     type="text"
-                                    placeholder="Name"
+                                    placeholder="Enter name..."
+                                    value={userA.name}
+                                    onChange={(e) => setUserA({ ...userA, name: e.target.value })}
+                                    className="w-full bg-black/50 border-2 border-cyan-500/30 rounded-xl px-5 py-4 text-lg focus:border-cyan-500 outline-none placeholder:text-gray-600"
+                                    autoFocus
+                                />
+                            </div>
+
+                            {/* Person B Card */}
+                            <div className="rounded-2xl p-8 border-2 border-magenta-500/40 bg-magenta-500/5">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <span className="w-12 h-12 rounded-full bg-magenta-500/30 flex items-center justify-center text-magenta-400 font-black text-xl">B</span>
+                                    <span className="text-xl font-bold neon-text-magenta">Person B</span>
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="Enter name..."
                                     value={userB.name}
                                     onChange={(e) => setUserB({ ...userB, name: e.target.value })}
-                                    className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 focus:border-magenta-500 outline-none"
+                                    className="w-full bg-black/50 border-2 border-magenta-500/30 rounded-xl px-5 py-4 text-lg focus:border-magenta-500 outline-none placeholder:text-gray-600"
                                 />
-                                <select
-                                    value={userB.job}
-                                    onChange={(e) => setUserB({ ...userB, job: e.target.value })}
-                                    className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 focus:border-magenta-500 outline-none"
-                                >
-                                    <option value="">Select Job...</option>
-                                    <option value="engineer">Engineer</option>
-                                    <option value="artist">Artist</option>
-                                    <option value="teacher">Teacher</option>
-                                    <option value="doctor">Doctor</option>
-                                    <option value="lawyer">Lawyer</option>
-                                    <option value="founder">Founder</option>
-                                    <option value="student">Student</option>
-                                    <option value="freelancer">Freelancer</option>
-                                    <option value="other">Other</option>
-                                </select>
-                                <select
-                                    value={userB.accent}
-                                    onChange={(e) => setUserB({ ...userB, accent: e.target.value })}
-                                    className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 focus:border-magenta-500 outline-none"
-                                >
-                                    <option value="us">🇺🇸 American</option>
-                                    <option value="uk">🇬🇧 British</option>
-                                    <option value="au">🇦🇺 Australian</option>
-                                    <option value="asia">🌏 Asian</option>
-                                    <option value="eu">🇪🇺 European</option>
-                                    <option value="latam">🌎 Latin American</option>
-                                </select>
                             </div>
                         </div>
 
@@ -365,37 +312,37 @@ export default function CoupleRecordPage() {
                             </div>
                         </div>
 
-                        {/* Speaker Indicator */}
-                        <div className="flex justify-center gap-4 mb-4">
-                            <div className={`px-4 py-2 rounded-full transition-all ${currentStep.speaker === 'A' || currentStep.speaker === 'BOTH' || currentStep.speaker === 'ALTERNATE'
-                                ? 'bg-cyan-500/30 text-cyan-400 scale-110'
-                                : 'bg-gray-800 text-gray-600'
+                        {/* Speaker Indicator - Larger and clearer */}
+                        <div className="flex justify-center gap-6 mb-8">
+                            <div className={`px-6 py-3 rounded-full transition-all font-bold text-lg ${currentStep.speaker === 'A' || currentStep.speaker === 'BOTH' || currentStep.speaker === 'ALTERNATE'
+                                ? 'bg-cyan-500/40 text-cyan-300 scale-110 border-2 border-cyan-500 shadow-[0_0_20px_rgba(0,240,255,0.3)]'
+                                : 'bg-gray-800 text-gray-600 border-2 border-transparent'
                                 }`}>
-                                {userA.name || 'A'}
+                                <span className="mr-2">🎤</span>{userA.name || 'A'}
                             </div>
-                            <div className={`px-4 py-2 rounded-full transition-all ${currentStep.speaker === 'B' || currentStep.speaker === 'BOTH' || currentStep.speaker === 'ALTERNATE'
-                                ? 'bg-magenta-500/30 text-magenta-400 scale-110'
-                                : 'bg-gray-800 text-gray-600'
+                            <div className={`px-6 py-3 rounded-full transition-all font-bold text-lg ${currentStep.speaker === 'B' || currentStep.speaker === 'BOTH' || currentStep.speaker === 'ALTERNATE'
+                                ? 'bg-magenta-500/40 text-magenta-300 scale-110 border-2 border-magenta-500 shadow-[0_0_20px_rgba(255,0,255,0.3)]'
+                                : 'bg-gray-800 text-gray-600 border-2 border-transparent'
                                 }`}>
-                                {userB.name || 'B'}
+                                <span className="mr-2">🎤</span>{userB.name || 'B'}
                             </div>
                         </div>
 
-                        {/* UI Text */}
-                        <div className="mono text-sm text-cyan-400 mb-4 animate-pulse">
+                        {/* UI Text - Larger */}
+                        <div className="mono text-base text-cyan-400 mb-6 animate-pulse">
                             {currentStep.ui.en}
                         </div>
 
-                        {/* Visualizer */}
-                        <div className="mb-4">
+                        {/* Visualizer - More space */}
+                        <div className="mb-8">
                             <ParticleVisualizer
                                 analyser={analyserRef.current}
                                 isActive={true}
                             />
                         </div>
 
-                        {/* Instruction */}
-                        <p className="text-gray-400 text-sm mb-4">
+                        {/* Instruction - Larger */}
+                        <p className="text-gray-300 text-lg mb-8 font-medium">
                             {currentStep.instruction.en}
                         </p>
 
@@ -403,17 +350,17 @@ export default function CoupleRecordPage() {
                         {currentStep.phase === 'alternating' ? (
                             renderAlternatingScript()
                         ) : (
-                            <div className="glass rounded-xl p-6">
-                                <p className="text-xl font-medium leading-relaxed">
+                            <div className="glass rounded-2xl p-10 border border-white/10">
+                                <p className="text-2xl font-semibold leading-relaxed">
                                     "{currentStep.script.en}"
                                 </p>
                             </div>
                         )}
 
-                        {/* Timer */}
-                        <div className="mt-6 flex items-center justify-center gap-2">
-                            <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-                            <span className="text-red-400 mono">REC</span>
+                        {/* Timer - Larger */}
+                        <div className="mt-10 flex items-center justify-center gap-3">
+                            <span className="w-4 h-4 bg-red-500 rounded-full animate-pulse" />
+                            <span className="text-red-400 mono text-lg font-bold">RECORDING</span>
                         </div>
                     </div>
                 )}
