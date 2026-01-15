@@ -20,59 +20,68 @@ export default function HomePage() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 text-center max-w-2xl mx-auto space-y-10">
+      <div className="relative z-10 text-center max-w-3xl mx-auto space-y-8 md:space-y-12">
         {/* Logo */}
         <div>
-          <h1 className="text-5xl md:text-7xl font-black tracking-tight leading-tight">
+          <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-black tracking-tight leading-tight">
             <span className="neon-text-cyan">ETCH</span>
             <span className="neon-text-magenta">VOX</span>
           </h1>
         </div>
 
         {/* Tagline */}
-        <div className="space-y-3">
-          <p className="text-xl md:text-2xl text-gray-300 font-light leading-relaxed">
+        <div className="space-y-4">
+          <p className="text-xl sm:text-2xl md:text-3xl text-gray-300 font-light leading-relaxed px-4">
             Your Face is 10/10.
           </p>
-          <p className="text-2xl md:text-3xl font-bold leading-snug">
+          <p className="text-2xl sm:text-3xl md:text-4xl font-bold leading-snug px-4">
             <span className="neon-text-cyan">What about your Voice?</span>
           </p>
         </div>
 
         {/* System Check */}
-        <div className="glass rounded-xl p-8 max-w-md mx-auto">
-          <div className="flex items-center justify-center gap-2 mb-5">
+        <div className="glass rounded-xl p-6 sm:p-8 md:p-10 max-w-md mx-4 sm:mx-auto">
+          <div className="flex items-center justify-center gap-2 mb-6">
             <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            <span className="mono text-sm text-green-400">SYSTEM CHECK</span>
+            <span className="mono text-sm sm:text-base text-green-400">SYSTEM CHECK</span>
           </div>
-          <p className="text-xl text-gray-200 mb-3 leading-relaxed">
+          <p className="text-xl sm:text-2xl md:text-3xl text-gray-200 mb-4 leading-relaxed">
             Are you <span className="text-cyan-400 font-bold">Human</span>?
           </p>
-          <p className="text-base text-gray-400 leading-relaxed">
+          <p className="text-base sm:text-lg md:text-xl text-gray-400 leading-relaxed">
             Or something more... interesting?
           </p>
         </div>
 
-        {/* CTA Button */}
-        <div className="pt-4">
+        {/* CTA Button - Solo Mode */}
+        <div className="pt-2 px-4">
           <Link
             href="/record"
-            className="inline-flex items-center gap-3 btn-primary text-lg px-10 py-5 rounded-full font-bold transition-all duration-300 hover:scale-105 pulse-neon"
+            className="inline-flex items-center gap-3 sm:gap-4 btn-metallic text-lg sm:text-xl md:text-2xl px-8 sm:px-12 md:px-16 py-4 sm:py-5 md:py-6 rounded-full font-bold transition-all duration-300 hover:scale-105"
           >
-            <span className="text-2xl">🎤</span>
-            <span>Start Analysis</span>
+            <span className="text-2xl sm:text-3xl md:text-4xl">🎤</span>
+            <span className="relative z-10">START RECORDING</span>
           </Link>
         </div>
 
-        {/* Couple Mode Link */}
-        <div>
-          <Link
-            href="/couple"
-            className="inline-flex items-center gap-2 text-gray-400 hover:text-magenta-400 transition-colors text-base"
-          >
-            <span>💕</span>
-            <span>Try Couple Mode</span>
-            <span className="text-xs bg-magenta-500/20 text-magenta-400 px-2 py-1 rounded-full">NEW</span>
+        {/* Couple Mode - Prominent Card */}
+        <div className="px-4">
+          <Link href="/couple" className="block group">
+            <div className="glass rounded-2xl p-6 sm:p-8 border-2 border-magenta-500/30 hover:border-magenta-500/60 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_40px_rgba(255,0,255,0.3)]">
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <span className="text-4xl sm:text-5xl">💕</span>
+                <h3 className="text-2xl sm:text-3xl md:text-4xl font-black">
+                  <span className="neon-text-magenta">COUPLE MODE</span>
+                </h3>
+                <span className="text-sm sm:text-base bg-magenta-500/30 text-magenta-300 px-3 py-1 rounded-full font-bold animate-pulse">NEW</span>
+              </div>
+              <p className="text-base sm:text-lg md:text-xl text-gray-300 leading-relaxed mb-3">
+                Test your <span className="text-magenta-400 font-bold">vocal chemistry</span> together
+              </p>
+              <p className="text-sm sm:text-base text-gray-500">
+                36 seconds • 2 voices • 1 compatibility score
+              </p>
+            </div>
           </Link>
         </div>
 

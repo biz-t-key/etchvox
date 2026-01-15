@@ -39,6 +39,7 @@ export default function RecordPage() {
     const [error, setError] = useState<string | null>(null);
     const [selectedAccent, setSelectedAccent] = useState<string | null>(null);
     const [toxicity, setToxicity] = useState<ToxicityProfile | null>(null);
+    const [consentGiven, setConsentGiven] = useState(false);
 
     const analyzerRef = useRef<VoiceAnalyzer | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -255,12 +256,30 @@ export default function RecordPage() {
                             </div>
                         )}
 
+                        {/* Privacy Consent */}
+                        <div className="glass rounded-xl p-6 space-y-4 text-left">
+                            <div className="flex items-start gap-3">
+                                <input
+                                    type="checkbox"
+                                    id="consent"
+                                    checked={consentGiven}
+                                    onChange={(e) => setConsentGiven(e.target.checked)}
+                                    className="mt-1 w-5 h-5 rounded border-gray-600 bg-black cursor-pointer"
+                                />
+                                <label htmlFor="consent" className="text-sm text-gray-300 leading-relaxed cursor-pointer">
+                                    I consent to my voice being recorded and analyzed. My voice data will be stored for 30 days for result retrieval, then deleted unless I purchase the Vault.
+                                    {' '}<a href="/privacy" target="_blank" className="text-cyan-400 underline hover:text-cyan-300">Privacy Policy</a>
+                                </label>
+                            </div>
+                        </div>
+
                         <button
                             onClick={startRecording}
-                            className="btn-primary text-xl px-12 py-6 rounded-full font-bold record-pulse mt-4"
+                            disabled={!consentGiven}
+                            className="btn-metallic text-xl px-12 py-6 rounded-full font-bold transition-all mt-4 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                             <span className="mr-3">🎤</span>
-                            Start Recording
+                            START RECORDING
                         </button>
                     </div>
                 )}

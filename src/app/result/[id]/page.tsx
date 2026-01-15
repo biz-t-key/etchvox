@@ -369,7 +369,7 @@ export default function ResultPage() {
                                             <button
                                                 onClick={() => handleCheckout('vault')}
                                                 disabled={processingPayment}
-                                                className="w-full max-w-sm mx-auto bg-white text-black hover:bg-gray-200 font-black py-5 rounded-full text-xl uppercase tracking-tighter transition-all transform hover:scale-105 disabled:opacity-50 shadow-[0_0_30px_rgba(0,240,255,0.3)]"
+                                                className="w-full max-w-sm mx-auto btn-amber py-6 rounded-full text-xl sm:text-2xl uppercase tracking-tight transition-all transform hover:scale-105 disabled:opacity-50 font-black"
                                             >
                                                 {processingPayment ? 'PRESERVING...' : '💎 FREEZE MY VIBE — $10'}
                                             </button>

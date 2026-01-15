@@ -78,13 +78,13 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
                     <div className="text-[10px] text-cyan-400 font-black uppercase tracking-[0.4em] mb-2 opacity-80">
                         Duo Identity Result
                     </div>
-                    <div className="text-2xl md:text-3xl font-black text-white uppercase italic tracking-tighter mb-4 leading-none">
+                    <div className="text-4xl sm:text-5xl md:text-6xl font-black text-white uppercase italic tracking-tighter mb-5 leading-none px-2">
                         "{identity.brandName}"
                     </div>
 
                     <div className="h-[2px] w-12 bg-gradient-to-r from-transparent via-white/40 to-transparent mx-auto mb-4" />
 
-                    <div className="text-[11px] md:text-xs text-gray-300 font-medium italic leading-relaxed max-w-sm mx-auto mb-2 opacity-90">
+                    <div className="text-base sm:text-lg md:text-xl text-gray-200 font-semibold italic leading-snug max-w-md mx-auto mb-3 px-3">
                         {identity.roast || "Bio-analysis complete. Persona mismatch detected."}
                     </div>
 

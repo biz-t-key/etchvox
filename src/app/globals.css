@@ -376,16 +376,145 @@ button,
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* Responsive text scaling */
+/* Metallic/Engraved Button (Premium Feel) */
+.btn-metallic {
+  background: linear-gradient(145deg, #1a1a1a 0%, #0a0a0a 50%, #1a1a1a 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+    0 4px 8px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(0, 240, 255, 0.2);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.8), 0 0 10px rgba(0, 240, 255, 0.5);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-metallic::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg,
+      transparent 30%,
+      rgba(255, 255, 255, 0.1) 50%,
+      transparent 70%);
+  transform: rotate(45deg);
+  transition: all 0.6s;
+}
+
+.btn-metallic:hover::before {
+  left: 100%;
+}
+
+/* Amber/Gold Button (For Premium Features) */
+.btn-amber {
+  background: linear-gradient(145deg, #d4a574 0%, #b8860b 50%, #d4a574 100%);
+  box-shadow:
+    0 0 30px rgba(212, 165, 116, 0.6),
+    0 0 60px rgba(212, 165, 116, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.4),
+    0 8px 16px rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(255, 215, 0, 0.5);
+  color: #000000;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-amber::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg,
+      transparent 30%,
+      rgba(255, 255, 255, 0.4) 50%,
+      transparent 70%);
+  transform: rotate(45deg);
+  animation: amber-shine 3s infinite;
+}
+
+@keyframes amber-shine {
+  0% {
+    left: -100%;
+  }
+
+  100% {
+    left: 100%;
+  }
+}
+
+.btn-amber:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow:
+    0 0 40px rgba(212, 165, 116, 0.8),
+    0 0 80px rgba(212, 165, 116, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.4),
+    0 12px 24px rgba(0, 0, 0, 0.5);
+}
+
+/* Speaker Color Coding (Couple Mode) */
+.speaker-a {
+  color: var(--color-cyan);
+}
+
+.speaker-b {
+  color: var(--color-magenta);
+}
+
+.speaker-both {
+  color: var(--color-yellow);
+}
+
+/* Enhanced Share Buttons */
+.share-btn {
+  min-width: 60px;
+  min-height: 60px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 1.5rem;
+}
+
+.share-btn:hover {
+  transform: translateY(-4px) scale(1.1);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* Responsive text scaling - Enhanced for better readability */
 @media (max-width: 640px) {
   html {
-    font-size: 14px;
+    font-size: 16px;
+    /* Increased from 14px for better mobile readability */
+  }
+
+  /* Ensure CTAs are large enough on mobile */
+  .btn-primary,
+  .btn-metallic,
+  .btn-amber {
+    min-height: 56px;
+    font-size: 1.125rem;
+    padding: 1rem 1.5rem;
   }
 }
 
 @media (min-width: 641px) and (max-width: 1024px) {
   html {
-    font-size: 15px;
+    font-size: 16px;
+    /* Increased from 15px */
   }
 }
 

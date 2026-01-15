@@ -22,6 +22,7 @@ export default function CoupleRecordPage() {
     const [elapsedTime, setElapsedTime] = useState(0);
     const [stepElapsed, setStepElapsed] = useState(0);
     const [error, setError] = useState<string | null>(null);
+    const [consentGiven, setConsentGiven] = useState(false);
 
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioContextRef = useRef<AudioContext | null>(null);
@@ -314,12 +315,29 @@ export default function CoupleRecordPage() {
                             </div>
                         )}
 
+                        {/* Privacy Consent */}
+                        <div className="glass rounded-xl p-6 mb-4 space-y-4 text-left">
+                            <div className="flex items-start gap-3">
+                                <input
+                                    type="checkbox"
+                                    id="couple-consent"
+                                    checked={consentGiven}
+                                    onChange={(e) => setConsentGiven(e.target.checked)}
+                                    className="mt-1 w-5 h-5 rounded border-gray-600 bg-black cursor-pointer"
+                                />
+                                <label htmlFor="couple-consent" className="text-sm text-gray-300 leading-relaxed cursor-pointer">
+                                    We consent to our voices being recorded and analyzed together. Voice data will be stored for 30 days, then deleted.
+                                    {' '}<a href="/privacy" target="_blank" className="text-cyan-400 underline hover:text-cyan-300">Privacy Policy</a>
+                                </label>
+                            </div>
+                        </div>
+
                         <button
                             onClick={startRecording}
-                            disabled={!userA.name || !userB.name}
-                            className="w-full btn-primary py-4 rounded-full text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={!userA.name || !userB.name || !consentGiven}
+                            className="w-full btn-metallic py-5 rounded-full text-lg font-bold disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                         >
-                            🎤 Start Recording Together
+                            <span className="mr-2">🎤</span> START RECORDING TOGETHER
                         </button>
                     </div>
                 )}

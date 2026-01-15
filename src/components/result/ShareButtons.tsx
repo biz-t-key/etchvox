@@ -49,7 +49,7 @@ export default function ShareButtons({ resultId, typeName, typeIcon, catchphrase
     return (
         <div className="glass rounded-xl p-6">
             {/* Tagline */}
-            <p className="text-center text-gray-400 text-sm mb-4 italic">
+            <p className="text-center text-gray-300 text-base sm:text-lg font-semibold mb-6">
                 ✨ Perfect for your Bio, Slack status, or just to warn people.
             </p>
 
@@ -71,25 +71,25 @@ export default function ShareButtons({ resultId, typeName, typeIcon, catchphrase
                 ────── SHARE YOUR VOICE ID ──────
             </div>
 
-            {/* Social Buttons */}
-            <div className="flex justify-center gap-4 mb-4">
+            {/* Social Buttons - Enhanced Size */}
+            <div className="flex justify-center gap-6 mb-6">
                 <button
                     onClick={() => {
                         // Instagram: Can't directly share, open profile
                         alert('Save the result image and share it on Instagram Stories!');
                     }}
-                    className="flex flex-col items-center gap-1 p-3 rounded-lg hover:bg-white/5 transition-colors"
+                    className="share-btn flex flex-col items-center gap-2 p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 hover:from-purple-500/20 hover:to-pink-500/20 border border-pink-500/20 hover:border-pink-500/40 transition-all"
                 >
-                    <span className="text-2xl">📸</span>
-                    <span className="text-xs text-gray-400">Instagram</span>
+                    <span className="text-4xl">📸</span>
+                    <span className="text-sm font-bold text-gray-200">Instagram</span>
                 </button>
 
                 <button
                     onClick={shareToTwitter}
-                    className="flex flex-col items-center gap-1 p-3 rounded-lg hover:bg-white/5 transition-colors"
+                    className="share-btn flex flex-col items-center gap-2 p-4 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 hover:border-cyan-500/40 transition-all"
                 >
-                    <span className="text-2xl">𝕏</span>
-                    <span className="text-xs text-gray-400">Twitter/X</span>
+                    <span className="text-4xl">𝕏</span>
+                    <span className="text-sm font-bold text-gray-200">Twitter/X</span>
                 </button>
 
                 <button
@@ -97,10 +97,10 @@ export default function ShareButtons({ resultId, typeName, typeIcon, catchphrase
                         // TikTok: Can't directly share
                         alert('Save the result video (Premium) and share it on TikTok!');
                     }}
-                    className="flex flex-col items-center gap-1 p-3 rounded-lg hover:bg-white/5 transition-colors"
+                    className="share-btn flex flex-col items-center gap-2 p-4 rounded-xl bg-gradient-to-br from-cyan-500/10 to-magenta-500/10 hover:from-cyan-500/20 hover:to-magenta-500/20 border border-magenta-500/20 hover:border-magenta-500/40 transition-all"
                 >
-                    <span className="text-2xl">🎵</span>
-                    <span className="text-xs text-gray-400">TikTok</span>
+                    <span className="text-4xl">🎵</span>
+                    <span className="text-sm font-bold text-gray-200">TikTok</span>
                 </button>
             </div>
 
