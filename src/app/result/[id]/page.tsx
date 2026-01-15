@@ -30,6 +30,8 @@ export default function ResultPage() {
     const [selectedMBTI, setSelectedMBTI] = useState<MBTIType | null>(null);
     const [mbtiSkipped, setMbtiSkipped] = useState(false);
 
+    const [showOTO, setShowOTO] = useState(false);
+
     // Initial Load
     useEffect(() => {
         async function loadResult() {
@@ -107,7 +109,64 @@ export default function ResultPage() {
     const showVideo = result.vaultEnabled || (searchParams.get('payment') === 'success');
 
     return (
-        <main className="min-h-screen bg-black text-white selection:bg-cyan-500/30 font-sans flex flex-col items-center overflow-x-hidden w-full">
+        <main className="min-h-screen bg-black text-white selection:bg-cyan-500/30 font-sans flex flex-col items-center overflow-x-hidden w-full relative">
+            {/* OTO Modal Overlay */}
+            {showOTO && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-gradient-to-br from-gray-900 via-black to-gray-900 border border-white/20 rounded-3xl p-6 md:p-10 max-w-lg w-full text-center relative shadow-[0_0_50px_rgba(236,72,153,0.3)]">
+                        <div className="absolute top-4 right-4 text-gray-500 cursor-pointer hover:text-white" onClick={() => setShowOTO(false)}>✕</div>
+
+                        <div className="text-[10px] text-cyan-400 font-bold uppercase tracking-[0.3em] mb-4 animate-pulse">
+                            Wait! One-Time Offer
+                        </div>
+
+                        <h3 className="text-2xl md:text-3xl font-black text-white uppercase mb-2 tracking-tight">
+                            Upgrade to Vault
+                        </h3>
+                        <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-500 mb-6">
+                            +$10.00
+                        </div>
+
+                        <ul className="text-left text-sm text-gray-300 space-y-3 mb-8 bg-white/5 p-6 rounded-xl border border-white/5">
+                            <li className="flex items-center gap-3">
+                                <span className="text-green-400">✓</span>
+                                <span><strong>Permanent Video Storage:</strong> Never lose your analysis video.</span>
+                            </li>
+                            <li className="flex items-center gap-3">
+                                <span className="text-green-400">✓</span>
+                                <span><strong>Detailed PDF Report:</strong> Deep dive into your vocal psychology.</span>
+                            </li>
+                            <li className="flex items-center gap-3">
+                                <span className="text-green-400">✓</span>
+                                <span><strong>Priority Generation:</strong> Skip the queue for future updates.</span>
+                            </li>
+                        </ul>
+
+                        <button
+                            onClick={() => {
+                                setShowOTO(false);
+                                handleCheckout('vault');
+                            }}
+                            disabled={processingPayment}
+                            className="w-full bg-gradient-to-r from-pink-600 to-violet-600 hover:from-pink-500 hover:to-violet-500 text-white font-black py-4 rounded-xl text-lg uppercase tracking-widest shadow-lg transform hover:scale-[1.02] transition-all mb-4"
+                        >
+                            Yes, Upgrade Me ($10.00)
+                        </button>
+
+                        <button
+                            onClick={() => {
+                                setShowOTO(false);
+                                handleCheckout('unlock');
+                            }}
+                            disabled={processingPayment}
+                            className="text-xs text-gray-500 hover:text-white underline decoration-gray-700 underline-offset-4 uppercase tracking-widest transition-colors"
+                        >
+                            No thanks, I'll take the video only ($4.99)
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Background Decoration */}
             <div className="fixed inset-0 pointer-events-none z-0">
                 <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-[100px] opacity-20 animate-pulse-slow" />
@@ -331,7 +390,7 @@ export default function ResultPage() {
                                             </p>
 
                                             <button
-                                                onClick={() => handleCheckout('unlock')}
+                                                onClick={() => setShowOTO(true)}
                                                 disabled={processingPayment}
                                                 className="w-full max-w-xs mx-auto bg-white text-black hover:bg-gray-200 py-3 rounded text-xs font-bold uppercase tracking-[0.2em] transition-all"
                                             >

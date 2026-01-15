@@ -13,10 +13,17 @@ interface SoloIdentityCardProps {
 export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: SoloIdentityCardProps) {
     const mbtiInfo = mbtiTypes[mbti];
     const voiceInfo = voiceTypes[voiceTypeCode];
-    const identity = getSoloIdentity(mbti, voiceTypeCode);
+
+    // Attempt to get identity, provide fallback if null
+    const rawIdentity = getSoloIdentity(mbti, voiceTypeCode);
+    const displayIdentity = rawIdentity || {
+        brandName: "THE ENIGMA",
+        roast: "Your combination is so rare, even our AI is trying to figure you out. You are the anomaly in the system.",
+    };
+
     const groupInfo = mbtiGroups[mbtiInfo.group];
 
-    if (!identity) return null;
+    if (!mbtiInfo || !voiceInfo) return null;
 
     return (
         <div className="relative w-full max-w-xl mx-auto aspect-[1.91/1] overflow-hidden rounded-3xl border border-white/20 shadow-2xl flex">
@@ -79,13 +86,13 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
                         Duo Identity Result
                     </div>
                     <div className="text-3xl sm:text-4xl md:text-5xl font-black text-white uppercase italic tracking-tighter mb-3 sm:mb-5 leading-none px-1">
-                        "{identity.brandName}"
+                        "{displayIdentity.brandName}"
                     </div>
 
                     <div className="h-[1px] sm:h-[2px] w-8 sm:w-12 bg-gradient-to-r from-transparent via-white/40 to-transparent mx-auto mb-3 sm:mb-4" />
 
                     <div className="text-sm sm:text-base md:text-lg text-gray-200 font-semibold italic leading-snug max-w-sm sm:max-w-md mx-auto mb-2 sm:mb-3 px-1">
-                        {identity.roast || "Bio-analysis complete. Persona mismatch detected."}
+                        {displayIdentity.roast || "Bio-analysis complete. Persona mismatch detected."}
                     </div>
 
                     <div className="text-[6px] sm:text-[8px] text-gray-500 font-mono tracking-widest mt-2 sm:mt-4 uppercase">
