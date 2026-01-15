@@ -22,12 +22,12 @@ export default function MBTISelector({ onSelect }: MBTISelectorProps) {
 
     return (
         <div className="fade-in max-w-2xl mx-auto">
-            <div className="glass rounded-xl p-6 mb-6">
-                <h2 className="text-xl font-bold text-center mb-2">
-                    <span className="neon-text-cyan">Your MBTI Type?</span>
+            <div className="glass rounded-xl p-5 mb-4">
+                <h2 className="text-sm font-bold text-center mb-1 uppercase tracking-widest text-gray-400">
+                    Select Your MBTI
                 </h2>
-                <p className="text-gray-400 text-sm text-center mb-6">
-                    Select your MBTI to generate a unique share card
+                <p className="text-gray-500 text-xs text-center mb-4">
+                    To generate your unique identity card
                 </p>
 
                 {/* Group Tabs */}
@@ -39,18 +39,13 @@ export default function MBTISelector({ onSelect }: MBTISelectorProps) {
                             <button
                                 key={group}
                                 onClick={() => setSelectedGroup(group)}
-                                className={`p-3 rounded-lg border transition-all ${isSelected
-                                    ? 'border-white/30 scale-105'
-                                    : 'border-white/10 hover:border-white/20'
+                                className={`p-2 rounded-lg border transition-all ${isSelected
+                                    ? 'border-white/30 bg-white/5'
+                                    : 'border-white/5 hover:border-white/10'
                                     }`}
-                                style={{
-                                    background: isSelected
-                                        ? `${groupInfo.color}20`
-                                        : 'transparent',
-                                }}
                             >
-                                <div className="text-2xl mb-1">{groupInfo.emoji}</div>
-                                <div className="text-[10px] uppercase tracking-wider">
+                                <div className="text-lg mb-1 opacity-80">{groupInfo.emoji}</div>
+                                <div className="text-[9px] uppercase tracking-widest font-bold text-gray-400">
                                     {group}
                                 </div>
                             </button>
@@ -59,7 +54,7 @@ export default function MBTISelector({ onSelect }: MBTISelectorProps) {
                 </div>
 
                 {/* MBTI Type Grid */}
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid grid-cols-4 gap-2">
                     {mbtiOrder.map((type) => {
                         const info = mbtiTypes[type];
                         const groupInfo = mbtiGroups[info.group];
@@ -72,14 +67,14 @@ export default function MBTISelector({ onSelect }: MBTISelectorProps) {
                             <button
                                 key={type}
                                 onClick={() => onSelect(type)}
-                                className="p-4 rounded-lg border border-white/10 hover:border-white/30 transition-all transform hover:scale-105"
+                                className="p-3 rounded-lg border border-white/10 hover:border-white/30 transition-all hover:bg-white/5"
                                 style={{
-                                    background: `linear-gradient(135deg, ${groupInfo.color}15, ${groupInfo.color}05)`,
+                                    borderColor: isInSelectedGroup ? `${groupInfo.color}40` : '',
                                 }}
                             >
-                                <div className="font-bold text-lg mb-1">{type}</div>
+                                <div className="font-bold text-sm mb-1 text-gray-200">{type}</div>
                                 <div
-                                    className="text-[9px] uppercase tracking-wider opacity-70"
+                                    className="text-[8px] uppercase tracking-wider opacity-60 truncate"
                                     style={{ color: groupInfo.color }}
                                 >
                                     {info.nickname.replace('The ', '')}
@@ -91,12 +86,12 @@ export default function MBTISelector({ onSelect }: MBTISelectorProps) {
             </div>
 
             {/* Skip Option */}
-            <div className="text-center mt-6">
+            <div className="text-center mt-4">
                 <button
                     onClick={() => onSelect(null)}
-                    className="text-gray-400 hover:text-white text-base py-3 px-6 rounded-full border border-gray-700 hover:border-gray-500 transition-all"
+                    className="text-xs text-gray-500 hover:text-gray-300 transition-colors border-b border-dashed border-gray-700 hover:border-gray-500 pb-0.5"
                 >
-                    🤷 I don't know my MBTI — Skip
+                    I don't know my MBTI (Skip)
                 </button>
             </div>
 
