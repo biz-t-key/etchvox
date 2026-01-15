@@ -12,37 +12,80 @@ export interface SoloIdentity {
     roast: string;
 }
 
+// Voice Type Traits for dynamic generation
+const voiceTraits: Record<TypeCode, { adj: string; noun: string; vibe: string; roastFragment: string }> = {
+    HFEC: { adj: "Electric", noun: "Idol", vibe: "High Energy", roastFragment: "you sound like a chaotic anime protagonist" },
+    HFED: { adj: "Dramatic", noun: "Diva", vibe: "Theatrical", roastFragment: "your voice demands a spotlight even in a dark room" },
+    HSEC: { adj: "Magnetic", noun: "Influencer", vibe: "Charming", roastFragment: "you could sell ice to a polar bear" },
+    HSED: { adj: "Radioactive", noun: "Star", vibe: "Explosive", roastFragment: "you have zero indoor voice and zero regrets" },
+    HFCC: { adj: "Cybernetic", noun: "Android", vibe: "Neon", roastFragment: "you process emotions like a GPU processes textures" },
+    HFCD: { adj: "Glitched", noun: "Hacker", vibe: "Broken Tech", roastFragment: "you sound like a corrupted save file" },
+    HSCC: { adj: "Velvet", noun: "Operator", vibe: "Smooth", roastFragment: "you speak in ASMR and secrets" },
+    HSCD: { adj: "Imperial", noun: "Royal", vibe: "Commanding", roastFragment: "you don't ask for things, you announce them" },
+    LFEC: { adj: "Thunderous", noun: "Titan", vibe: "Heavy", roastFragment: "your voice has its own gravitational pull" },
+    LFED: { adj: "Operatic", noun: "Phantom", vibe: "Tragic", roastFragment: "you make ordering pizza sound like a Shakespearean soliloquy" },
+    LSEC: { adj: "Cinematic", noun: "Narrator", vibe: "Epic", roastFragment: "you sound like the voiceover for a summer blockbuster" },
+    LSED: { adj: "Noir", noun: "Detective", vibe: "Shadowy", roastFragment: "you sound like a monologue in a rain-slicked alleyway" },
+    LFCC: { adj: "Absolute", noun: "Monolith", vibe: "Cold", roastFragment: "you deliver facts like a printer delivers paper: flat and necessary" },
+    LFCD: { adj: "Abyssal", noun: "Leviathan", vibe: "Deep", roastFragment: "you sound like you're speaking from the bottom of a well" },
+    LSCC: { adj: "Iron", noun: "Butler", vibe: "Service", roastFragment: "you are terrifyingly polite and efficient" },
+    LSCD: { adj: "Subsonic", noun: "Cryptid", vibe: "Hidden", roastFragment: "your voice is less a sound and more a vibration in the floorboards" },
+};
+
+const mbtiThemes: Record<MBTIType, { archetype: string; flaw: string }> = {
+    INTJ: { archetype: "Mastermind", flaw: "overthinking" },
+    INTP: { archetype: "Architect", flaw: "buffering" },
+    ENTJ: { archetype: "Commander", flaw: "dominating" },
+    ENTP: { archetype: "Visionary", flaw: "trolling" },
+    INFJ: { archetype: "Sage", flaw: "judging" },
+    INFP: { archetype: "Dreamer", flaw: "zoning out" },
+    ENFJ: { archetype: "Mentor", flaw: "preaching" },
+    ENFP: { archetype: "Muse", flaw: "spiraling" },
+    ISTJ: { archetype: "Inspector", flaw: "auditing" },
+    ISFJ: { archetype: "Protector", flaw: "worrying" },
+    ESTJ: { archetype: "Director", flaw: "micromanaging" },
+    ESFJ: { archetype: "Provider", flaw: "gossiping" },
+    ISTP: { archetype: "Craftsman", flaw: "disassembling" },
+    ISFP: { archetype: "Artist", flaw: "sulking" },
+    ESTP: { archetype: "Dynamo", flaw: "reckless driving" },
+    ESFP: { archetype: "Performer", flaw: "scene-stealing" },
+};
+
 export function getSoloIdentity(mbti: MBTIType, voiceType: TypeCode): SoloIdentity {
     const key = `${mbti}_${voiceType}`;
 
-    // Direct match
+    // 1. Check for manual override (Legacy Data)
     if (soloIdentityMatrix[key]) {
         return soloIdentityMatrix[key];
     }
 
-    // Dynamic Fallback Generator if specific matrix entry is missing
-    const mbtiNicknames: Record<string, string> = {
-        INTJ: "Architect", INTP: "Logician", ENTJ: "Commander", ENTP: "Debater",
-        INFJ: "Advocate", INFP: "Mediator", ENFJ: "Protagonist", ENFP: "Campaigner",
-        ISTJ: "Logistician", ISFJ: "Defender", ESTJ: "Executive", ESFJ: "Consul",
-        ISTP: "Virtuoso", ISFP: "Adventurer", ESTP: "Entrepreneur", ESFP: "Entertainer"
-    };
+    // 2. Generate Dynamic Identity
+    const vTrait = voiceTraits[voiceType];
+    const mTheme = mbtiThemes[mbti];
 
-    const voiceAdjectives: Record<TypeCode, string> = {
-        HFEC: "Electric", HFED: "Dramatic", HSEC: "Charming", HSED: "Viral",
-        HFCC: "Cybernetic", HFCD: "Glitched", HSCC: "Whispering", HSCD: "Royal",
-        LFEC: "Thunderous", LFED: "Operatic", LSEC: "Cinematic", LSED: "Noir",
-        LFCC: "Objective", LFCD: "Abyssal", LSCC: "Loyal", LSCD: "Subsonic"
-    };
+    // Brand Name Generation: "The [Voice Adjective] [MBTI Archetype]"
+    // e.g., "The Electric Mastermind", "The Noir Performer"
+    const BrandName = `The ${vTrait.adj} ${mTheme.archetype}`;
 
-    const nickname = mbtiNicknames[mbti] || "Unknown";
-    const adjective = voiceAdjectives[voiceType] || "Mystery";
+    // Roast Generation
+    // Logic: Combine MBTI flaw with Voice Type characteristic
+    // e.g. "As a [MBTI], you are prone to [flaw], and [voice roast fragment]."
+
+    // Personalized touches based on Voice Group
+    let prefix = "";
+    if (voiceType.startsWith('H')) {
+        prefix = `You have the brain of a ${mbti} but the energy of a nuclear reactor.`;
+    } else {
+        prefix = `You are a ${mbti} operating in stealth mode.`;
+    }
+
+    const Roast = `${prefix} You're constantly ${mTheme.flaw}, and ${vTrait.roastFragment}. It's a dangerous combination.`;
 
     return {
         mbti,
         voiceType,
-        brandName: `The ${adjective} ${nickname}`,
-        roast: `A rare fusion of ${mbti}'s mind and a ${voiceType} vocal signature. You break the standard archetype.`
+        brandName: BrandName,
+        roast: Roast
     };
 }
 
