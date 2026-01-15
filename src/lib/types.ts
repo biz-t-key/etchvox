@@ -7,7 +7,7 @@ export type TypeCode =
     | 'LFEC' | 'LFED' | 'LSEC' | 'LSED'  // Power Leaders
     | 'LFCC' | 'LFCD' | 'LSCC' | 'LSCD'; // Deep Philosophers
 
-export type GroupName = 'idol' | 'intellectual' | 'power' | 'philosopher';
+export type GroupName = 'idol' | 'intellectual' | 'power' | 'philosopher' | 'special';
 
 export interface VoiceType {
     code: TypeCode;
@@ -38,11 +38,38 @@ export interface AnalysisResult {
 }
 
 // Color palettes by group
-export const groupColors: Record<GroupName, { primary: string; secondary: string }> = {
-    idol: { primary: '#FF00CC', secondary: '#FFD700' },
-    intellectual: { primary: '#00F0FF', secondary: '#FFFFFF' },
-    power: { primary: '#FF3C00', secondary: '#6200EA' },
-    philosopher: { primary: '#00FF66', secondary: '#008B8B' },
+// Color Logic for UI & Video Generation
+export const groupColors: Record<GroupName, { label: string; primary: string; secondary: string; vibe: string }> = {
+    idol: {
+        label: 'High-Energy Idols',
+        primary: '#FF00CC',   // Neon Pink
+        secondary: '#FFD700', // Cyber Yellow
+        vibe: 'Electric, Loud',
+    },
+    intellectual: {
+        label: 'Intellectual Artists',
+        primary: '#00F0FF',   // Electric Blue
+        secondary: '#FFFFFF', // White
+        vibe: 'Cold, Sharp',
+    },
+    power: {
+        label: 'Power Leaders',
+        primary: '#FF3C00',   // Neon Red/Orange
+        secondary: '#6200EA', // Deep Purple
+        vibe: 'Aggressive, Heavy',
+    },
+    philosopher: {
+        label: 'Deep Philosophers',
+        primary: '#00FF66',   // Toxic Green
+        secondary: '#008B8B', // Deep Cyan
+        vibe: 'Mysterious, Abysmal',
+    },
+    special: {
+        label: 'System Error',
+        primary: '#FF0000',   // Danger Red
+        secondary: '#000000', // Black/Glitch
+        vibe: 'ERROR, WARNING',
+    },
 };
 
 // Master data for all 16 voice types

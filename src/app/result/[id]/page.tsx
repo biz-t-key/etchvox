@@ -12,6 +12,7 @@ import ShareButtons from '@/components/result/ShareButtons';
 import VaultDownloadSection from '@/components/result/VaultDownloadSection';
 import MBTISelector from '@/components/result/MBTISelector';
 import SoloIdentityCard from '@/components/result/SoloIdentityCard';
+import { VideoPlayerSection } from '@/components/video/VideoPlayerSection';
 import { MBTIType } from '@/lib/mbti';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
@@ -339,10 +340,14 @@ export default function ResultPage() {
 
                                 {/* Video Export Promotion */}
                                 {result.vaultEnabled ? (
-                                    <div className="text-center p-6 bg-green-500/10 border border-green-500 rounded-2xl">
-                                        <div className="text-2xl mb-2">✅</div>
-                                        <h3 className="text-lg font-bold text-green-400">Video Unlocked & Saved</h3>
-                                        <p className="text-sm text-gray-400 mt-2">Check your email for the download link.</p>
+                                    <div className="space-y-6">
+                                        <div className="text-center mb-6">
+                                            <div className="inline-block bg-green-500/10 border border-green-500 text-green-400 px-4 py-1.5 rounded-full text-xs font-bold animate-pulse mb-3 uppercase tracking-wider">
+                                                ✅ Unlocked: High-Res Video
+                                            </div>
+                                            <p className="text-gray-400 text-sm">Preview generated below. Use your screen recorder to capture or right-click to save loop.</p>
+                                        </div>
+                                        <VideoPlayerSection voiceType={voiceType} metrics={result.metrics} />
                                     </div>
                                 ) : (
                                     <div className="bg-gradient-to-br from-cyan-900/40 via-black to-magenta-900/40 border border-white/10 rounded-2xl p-8 text-center relative overflow-hidden group max-w-xl mx-auto">
