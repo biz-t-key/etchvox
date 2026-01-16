@@ -43,7 +43,8 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
                         backgroundColor: null,
                         scale: 2, // Retina quality
                         useCORS: true,
-                        logging: false
+                        logging: false,
+                        allowTaint: true
                     });
                     const imgData = canvas.toDataURL('image/png');
                     setImageUrl(imgData);
@@ -51,7 +52,7 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
             } catch (err) {
                 console.error("Image generation failed:", err);
             }
-        }, 1000);
+        }, 1500); // Increased delay for better rendering
 
         return () => clearTimeout(timer);
     }, [mbti, voiceTypeCode, mbtiInfo, voiceInfo]);
@@ -64,7 +65,7 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
             className="relative mx-auto w-[88vw] h-[140vw] max-w-[340px] max-h-[580px] sm:w-[350px] sm:h-[580px] md:w-[400px] md:h-[650px] lg:w-[450px] lg:h-[700px] bg-gradient-to-br from-gray-900 to-black rounded-3xl shadow-2xl overflow-hidden flex flex-col justify-between p-4 sm:p-6 border border-white/10 font-sans group"
         >
             {/* HEADER */}
-            <div className="relative z-10 flex items-center justify-between mb-4">
+            <div className="relative z-10 flex items-center justify-between mb-4 px-2">
                 <div className="text-xs sm:text-sm font-bold text-white uppercase tracking-[0.3em] opacity-70">
                     Truth Card
                 </div>
@@ -74,17 +75,17 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
             </div>
 
             {/* MAIN CONTENT AREA */}
-            <div className="relative flex-grow flex flex-col items-center justify-center text-center z-10 space-y-8">
+            <div className="relative flex-grow flex flex-col items-center justify-center text-center z-10 space-y-12">
 
                 {/* MBTI SECTION - GROUP COLOR */}
                 <div className="relative w-full">
                     <div
-                        className="absolute -top-2 left-2 text-[8px] font-bold uppercase tracking-[0.3em] opacity-70"
+                        className="text-center mb-2 text-[8px] font-bold uppercase tracking-[0.3em] opacity-70"
                         style={{ color: mbtiInfo.color }}
                     >
                         Self Perception
                     </div>
-                    <div className="space-y-3 mt-4">
+                    <div className="space-y-3">
                         {/* MBTI Code - Large with Group Color */}
                         <div
                             className="text-5xl sm:text-6xl md:text-7xl font-black uppercase tracking-tighter leading-none"
@@ -115,10 +116,10 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
 
                 {/* VOICE TYPE SECTION - CYAN */}
                 <div className="relative w-full">
-                    <div className="absolute -top-2 right-2 text-[8px] text-cyan-400/70 font-bold uppercase tracking-[0.3em]">
+                    <div className="text-center mb-2 text-[8px] text-cyan-400/70 font-bold uppercase tracking-[0.3em]">
                         Bio-Data
                     </div>
-                    <div className="space-y-3 mt-4">
+                    <div className="space-y-3">
                         {/* Voice Type Code - Large */}
                         <div className="text-5xl sm:text-6xl md:text-7xl font-black uppercase text-cyan-400 tracking-tighter leading-none drop-shadow-[0_0_20px_rgba(34,211,238,0.4)]">
                             {voiceTypeCode}
@@ -137,7 +138,7 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
 
             {/* RESULT OVERLAY (Bottom Positioned) */}
             <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-6 pointer-events-none flex items-end justify-center h-full">
-                <div className="bg-black/60 backdrop-blur-md border-[0.5px] border-white/20 rounded-2xl p-4 sm:p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] w-full max-w-[95%] text-center pointer-events-auto mt-auto mb-16">
+                <div className="bg-black/60 backdrop-blur-md border-[0.5px] border-white/20 rounded-2xl p-4 sm:p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] w-full max-w-[95%] text-center pointer-events-auto mt-auto mb-24">
                     <div className="flex items-center justify-center gap-2 mb-2 opacity-70">
                         <div className="text-[8px] md:text-[10px] text-cyan-400 font-bold uppercase tracking-[0.3em]">
                             Duo Identity Result
