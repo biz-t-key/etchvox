@@ -73,54 +73,74 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
                         EtchVox
                     </div>
                 </div>
-                <div className="text-xs sm:text-sm font-mono text-gray-400 uppercase tracking-widest">
-                    AI_AUDIT
+                <div className="text-[8px] sm:text-[10px] font-mono text-gray-400 uppercase tracking-widest">
+                    USER ID: {userName?.substring(0, 8) || 'GUEST'}
                 </div>
             </div>
 
             {/* MAIN CONTENT AREA */}
-            <div className="relative flex-grow flex flex-col items-center justify-center text-center z-10">
-                {/* MBTI Info - MAGENTA COLOR SCHEME */}
-                <div className="mb-4">
-                    <div className="text-xl sm:text-2xl md:text-3xl font-black uppercase text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-magenta-300 tracking-tighter leading-none">
-                        {mbtiInfo.nickname}
+            <div className="relative flex-grow flex flex-col items-center justify-center text-center z-10 space-y-8">
+
+                {/* MBTI SECTION - MAGENTA */}
+                <div className="relative w-full">
+                    <div className="absolute -top-2 left-2 text-[8px] text-pink-400/70 font-bold uppercase tracking-[0.3em]">
+                        Self Perception
                     </div>
-                    <div className="text-sm sm:text-base md:text-lg font-bold text-magenta-300 uppercase tracking-widest">
-                        {mbti}
-                    </div>
-                    <div className="text-[8px] md:text-[10px] font-mono text-pink-500/70 uppercase tracking-[0.2em] mt-1">
-                        SIG: MB_{mbti}
+                    <div className="space-y-2 mt-4">
+                        {/* MBTI Code - Large */}
+                        <div className="text-5xl sm:text-6xl md:text-7xl font-black uppercase text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-magenta-300 tracking-tighter leading-none">
+                            {mbti}
+                        </div>
+                        {/* Nickname - Below */}
+                        <div className="text-base sm:text-lg md:text-xl font-bold text-magenta-300 uppercase tracking-wider">
+                            {mbtiInfo.nickname}
+                        </div>
+                        <div className="text-[8px] md:text-[9px] font-mono text-pink-500/50 uppercase tracking-[0.2em]">
+                            SIG: MB_{mbti}
+                        </div>
                     </div>
                 </div>
 
                 {/* Separator */}
-                <div className="w-24 h-0.5 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 my-4" />
+                <div className="w-32 h-0.5 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500" />
 
-                {/* Voice Type Info - CYAN COLOR SCHEME */}
-                {/* Glowing Waveform */}
-                <div className="flex items-end justify-center gap-0.5 md:gap-1 h-8 md:h-12 mb-2 px-2 opacity-80">
-                    {[...Array(10)].map((_, i) => (
-                        <div
-                            key={i}
-                            className="w-1 bg-cyan-400 rounded-full animate-wave"
-                            style={{
-                                height: `${20 + (i % 5) * 15 + Math.random() * 20}%`,
-                                animationDelay: `${i * 0.08}s`,
-                                boxShadow: '0 0 12px rgba(34, 211, 238, 0.5)'
-                            }}
-                        />
-                    ))}
-                </div>
-
-                <div className="text-2xl sm:text-4xl md:text-5xl font-black uppercase text-center tracking-tighter mb-1 text-cyan-400 drop-shadow-[0_0_15px_rgba(34,211,238,0.3)] scale-y-110 leading-none">
-                    {voiceInfo.name}
-                </div>
-                <div className="text-[7px] md:text-[9px] font-mono text-cyan-600 uppercase tracking-[0.2em] mt-1">
-                    SIG: EV_{voiceTypeCode}
+                {/* VOICE TYPE SECTION - CYAN */}
+                <div className="relative w-full">
+                    <div className="absolute -top-2 right-2 text-[8px] text-cyan-400/70 font-bold uppercase tracking-[0.3em]">
+                        Bio-Data
+                    </div>
+                    <div className="space-y-2 mt-4">
+                        {/* Glowing Waveform - Compact */}
+                        <div className="flex items-end justify-center gap-0.5 h-6 md:h-8 mb-2 opacity-60">
+                            {[...Array(8)].map((_, i) => (
+                                <div
+                                    key={i}
+                                    className="w-0.5 bg-cyan-400 rounded-full animate-wave"
+                                    style={{
+                                        height: `${30 + (i % 4) * 20}%`,
+                                        animationDelay: `${i * 0.1}s`,
+                                        boxShadow: '0 0 8px rgba(34, 211, 238, 0.4)'
+                                    }}
+                                />
+                            ))}
+                        </div>
+                        {/* Voice Type Code - Large */}
+                        <div className="text-5xl sm:text-6xl md:text-7xl font-black uppercase text-cyan-400 tracking-tighter leading-none drop-shadow-[0_0_20px_rgba(34,211,238,0.4)]">
+                            {voiceTypeCode}
+                        </div>
+                        {/* Voice Type Name - Below */}
+                        <div className="text-base sm:text-lg md:text-xl font-bold text-cyan-300 uppercase tracking-wider">
+                            {voiceInfo.name}
+                        </div>
+                        <div className="text-[8px] md:text-[9px] font-mono text-cyan-500/50 uppercase tracking-[0.2em]">
+                            SIG: EV_{voiceTypeCode}
+                        </div>
+                    </div>
                 </div>
 
                 {/* Decorative glow */}
                 <div className="absolute -top-10 -right-10 w-32 h-32 md:w-40 md:h-40 bg-cyan-500/10 rounded-full blur-3xl opacity-50" />
+                <div className="absolute -bottom-10 -left-10 w-32 h-32 md:w-40 md:h-40 bg-pink-500/10 rounded-full blur-3xl opacity-50" />
             </div>
 
             {/* RESULT OVERLAY (Bottom Positioned) */}
@@ -139,6 +159,16 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
                     <div className="text-xs sm:text-sm md:text-base text-gray-200 font-medium italic leading-relaxed max-w-lg mx-auto line-clamp-3 md:line-clamp-none px-2 opacity-90">
                         {displayIdentity.roast || "Bio-analysis complete. Persona mismatch detected."}
                     </div>
+                </div>
+            </div>
+
+            {/* FOOTER */}
+            <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between z-10 pointer-events-none">
+                <div className="text-[8px] sm:text-[9px] font-mono text-gray-500 uppercase tracking-wider">
+                    Verification: {new Date().toLocaleDateString('en-CA')}
+                </div>
+                <div className="text-[8px] sm:text-[9px] font-mono text-gray-500 uppercase tracking-wider">
+                    etchvox.com
                 </div>
             </div>
 
