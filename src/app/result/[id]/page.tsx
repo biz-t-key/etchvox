@@ -282,10 +282,20 @@ export default function ResultPage() {
                                 <span className="text-6xl mb-4 filter drop-shadow-[0_0_25px_rgba(255,255,255,0.15)]">
                                     {voiceType.icon}
                                 </span>
-                                <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tight mb-2 text-white">
+                                {/* Voice Type Code - Large */}
+                                <div className="text-5xl md:text-6xl font-black uppercase tracking-tighter mb-3 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-white">
+                                    {result.typeCode}
+                                </div>
+                                {/* Voice Type Name - Secondary */}
+                                <h1 className="text-2xl md:text-3xl font-bold uppercase tracking-tight mb-6 text-white/90">
                                     {voiceType.name}
                                 </h1>
-
+                                {/* Analysis - Below Name */}
+                                <div className="max-w-lg text-center">
+                                    <p className="text-gray-400 leading-relaxed text-sm md:text-base font-medium italic">
+                                        {voiceType.roast}
+                                    </p>
+                                </div>
                             </div>
 
                             {/* Meters - Clean & Minimal */}
@@ -358,21 +368,7 @@ export default function ResultPage() {
                                     )}
                                 </div>
 
-                                {/* THE ROAST (Free) */}
-                                <div>
-                                    <div className="flex items-center gap-3 mb-6 px-1">
-                                        <div className="w-1 h-6 bg-white/20" />
-                                        <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em]">
-                                            Analysis
-                                        </h2>
-                                    </div>
-                                    <div className="bg-black/40 rounded-2xl p-8 border border-white/5 relative overflow-hidden">
-                                        <div className="absolute top-0 right-0 p-4 opacity-10 grayscale text-6xl select-none">🔥</div>
-                                        <p className="text-gray-300 leading-relaxed text-sm md:text-base font-medium relative z-10 w-[90%]">
-                                            {voiceType.roast}
-                                        </p>
-                                    </div>
-                                </div>
+
 
                                 {/* Genetic Matches */}
                                 <div className="w-full">
@@ -549,7 +545,7 @@ export default function ResultPage() {
                                                             disabled={processingPayment}
                                                             className="w-full bg-gradient-to-r from-pink-600 to-violet-600 hover:from-pink-500 hover:to-violet-500 text-white font-bold py-4 rounded-xl text-sm uppercase tracking-widest shadow-lg transform hover:scale-[1.02] transition-all"
                                                         >
-                                                            {processingPayment ? 'Processing...' : '思い出を保存する — $10.00'}
+                                                            {processingPayment ? 'Processing...' : 'Preserve My Voice — $10.00'}
                                                         </button>
                                                     </div>
 
@@ -573,29 +569,35 @@ export default function ResultPage() {
                                     )}
                                 </div>
 
+                                {/* COPY FOR BIO - Independent Section */}
+                                <div className="w-full">
+                                    <div className="flex items-center gap-3 mb-6 px-1">
+                                        <div className="w-1 h-6 bg-cyan-500" />
+                                        <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em]">
+                                            Copy for Bio
+                                        </h2>
+                                    </div>
+                                    <div className="bg-black border border-white/10 p-6 rounded-xl relative group hover:border-cyan-500/50 transition-colors cursor-pointer" onClick={() => {
+                                        navigator.clipboard.writeText(`${voiceType.icon} ${voiceType.name} | ${result.typeCode}\n${voiceType.catchphrase}`);
+                                        // Ideally add a toast here
+                                    }}>
+                                        <div className="flex items-center gap-4 mb-3">
+                                            <span className="text-2xl filter grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all">{voiceType.icon}</span>
+                                            <div>
+                                                <div className="text-white font-bold uppercase text-sm tracking-wide">{voiceType.name}</div>
+                                                <div className="text-cyan-600 font-mono text-[10px] tracking-widest">TYPE: {result.typeCode}</div>
+                                            </div>
+                                        </div>
+                                        <div className="text-gray-500 text-xs leading-relaxed pl-1 border-l border-white/10">
+                                            {voiceType.catchphrase}
+                                        </div>
+                                        <div className="absolute top-4 right-4 text-[9px] text-gray-600 font-bold uppercase tracking-widest group-hover:text-cyan-500">COPY</div>
+                                    </div>
+                                </div>
+
                                 {/* Footer & Share */}
                                 <div className="pt-20 pb-20 border-t border-white/5 space-y-12">
                                     <div className="w-full">
-                                        <div className="text-center mb-10">
-                                            <div className="inline-block px-3 py-1 rounded bg-white/5 border border-white/10 text-[10px] text-gray-400 mb-6 uppercase tracking-widest">
-                                                Copy for Bio
-                                            </div>
-
-                                            <div className="text-left bg-black border border-white/10 p-6 rounded-xl max-w-md mx-auto relative group hover:border-cyan-500/50 transition-colors cursor-pointer">
-                                                <div className="flex items-center gap-4 mb-3">
-                                                    <span className="text-2xl filter grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all">{voiceType.icon}</span>
-                                                    <div>
-                                                        <div className="text-white font-bold uppercase text-sm tracking-wide">{voiceType.name}</div>
-                                                        <div className="text-cyan-600 font-mono text-[10px] tracking-widest">TYPE: {result.typeCode}</div>
-                                                    </div>
-                                                </div>
-                                                <div className="text-gray-500 text-xs leading-relaxed pl-1 border-l border-white/10">
-                                                    {voiceType.catchphrase}
-                                                </div>
-                                                <div className="absolute top-4 right-4 text-[9px] text-gray-600 font-bold uppercase tracking-widest group-hover:text-cyan-500">COPY</div>
-                                            </div>
-                                        </div>
-
                                         <ShareButtons
                                             resultId={resultId}
                                             typeName={voiceType.name}
