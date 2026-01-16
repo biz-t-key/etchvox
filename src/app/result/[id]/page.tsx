@@ -238,9 +238,9 @@ export default function ResultPage() {
                 <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-magenta-500/10 rounded-full blur-[100px] opacity-20 animate-pulse-slow delay-1000" />
             </div>
 
-            <div className="relative z-10 w-full max-w-xl mx-auto px-4 py-8 md:py-12 space-y-12 flex flex-col items-center text-center">
+            <div className="relative z-10 w-full px-4 py-8 md:py-12 space-y-12 flex flex-col items-center text-center">
                 {/* Header */}
-                <header className="flex flex-col items-center justify-center space-y-4 w-full">
+                <header className="flex flex-col items-center justify-center space-y-4 w-full max-w-2xl">
                     <Link
                         href="/"
                         className="text-xs font-bold tracking-widest text-gray-500 hover:text-white transition-colors duration-300 uppercase"
@@ -255,9 +255,9 @@ export default function ResultPage() {
                     </div>
                 </header>
 
-                {/* STAGE 1: THE REVEAL (Instant Hook) */}
+                {/* STAGE 1: THE REVEAL */}
                 {displayStage === 'label' && (
-                    <div className="flex flex-col items-center justify-center min-h-[50vh] animate-fade-in text-center">
+                    <div className="flex flex-col items-center justify-center min-h-[50vh] animate-fade-in text-center w-full max-w-2xl">
                         <div className="text-8xl mb-6 animate-bounce-slow filter drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]">
                             {voiceType.icon}
                         </div>
@@ -265,7 +265,7 @@ export default function ResultPage() {
                             {voiceType.name}
                         </h2>
                         <div className="text-sm md:text-base font-mono text-cyan-500 tracking-[0.3em] uppercase opacity-80">
-                            Subject ID: {result.typeCode}
+                            {result.typeCode}
                         </div>
                     </div>
                 )}
@@ -285,11 +285,7 @@ export default function ResultPage() {
                                 <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tight mb-2 text-white">
                                     {voiceType.name}
                                 </h1>
-                                <div className="flex items-center gap-3 text-xs font-mono text-gray-500 uppercase tracking-widest">
-                                    <span>ID: {result.typeCode}</span>
-                                    <span className="w-1 h-1 rounded-full bg-gray-700" />
-                                    <span>SESSION_{result.sessionId.slice(-4)}</span>
-                                </div>
+
                             </div>
 
                             {/* Meters - Clean & Minimal */}
@@ -315,25 +311,9 @@ export default function ResultPage() {
                             )}
                         </div>
 
-                        {/* THE REALIZATION - Voice Aging Message */}
-                        {displayStage === 'full' && !isPremium && (
-                            <div className="glass rounded-2xl p-6 md:p-8 border border-yellow-500/20 bg-gradient-to-br from-yellow-500/5 to-orange-500/5 animate-fade-in">
-                                <div className="text-center space-y-4">
-                                    <div className="text-xs text-yellow-400/80 font-bold uppercase tracking-[0.3em]">
-                                        ⚠️ Diagnosis Complete
-                                    </div>
-                                    <p className="text-sm md:text-base text-gray-300 leading-relaxed max-w-lg mx-auto">
-                                        By the way, human voices change <span className="text-yellow-400 font-bold">0.5% every year</span> due to stress and aging.
-                                    </p>
-                                    <p className="text-base md:text-lg font-bold text-white">
-                                        This recording is now <span className="text-yellow-400">the youngest voice you have left</span>.
-                                    </p>
-                                </div>
-                            </div>
-                        )}
 
                         {displayStage === 'full' && (
-                            <div className="animate-slide-up space-y-20">
+                            <div className="animate-slide-up space-y-20 w-full max-w-2xl">
                                 {/* MBTI / Truth Card Section */}
                                 <div className="w-full">
                                     <div className="flex items-end justify-between mb-6 px-1">
@@ -535,19 +515,15 @@ export default function ResultPage() {
                                                         <div className="text-[10px] text-pink-400 font-bold uppercase tracking-[0.3em] mb-2">
                                                             💎 Lifetime Access
                                                         </div>
-                                                        <h4 className="text-xl font-black text-white uppercase mb-3">VoiceGlow Vault</h4>
+                                                        <h4 className="text-xl font-black text-white uppercase mb-3">EtchVox Vault</h4>
                                                         <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-violet-400 mb-4">
                                                             $10.00
                                                         </div>
 
-                                                        {/* THE SELL - Emotional Copy */}
-                                                        <div className="text-left text-sm text-gray-300 leading-relaxed mb-6 italic border-l-2 border-pink-500/30 pl-4">
-                                                            <p className="mb-3">
-                                                                "Don't delete this data. <span className="text-white font-bold">Secure it in the VoiceGlow Vault</span> for $10 (Lifetime Access)."
-                                                            </p>
-                                                            <p className="text-xs text-gray-400">
-                                                                We keep the <span className="text-pink-400">raw audio</span>. The <span className="text-pink-400">background noise</span>. The <span className="text-pink-400">atmosphere</span>. Even your <span className="text-pink-400">hesitation</span>.
-                                                            </p>
+                                                        {/* THE SELL - Simplified Copy */}
+                                                        <div className="text-center text-xs text-gray-400 mb-6">
+                                                            <p className="mb-2">Human voices change <span className="text-yellow-400 font-bold">0.5%/year</span> due to stress and aging.</p>
+                                                            <p className="text-pink-400">This is the youngest voice you have left.</p>
                                                         </div>
 
                                                         <ul className="text-left text-xs text-gray-300 space-y-2 mb-6">
@@ -573,7 +549,7 @@ export default function ResultPage() {
                                                             disabled={processingPayment}
                                                             className="w-full bg-gradient-to-r from-pink-600 to-violet-600 hover:from-pink-500 hover:to-violet-500 text-white font-bold py-4 rounded-xl text-sm uppercase tracking-widest shadow-lg transform hover:scale-[1.02] transition-all"
                                                         >
-                                                            {processingPayment ? 'Processing...' : 'Secure My Voice — $10.00'}
+                                                            {processingPayment ? 'Processing...' : '思い出を保存する — $10.00'}
                                                         </button>
                                                     </div>
 
