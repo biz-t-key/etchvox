@@ -20,7 +20,7 @@ export default function TokushoPage() {
 
                         <div>
                             <h3 className="text-cyan-400 font-bold mb-2">運営責任者</h3>
-                            <p className="text-gray-300">請求に応じて滞りなく開示します</p>
+                            <p className="text-gray-300">木南智章</p>
                         </div>
 
                         <div>
@@ -46,6 +46,8 @@ export default function TokushoPage() {
                             <h3 className="text-cyan-400 font-bold mb-2">販売価格</h3>
                             <p className="text-gray-300">
                                 各プランページに表示された価格（税込）
+                                <br />
+                                - Video Unlock（動画アンロック）: $5.00 USD
                                 <br />
                                 - AI Identity Audit（ソロ分析）: $10.00 USD
                                 <br />
