@@ -498,61 +498,72 @@ export default function ResultPage() {
                                             <VideoPlayerSection voiceType={voiceType} metrics={result.metrics} />
                                         </div>
                                     ) : (
-                                        <div className="bg-gradient-to-br from-gray-900 via-black to-gray-900 border border-white/10 rounded-2xl p-8 text-center relative overflow-hidden">
-                                            <h3 className="text-2xl font-bold text-white mb-2 uppercase tracking-wide">Unlock Your Analysis</h3>
-                                            <p className="text-gray-400 text-sm mb-8 leading-relaxed max-w-md mx-auto">
-                                                Choose your plan to access your voice analysis and downloadable content.
-                                            </p>
-
-                                            {/* Premium Option - $10 Vault */}
-                                            <div className="bg-gradient-to-br from-pink-500/10 to-violet-500/10 border-2 border-pink-500/30 rounded-xl p-6 mb-4">
-                                                <div className="text-[10px] text-pink-400 font-bold uppercase tracking-[0.3em] mb-2">
-                                                    ⭐ Recommended
-                                                </div>
-                                                <h4 className="text-xl font-black text-white uppercase mb-2">Premium Report + Vault</h4>
-                                                <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-violet-400 mb-4">
-                                                    $10.00
-                                                </div>
-                                                <ul className="text-left text-xs text-gray-300 space-y-2 mb-6">
-                                                    <li className="flex items-center gap-2">
-                                                        <span className="text-green-400">✓</span>
-                                                        <span><strong>AI Identity Audit Report</strong></span>
-                                                    </li>
-                                                    <li className="flex items-center gap-2">
-                                                        <span className="text-green-400">✓</span>
-                                                        <span><strong>Permanent Video Storage</strong></span>
-                                                    </li>
-                                                    <li className="flex items-center gap-2">
-                                                        <span className="text-green-400">✓</span>
-                                                        <span>High-quality downloadable video</span>
-                                                    </li>
-                                                    <li className="flex items-center gap-2">
-                                                        <span className="text-green-400">✓</span>
-                                                        <span>Detailed PDF analysis</span>
-                                                    </li>
-                                                </ul>
-                                                <button
-                                                    onClick={() => handleCheckout('vault')}
-                                                    disabled={processingPayment}
-                                                    className="w-full bg-gradient-to-r from-pink-600 to-violet-600 hover:from-pink-500 hover:to-violet-500 text-white font-bold py-4 rounded-xl text-sm uppercase tracking-widest shadow-lg transform hover:scale-[1.02] transition-all"
-                                                >
-                                                    {processingPayment ? 'Processing...' : 'Get Premium — $10.00'}
-                                                </button>
+                                        <div className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900 border border-white/10 rounded-2xl overflow-hidden">
+                                            {/* Blurred Preview */}
+                                            <div className="blur-md opacity-30 pointer-events-none">
+                                                <VideoPlayerSection voiceType={voiceType} metrics={result.metrics} />
                                             </div>
 
-                                            {/* Basic Option - $5 Video Only */}
-                                            <div className="border border-white/10 rounded-xl p-4">
-                                                <h4 className="text-sm font-bold text-gray-300 uppercase mb-1">Video Only</h4>
-                                                <div className="text-xl font-black text-cyan-400 mb-3">
-                                                    $5.00
+                                            {/* Lock Overlay */}
+                                            <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                                                <div className="text-center p-8 max-w-md">
+                                                    <div className="text-4xl mb-4">🔒</div>
+                                                    <h3 className="text-2xl font-bold text-white mb-2 uppercase tracking-wide">Unlock Video</h3>
+                                                    <p className="text-gray-400 text-sm mb-8 leading-relaxed">
+                                                        Get your personalized voice × waveform visualization. High-quality, shareable video for your social profiles.
+                                                    </p>
+
+                                                    {/* Premium Option - $10 Vault */}
+                                                    <div className="bg-gradient-to-br from-pink-500/10 to-violet-500/10 border-2 border-pink-500/30 rounded-xl p-6 mb-4">
+                                                        <div className="text-[10px] text-pink-400 font-bold uppercase tracking-[0.3em] mb-2">
+                                                            ⭐ Recommended
+                                                        </div>
+                                                        <h4 className="text-xl font-black text-white uppercase mb-2">Premium Report + Vault</h4>
+                                                        <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-violet-400 mb-4">
+                                                            $10.00
+                                                        </div>
+                                                        <ul className="text-left text-xs text-gray-300 space-y-2 mb-6">
+                                                            <li className="flex items-center gap-2">
+                                                                <span className="text-green-400">✓</span>
+                                                                <span><strong>AI Identity Audit Report</strong></span>
+                                                            </li>
+                                                            <li className="flex items-center gap-2">
+                                                                <span className="text-green-400">✓</span>
+                                                                <span><strong>Permanent Video Storage</strong></span>
+                                                            </li>
+                                                            <li className="flex items-center gap-2">
+                                                                <span className="text-green-400">✓</span>
+                                                                <span>High-quality downloadable video</span>
+                                                            </li>
+                                                            <li className="flex items-center gap-2">
+                                                                <span className="text-green-400">✓</span>
+                                                                <span>Detailed PDF analysis</span>
+                                                            </li>
+                                                        </ul>
+                                                        <button
+                                                            onClick={() => handleCheckout('vault')}
+                                                            disabled={processingPayment}
+                                                            className="w-full bg-gradient-to-r from-pink-600 to-violet-600 hover:from-pink-500 hover:to-violet-500 text-white font-bold py-4 rounded-xl text-sm uppercase tracking-widest shadow-lg transform hover:scale-[1.02] transition-all"
+                                                        >
+                                                            {processingPayment ? 'Processing...' : 'Get Premium — $10.00'}
+                                                        </button>
+                                                    </div>
+
+                                                    {/* Basic Option - $5 Video Only */}
+                                                    <div className="border border-white/10 rounded-xl p-4">
+                                                        <h4 className="text-sm font-bold text-gray-300 uppercase mb-1">Video Only</h4>
+                                                        <div className="text-xl font-black text-cyan-400 mb-3">
+                                                            $5.00
+                                                        </div>
+                                                        <button
+                                                            onClick={() => handleCheckout('unlock')}
+                                                            disabled={processingPayment}
+                                                            className="w-full bg-white/10 hover:bg-white/20 border border-white/20 text-white py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
+                                                        >
+                                                            {processingPayment ? 'Processing...' : 'Video Only — $5.00'}
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <button
-                                                    onClick={() => handleCheckout('unlock')}
-                                                    disabled={processingPayment}
-                                                    className="w-full bg-white/10 hover:bg-white/20 border border-white/20 text-white py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
-                                                >
-                                                    {processingPayment ? 'Processing...' : 'Video Only — $5.00'}
-                                                </button>
                                             </div>
                                         </div>
                                     )}

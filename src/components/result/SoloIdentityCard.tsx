@@ -65,16 +65,11 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
         >
             {/* HEADER */}
             <div className="relative z-10 flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-cyan-500 rounded-full flex items-center justify-center text-xs sm:text-sm font-black text-black">
-                        EV
-                    </div>
-                    <div className="text-sm sm:text-base font-black uppercase text-white tracking-wider">
-                        EtchVox
-                    </div>
+                <div className="text-xs sm:text-sm font-bold text-white uppercase tracking-[0.3em] opacity-70">
+                    Truth Card
                 </div>
                 <div className="text-[8px] sm:text-[10px] font-mono text-gray-400 uppercase tracking-widest">
-                    USER ID: {userName?.substring(0, 8) || 'GUEST'}
+                    #{userName?.substring(0, 6) || 'GUEST'}
                 </div>
             </div>
 
@@ -89,7 +84,7 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
                     >
                         Self Perception
                     </div>
-                    <div className="space-y-2 mt-4">
+                    <div className="space-y-3 mt-4">
                         {/* MBTI Code - Large with Group Color */}
                         <div
                             className="text-5xl sm:text-6xl md:text-7xl font-black uppercase tracking-tighter leading-none"
@@ -107,12 +102,6 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
                         >
                             {mbtiInfo.nickname}
                         </div>
-                        <div
-                            className="text-[8px] md:text-[9px] font-mono uppercase tracking-[0.2em] opacity-50"
-                            style={{ color: mbtiInfo.color }}
-                        >
-                            SIG: MB_{mbti}
-                        </div>
                     </div>
                 </div>
 
@@ -129,21 +118,7 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
                     <div className="absolute -top-2 right-2 text-[8px] text-cyan-400/70 font-bold uppercase tracking-[0.3em]">
                         Bio-Data
                     </div>
-                    <div className="space-y-2 mt-4">
-                        {/* Glowing Waveform - Compact */}
-                        <div className="flex items-end justify-center gap-0.5 h-6 md:h-8 mb-2 opacity-60">
-                            {[...Array(8)].map((_, i) => (
-                                <div
-                                    key={i}
-                                    className="w-0.5 bg-cyan-400 rounded-full animate-wave"
-                                    style={{
-                                        height: `${30 + (i % 4) * 20}%`,
-                                        animationDelay: `${i * 0.1}s`,
-                                        boxShadow: '0 0 8px rgba(34, 211, 238, 0.4)'
-                                    }}
-                                />
-                            ))}
-                        </div>
+                    <div className="space-y-3 mt-4">
                         {/* Voice Type Code - Large */}
                         <div className="text-5xl sm:text-6xl md:text-7xl font-black uppercase text-cyan-400 tracking-tighter leading-none drop-shadow-[0_0_20px_rgba(34,211,238,0.4)]">
                             {voiceTypeCode}
@@ -151,9 +126,6 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
                         {/* Voice Type Name - Below */}
                         <div className="text-base sm:text-lg md:text-xl font-bold text-cyan-300 uppercase tracking-wider">
                             {voiceInfo.name}
-                        </div>
-                        <div className="text-[8px] md:text-[9px] font-mono text-cyan-500/50 uppercase tracking-[0.2em]">
-                            SIG: EV_{voiceTypeCode}
                         </div>
                     </div>
                 </div>
@@ -182,11 +154,8 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
                 </div>
             </div>
 
-            {/* FOOTER */}
-            <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between z-10 pointer-events-none">
-                <div className="text-[8px] sm:text-[9px] font-mono text-gray-500 uppercase tracking-wider">
-                    Verification: {new Date().toLocaleDateString('en-CA')}
-                </div>
+            {/* FOOTER - Minimal */}
+            <div className="absolute bottom-3 right-4 z-10 pointer-events-none">
                 <div className="text-[8px] sm:text-[9px] font-mono text-gray-500 uppercase tracking-wider">
                     etchvox.com
                 </div>
@@ -200,6 +169,23 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-50 hover:opacity-10 transition-opacity duration-300"
                     title="Long press or Right Click to Save"
                 />
+            )}
+
+            {/* Download Button */}
+            {imageUrl && (
+                <div className="absolute bottom-14 left-0 right-0 flex justify-center z-40">
+                    <button
+                        onClick={() => {
+                            const link = document.createElement('a');
+                            link.download = `etchvox-${mbti}-${voiceTypeCode}.png`;
+                            link.href = imageUrl;
+                            link.click();
+                        }}
+                        className="bg-white/10 hover:bg-white/20 border border-white/20 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all backdrop-blur-sm"
+                    >
+                        📥 Download Card
+                    </button>
+                </div>
             )}
 
             {/* Loading / Saving Hint */}
