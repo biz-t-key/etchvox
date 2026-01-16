@@ -81,7 +81,7 @@ export default function TermsPage() {
 
                     <h2 className="text-xl font-bold text-cyan-400 mt-8 mb-4">8. Contact</h2>
                     <p className="text-gray-300">
-                        Questions? Contact us at: <a href="mailto:support@etchvox.ai" className="text-cyan-400 hover:underline">support@etchvox.ai</a>
+                        Questions? Contact us at: <a href="mailto:info@etchvox.com" className="text-cyan-400 hover:underline">info@etchvox.com</a>
                     </p>
                 </div>
             </div>

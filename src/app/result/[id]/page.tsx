@@ -463,7 +463,7 @@ export default function ResultPage() {
                                                 <div className="text-gray-400 text-xs max-w-md mx-auto leading-relaxed mb-4">
                                                     {(result as any).aiAnalysisError}
                                                 </div>
-                                                <a href="mailto:support@etchvox.com" className="text-cyan-400 text-xs underline hover:text-cyan-300">
+                                                <a href="mailto:info@etchvox.com" className="text-cyan-400 text-xs underline hover:text-cyan-300">
                                                     Contact Support
                                                 </a>
                                             </div>

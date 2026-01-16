@@ -156,6 +156,9 @@ export default function HomePage() {
           <Link href="/privacy" className="hover:text-gray-400 transition-colors">
             Privacy
           </Link>
+          <Link href="/tokusho" className="hover:text-gray-400 transition-colors">
+            特商法
+          </Link>
         </div>
         <p className="leading-relaxed">
           Built by a husband who was told he sounds like a robot.
