@@ -47,9 +47,9 @@ export default function HomePage() {
         {/* Mode Selection */}
         {!selectedMode ? (
           <div className="space-y-12 animate-fade-in">
-            <p className="text-gray-400 text-lg mb-8">Choose your analysis mode:</p>
+            <p className="text-gray-400 text-lg mb-16">Choose your analysis mode:</p>
 
-            <div className="grid md:grid-cols-2 gap-8 px-4">
+            <div className="grid md:grid-cols-2 gap-12 px-4">
               {/* Solo Mode */}
               <button
                 onClick={() => setSelectedMode('solo')}
@@ -59,10 +59,10 @@ export default function HomePage() {
                 <h2 className="text-2xl md:text-3xl font-black mb-4 uppercase tracking-tight">
                   <span className="neon-text-cyan">SOLO MODE</span>
                 </h2>
-                <p className="text-gray-300 text-base leading-relaxed mb-4 max-w-xs mx-auto">
+                <p className="text-gray-300 text-base leading-relaxed mb-6 max-w-xs mx-auto">
                   Discover your unique voice type
                 </p>
-                <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">
+                <p className="text-gray-500 text-xs font-medium uppercase tracking-wider px-4">
                   30 seconds • 16 voice types • Instant analysis
                 </p>
               </button>
@@ -77,10 +77,10 @@ export default function HomePage() {
                 <h2 className="text-2xl md:text-3xl font-black mb-4 uppercase tracking-tight">
                   <span className="neon-text-magenta">COUPLE MODE</span>
                 </h2>
-                <p className="text-gray-300 text-base leading-relaxed mb-4 max-w-xs mx-auto">
+                <p className="text-gray-300 text-base leading-relaxed mb-6 max-w-xs mx-auto">
                   Test your <span className="text-magenta-400 font-bold">vocal chemistry</span> together
                 </p>
-                <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">
+                <p className="text-gray-500 text-xs font-medium uppercase tracking-wider px-4">
                   36 seconds • 2 voices • Compatibility score
                 </p>
               </button>
@@ -134,7 +134,7 @@ export default function HomePage() {
 
         {/* Stats */}
         {!selectedMode && (
-          <div className="pt-8 flex justify-center gap-16 text-center">
+          <div className="pt-20 flex justify-center gap-16 text-center">
             <div className="space-y-3">
               <div className="mono text-3xl md:text-4xl font-bold neon-text-cyan">14,028</div>
               <div className="text-sm text-gray-500">Voices Analyzed</div>
