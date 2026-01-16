@@ -80,23 +80,23 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
 
             {/* MAIN CONTENT AREA */}
             <div className="relative flex-grow flex flex-col items-center justify-center text-center z-10">
-                {/* MBTI Info */}
+                {/* MBTI Info - MAGENTA COLOR SCHEME */}
                 <div className="mb-4">
-                    <div className="text-xl sm:text-2xl md:text-3xl font-black uppercase text-white tracking-tighter leading-none">
+                    <div className="text-xl sm:text-2xl md:text-3xl font-black uppercase text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-magenta-300 tracking-tighter leading-none">
                         {mbtiInfo.nickname}
                     </div>
-                    <div className="text-sm sm:text-base md:text-lg font-bold text-gray-300 uppercase tracking-widest">
+                    <div className="text-sm sm:text-base md:text-lg font-bold text-magenta-300 uppercase tracking-widest">
                         {mbti}
                     </div>
-                    <div className="text-[8px] md:text-[10px] font-mono text-gray-500 uppercase tracking-[0.2em] mt-1">
+                    <div className="text-[8px] md:text-[10px] font-mono text-pink-500/70 uppercase tracking-[0.2em] mt-1">
                         SIG: MB_{mbti}
                     </div>
                 </div>
 
                 {/* Separator */}
-                <div className="w-24 h-0.5 bg-white/20 my-4" />
+                <div className="w-24 h-0.5 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 my-4" />
 
-                {/* Voice Type Info */}
+                {/* Voice Type Info - CYAN COLOR SCHEME */}
                 {/* Glowing Waveform */}
                 <div className="flex items-end justify-center gap-0.5 md:gap-1 h-8 md:h-12 mb-2 px-2 opacity-80">
                     {[...Array(10)].map((_, i) => (
@@ -115,7 +115,7 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
                 <div className="text-2xl sm:text-4xl md:text-5xl font-black uppercase text-center tracking-tighter mb-1 text-cyan-400 drop-shadow-[0_0_15px_rgba(34,211,238,0.3)] scale-y-110 leading-none">
                     {voiceInfo.name}
                 </div>
-                <div className="text-[7px] md:text-[9px] font-mono text-gray-600 uppercase tracking-[0.2em] mt-1">
+                <div className="text-[7px] md:text-[9px] font-mono text-cyan-600 uppercase tracking-[0.2em] mt-1">
                     SIG: EV_{voiceTypeCode}
                 </div>
 
@@ -125,7 +125,7 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
 
             {/* RESULT OVERLAY (Bottom Positioned) */}
             <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-6 pointer-events-none flex items-end justify-center h-full">
-                <div className="bg-black/60 backdrop-blur-md border-[0.5px] border-white/20 rounded-2xl p-4 sm:p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] w-full max-w-[95%] text-center pointer-events-auto mt-auto mb-12">
+                <div className="bg-black/60 backdrop-blur-md border-[0.5px] border-white/20 rounded-2xl p-4 sm:p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] w-full max-w-[95%] text-center pointer-events-auto mt-auto mb-16">
                     <div className="flex items-center justify-center gap-2 mb-2 opacity-70">
                         <div className="text-[8px] md:text-[10px] text-cyan-400 font-bold uppercase tracking-[0.3em]">
                             Duo Identity Result
@@ -138,10 +138,6 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
 
                     <div className="text-xs sm:text-sm md:text-base text-gray-200 font-medium italic leading-relaxed max-w-lg mx-auto line-clamp-3 md:line-clamp-none px-2 opacity-90">
                         {displayIdentity.roast || "Bio-analysis complete. Persona mismatch detected."}
-                    </div>
-
-                    <div className="absolute bottom-2 right-4 text-[6px] text-gray-600 font-mono tracking-widest uppercase hidden sm:block">
-                        ETCHVOX // AI_AUDIT
                     </div>
                 </div>
             </div>
@@ -162,16 +158,6 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 </div>
             )}
-
-            {/* FOOTER */}
-            <div className="absolute bottom-4 left-6 right-6 flex items-center justify-between z-10 pointer-events-none">
-                <div className="text-[10px] font-bold tracking-tighter text-white opacity-40 uppercase">
-                    EtchVox
-                </div>
-                <div className="text-[10px] font-bold tracking-tighter text-white opacity-40 uppercase">
-                    Verification: {new Date().toLocaleDateString()}
-                </div>
-            </div>
 
             {/* Film grain / Noise overlay */}
             <div className="absolute inset-0 pointer-events-none opacity-30 mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-repeat" />
