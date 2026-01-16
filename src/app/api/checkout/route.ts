@@ -25,15 +25,20 @@ export async function POST(req: NextRequest) {
                 productName = 'EtchVox Couple Resonance Report';
                 description = 'AI-powered relationship analysis using vocal signatures. Includes SCM profiling and sync score.';
                 break;
+            case 'unlock':
+                amount = 500; // $5.00
+                productName = 'EtchVox Video Unlock';
+                description = 'Unlock your analysis video. View and share your voice visualization.';
+                break;
             case 'vault':
                 amount = 1000; // $10.00
-                productName = 'EtchVox Vault - Lifetime Access';
-                description = 'Preserve your voice forever. Track aging. Raw audio included.';
+                productName = 'EtchVox Vault + Premium Report';
+                description = 'AI Identity Audit + Permanent video storage. Track your voice evolution forever.';
                 break;
             case 'solo':
             default:
                 amount = 1000; // $10.00
-                productName = 'EtchVox Solo Identity Audit';
+                productName = 'EtchVox AI Identity Audit';
                 description = 'AI Gap Analysis: Your MBTI vs Voice Archetype. Full roast included.';
         }
 
