@@ -81,28 +81,48 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
             {/* MAIN CONTENT AREA */}
             <div className="relative flex-grow flex flex-col items-center justify-center text-center z-10 space-y-8">
 
-                {/* MBTI SECTION - MAGENTA */}
+                {/* MBTI SECTION - GROUP COLOR */}
                 <div className="relative w-full">
-                    <div className="absolute -top-2 left-2 text-[8px] text-pink-400/70 font-bold uppercase tracking-[0.3em]">
+                    <div
+                        className="absolute -top-2 left-2 text-[8px] font-bold uppercase tracking-[0.3em] opacity-70"
+                        style={{ color: mbtiInfo.color }}
+                    >
                         Self Perception
                     </div>
                     <div className="space-y-2 mt-4">
-                        {/* MBTI Code - Large */}
-                        <div className="text-5xl sm:text-6xl md:text-7xl font-black uppercase text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-magenta-300 tracking-tighter leading-none">
+                        {/* MBTI Code - Large with Group Color */}
+                        <div
+                            className="text-5xl sm:text-6xl md:text-7xl font-black uppercase tracking-tighter leading-none"
+                            style={{
+                                color: mbtiInfo.color,
+                                textShadow: `0 0 40px ${mbtiInfo.color}40`
+                            }}
+                        >
                             {mbti}
                         </div>
                         {/* Nickname - Below */}
-                        <div className="text-base sm:text-lg md:text-xl font-bold text-magenta-300 uppercase tracking-wider">
+                        <div
+                            className="text-base sm:text-lg md:text-xl font-bold uppercase tracking-wider"
+                            style={{ color: mbtiInfo.color }}
+                        >
                             {mbtiInfo.nickname}
                         </div>
-                        <div className="text-[8px] md:text-[9px] font-mono text-pink-500/50 uppercase tracking-[0.2em]">
+                        <div
+                            className="text-[8px] md:text-[9px] font-mono uppercase tracking-[0.2em] opacity-50"
+                            style={{ color: mbtiInfo.color }}
+                        >
                             SIG: MB_{mbti}
                         </div>
                     </div>
                 </div>
 
-                {/* Separator */}
-                <div className="w-32 h-0.5 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500" />
+                {/* Separator - Gradient from MBTI color to Cyan */}
+                <div
+                    className="w-32 h-0.5"
+                    style={{
+                        background: `linear-gradient(to right, ${mbtiInfo.color}, #06b6d4)`
+                    }}
+                />
 
                 {/* VOICE TYPE SECTION - CYAN */}
                 <div className="relative w-full">
