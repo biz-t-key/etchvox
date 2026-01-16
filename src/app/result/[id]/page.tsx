@@ -315,6 +315,23 @@ export default function ResultPage() {
                             )}
                         </div>
 
+                        {/* THE REALIZATION - Voice Aging Message */}
+                        {displayStage === 'full' && !isPremium && (
+                            <div className="glass rounded-2xl p-6 md:p-8 border border-yellow-500/20 bg-gradient-to-br from-yellow-500/5 to-orange-500/5 animate-fade-in">
+                                <div className="text-center space-y-4">
+                                    <div className="text-xs text-yellow-400/80 font-bold uppercase tracking-[0.3em]">
+                                        ⚠️ Diagnosis Complete
+                                    </div>
+                                    <p className="text-sm md:text-base text-gray-300 leading-relaxed max-w-lg mx-auto">
+                                        By the way, human voices change <span className="text-yellow-400 font-bold">0.5% every year</span> due to stress and aging.
+                                    </p>
+                                    <p className="text-base md:text-lg font-bold text-white">
+                                        This recording is now <span className="text-yellow-400">the youngest voice you have left</span>.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
                         {displayStage === 'full' && (
                             <div className="animate-slide-up space-y-20">
                                 {/* MBTI / Truth Card Section */}
@@ -516,12 +533,23 @@ export default function ResultPage() {
                                                     {/* Premium Option - $10 Vault */}
                                                     <div className="bg-gradient-to-br from-pink-500/10 to-violet-500/10 border-2 border-pink-500/30 rounded-xl p-6 mb-4">
                                                         <div className="text-[10px] text-pink-400 font-bold uppercase tracking-[0.3em] mb-2">
-                                                            ⭐ Recommended
+                                                            💎 Lifetime Access
                                                         </div>
-                                                        <h4 className="text-xl font-black text-white uppercase mb-2">Premium Report + Vault</h4>
+                                                        <h4 className="text-xl font-black text-white uppercase mb-3">VoiceGlow Vault</h4>
                                                         <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-violet-400 mb-4">
                                                             $10.00
                                                         </div>
+
+                                                        {/* THE SELL - Emotional Copy */}
+                                                        <div className="text-left text-sm text-gray-300 leading-relaxed mb-6 italic border-l-2 border-pink-500/30 pl-4">
+                                                            <p className="mb-3">
+                                                                "Don't delete this data. <span className="text-white font-bold">Secure it in the VoiceGlow Vault</span> for $10 (Lifetime Access)."
+                                                            </p>
+                                                            <p className="text-xs text-gray-400">
+                                                                We keep the <span className="text-pink-400">raw audio</span>. The <span className="text-pink-400">background noise</span>. The <span className="text-pink-400">atmosphere</span>. Even your <span className="text-pink-400">hesitation</span>.
+                                                            </p>
+                                                        </div>
+
                                                         <ul className="text-left text-xs text-gray-300 space-y-2 mb-6">
                                                             <li className="flex items-center gap-2">
                                                                 <span className="text-green-400">✓</span>
@@ -529,7 +557,7 @@ export default function ResultPage() {
                                                             </li>
                                                             <li className="flex items-center gap-2">
                                                                 <span className="text-green-400">✓</span>
-                                                                <span><strong>Permanent Video Storage</strong></span>
+                                                                <span><strong>Permanent Raw Audio Storage</strong></span>
                                                             </li>
                                                             <li className="flex items-center gap-2">
                                                                 <span className="text-green-400">✓</span>
@@ -537,7 +565,7 @@ export default function ResultPage() {
                                                             </li>
                                                             <li className="flex items-center gap-2">
                                                                 <span className="text-green-400">✓</span>
-                                                                <span>Detailed PDF analysis</span>
+                                                                <span>Track your voice evolution over time</span>
                                                             </li>
                                                         </ul>
                                                         <button
@@ -545,7 +573,7 @@ export default function ResultPage() {
                                                             disabled={processingPayment}
                                                             className="w-full bg-gradient-to-r from-pink-600 to-violet-600 hover:from-pink-500 hover:to-violet-500 text-white font-bold py-4 rounded-xl text-sm uppercase tracking-widest shadow-lg transform hover:scale-[1.02] transition-all"
                                                         >
-                                                            {processingPayment ? 'Processing...' : 'Get Premium — $10.00'}
+                                                            {processingPayment ? 'Processing...' : 'Secure My Voice — $10.00'}
                                                         </button>
                                                     </div>
 
