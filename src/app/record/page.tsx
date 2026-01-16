@@ -10,10 +10,9 @@ import { ToxicityProfile } from '@/lib/toxicity';
 import ParticleVisualizer from '@/components/recording/ParticleVisualizer';
 import AccentSelector from '@/components/recording/AccentSelector';
 import ToxicitySelector from '@/components/recording/ToxicitySelector';
-import MBTISelector from '@/components/result/MBTISelector';
 
 type RecordingStep = 1 | 2 | 3;
-type Phase = 'ready' | 'recording' | 'analyzing' | 'toxicity' | 'mbti' | 'accent' | 'complete';
+type Phase = 'ready' | 'recording' | 'analyzing' | 'toxicity' | 'accent' | 'complete';
 
 const SCRIPTS = {
     1: {
@@ -40,7 +39,6 @@ export default function RecordPage() {
     const [timeLeft, setTimeLeft] = useState(SCRIPTS[1].duration);
     const [error, setError] = useState<string | null>(null);
     const [selectedAccent, setSelectedAccent] = useState<string | null>(null);
-    const [selectedMbti, setSelectedMbti] = useState<string | null>(null);
     const [toxicity, setToxicity] = useState<ToxicityProfile | null>(null);
     const [consentGiven, setConsentGiven] = useState(false);
 
@@ -173,12 +171,7 @@ export default function RecordPage() {
 
     const handleToxicitySelect = (profile: ToxicityProfile) => {
         setToxicity(profile);
-        setPhase('mbti'); // Go to MBTI selection
-    };
-
-    const handleMbtiSelect = (mbti: string) => {
-        setSelectedMbti(mbti);
-        setPhase('accent'); // Then go to Accent
+        setPhase('accent'); // Go directly to Accent
     };
 
     const handleAccentSelect = async (accent: string) => {
@@ -205,7 +198,7 @@ export default function RecordPage() {
                 typeCode: analysisResult.typeCode,
                 metrics: analysisResult.metrics,
                 accentOrigin: accent,
-                mbti: selectedMbti || undefined, // ✅ Include MBTI
+                // mbti: undefined, // Let user select on Result page
                 createdAt: new Date().toISOString(),
                 locale: 'en',
                 userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
@@ -373,25 +366,6 @@ export default function RecordPage() {
                 {/* Toxicity Selection Phase */}
                 {phase === 'toxicity' && (
                     <ToxicitySelector onComplete={handleToxicitySelect} />
-                )}
-
-                {/* MBTI Selection Phase */}
-                {phase === 'mbti' && (
-                    <div className="fade-in space-y-6 max-w-4xl mx-auto">
-                        <div className="text-center space-y-4 mb-8">
-                            <h2 className="text-2xl font-bold text-white uppercase tracking-widest">
-                                Step 3: Your Personality Type
-                            </h2>
-                            <p className="text-gray-400 text-sm max-w-md mx-auto leading-relaxed">
-                                Select your MBTI type. We'll compare it with your voice signature to reveal any gaps between your internal identity and external signal.
-                            </p>
-                        </div>
-
-                        {/* Reuse existing MBTISelector component */}
-                        <MBTISelector
-                            onSelect={(mbti) => mbti && handleMbtiSelect(mbti)}
-                        />
-                    </div>
                 )}
 
                 {/* Accent Selection Phase */}

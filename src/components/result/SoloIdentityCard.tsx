@@ -61,7 +61,7 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
     return (
         <div
             ref={cardRef}
-            className="relative mx-auto w-[300px] h-[500px] sm:w-[350px] sm:h-[580px] md:w-[400px] md:h-[650px] lg:w-[450px] lg:h-[700px] bg-gradient-to-br from-gray-900 to-black rounded-3xl shadow-2xl overflow-hidden flex flex-col justify-between p-4 sm:p-6 border border-white/10 font-sans group"
+            className="relative mx-auto w-[88vw] h-[140vw] max-w-[340px] max-h-[580px] sm:w-[350px] sm:h-[580px] md:w-[400px] md:h-[650px] lg:w-[450px] lg:h-[700px] bg-gradient-to-br from-gray-900 to-black rounded-3xl shadow-2xl overflow-hidden flex flex-col justify-between p-4 sm:p-6 border border-white/10 font-sans group"
         >
             {/* HEADER */}
             <div className="relative z-10 flex items-center justify-between mb-4">
@@ -125,7 +125,7 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
 
             {/* RESULT OVERLAY (Bottom Positioned) */}
             <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-6 pointer-events-none flex items-end justify-center h-full">
-                <div className="bg-black/60 backdrop-blur-md border-[0.5px] border-white/20 rounded-2xl p-4 sm:p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] w-full max-w-[95%] text-center pointer-events-auto mt-auto mb-1">
+                <div className="bg-black/60 backdrop-blur-md border-[0.5px] border-white/20 rounded-2xl p-4 sm:p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] w-full max-w-[95%] text-center pointer-events-auto mt-auto mb-12">
                     <div className="flex items-center justify-center gap-2 mb-2 opacity-70">
                         <div className="text-[8px] md:text-[10px] text-cyan-400 font-bold uppercase tracking-[0.3em]">
                             Duo Identity Result

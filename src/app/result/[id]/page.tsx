@@ -14,7 +14,7 @@ import SoloIdentityCard from '@/components/result/SoloIdentityCard';
 import { VideoPlayerSection } from '@/components/video/VideoPlayerSection';
 import { MBTIType } from '@/lib/mbti';
 import { isFirebaseConfigured, getDb } from '@/lib/firebase';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
 
@@ -42,6 +42,9 @@ export default function ResultPage() {
                 const data = await getResult(resultId);
                 if (data) {
                     setResult(data);
+                    if (data.mbti) {
+                        setSelectedMBTI(data.mbti as MBTIType); // Sync MBTI from saved data
+                    }
                     // Start staged display sequence
                     setTimeout(() => setDisplayStage('metrics'), 2500);
                     setTimeout(() => setDisplayStage('full'), 4500);
@@ -76,15 +79,45 @@ export default function ResultPage() {
                         aiAnalysisError: data.aiAnalysisError, // Also track errors
                         isPremium: data.isPremium,
                         vaultEnabled: data.vaultEnabled,
+                        mbti: data.mbti, // Update MBTI if changed
                     } as VoiceResult; // Cast to bypass type check for now if interface incomplete
                 });
+                // Also update selectedMBTI if it was saved
+                if (data.mbti && !selectedMBTI) {
+                    setSelectedMBTI(data.mbti as MBTIType);
+                }
             }
         }, (error) => {
             console.error('Firestore listener error:', error);
         });
 
         return () => unsubscribe();
-    }, [resultId]);
+    }, [resultId, selectedMBTI]);
+
+    // ✅ Save MBTI to Firestore when selected
+    const handleMBTISelect = async (mbti: MBTIType | null) => {
+        if (!mbti) return; // Guard against null
+
+        setSelectedMBTI(mbti);
+        setMbtiSkipped(false);
+
+        // Save to Firestore
+        if (isFirebaseConfigured()) {
+            try {
+                const db = getDb();
+                const resultRef = doc(db, 'results', resultId);
+                await updateDoc(resultRef, { mbti });
+                console.log('MBTI saved:', mbti);
+            } catch (err) {
+                console.error('Failed to save MBTI:', err);
+            }
+        }
+
+        // Scroll to card
+        setTimeout(() => {
+            document.getElementById('identity-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+    };
 
     const handleCheckout = async (type: 'unlock' | 'vault') => {
         setProcessingPayment(true);
@@ -305,13 +338,7 @@ export default function ResultPage() {
 
                                     {!selectedMBTI && !mbtiSkipped ? (
                                         <MBTISelector
-                                            onSelect={(mbti) => {
-                                                setSelectedMBTI(mbti);
-                                                setMbtiSkipped(false);
-                                                setTimeout(() => {
-                                                    document.getElementById('identity-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                                }, 100);
-                                            }}
+                                            onSelect={handleMBTISelect}
                                             onSkip={() => setMbtiSkipped(true)}
                                         />
                                     ) : selectedMBTI ? (
