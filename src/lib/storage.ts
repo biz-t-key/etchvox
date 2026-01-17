@@ -153,36 +153,39 @@ export async function getResult(resultId: string): Promise<VoiceResult | null> {
     return null;
 }
 
-// Upload audio file to Firebase Storage
+// Upload audio file to Cloudflare R2 (via API)
 export async function uploadAudio(
     resultId: string,
     audioBlob: Blob
 ): Promise<{ url: string; path: string } | null> {
-    if (!isFirebaseConfigured()) {
-        console.warn('Firebase not configured, skipping audio upload');
-        return null;
-    }
-
     try {
-        const storage = getStorageInstance();
-        const path = `audio/${resultId}.webm`;
-        const audioRef = ref(storage, path);
+        const formData = new FormData();
+        formData.append('file', audioBlob);
+        formData.append('resultId', resultId);
 
-        await uploadBytes(audioRef, audioBlob, {
-            contentType: 'audio/webm',
-            customMetadata: {
-                recordedAt: new Date().toISOString(),
-            },
+        const response = await fetch('/api/upload-audio', {
+            method: 'POST',
+            body: formData,
         });
 
-        const url = await getDownloadURL(audioRef);
+        if (!response.ok) {
+            throw new Error(`Upload failed: ${response.statusText}`);
+        }
 
-        console.log('Audio uploaded:', path);
+        const data = await response.json();
 
-        return { url, path };
+        // Use the redirect API as the stored URL
+        const proxyUrl = `/api/audio-url?id=${resultId}`;
+        const storagePath = `r2://${data.path}`; // Internal reference
+
+        console.log('Audio uploaded to R2:', storagePath);
+
+        return { url: proxyUrl, path: storagePath };
     } catch (error) {
-        console.error('Failed to upload audio:', error);
-        return null;
+        console.error('Failed to upload audio to R2:', error);
+
+        // Fallback or just return null
+        return null; // For now, strict migration.
     }
 }
 
