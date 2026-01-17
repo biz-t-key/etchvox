@@ -211,22 +211,34 @@ export default function CouplePage() {
         return (
             <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center relative overflow-hidden">
                 <ParticleVisualizer analyser={analyzerRef.current?.getAnalyser() || null} isActive={isRecording} />
-                <div className="z-10 text-center space-y-8 max-w-sm px-4">
+                <div className="z-10 text-center space-y-8 max-w-lg px-4">
                     <div className="uppercase tracking-[0.2em] text-pink-500 text-xs font-bold bg-pink-500/10 px-4 py-2 rounded-full inline-block">
                         REC: <span className="text-white ml-2 text-sm">{name}</span>
                     </div>
 
                     {!isRecording ? (
                         <div className="space-y-8 animate-fade-in">
-                            <p className="text-3xl font-light leading-tight">
-                                "Tell us about your day in one sentence."
+                            <div className="glass rounded-xl p-8 border border-white/20 bg-black/40 backdrop-blur-md">
+                                <p className="text-2xl md:text-3xl font-medium leading-relaxed font-serif italic text-gray-200">
+                                    "I parked my car in the garage to drink a bottle of water. I am definitely not a robot."
+                                </p>
+                            </div>
+                            <p className="text-sm text-gray-500 uppercase tracking-widest">
+                                Read the above script
                             </p>
-                            <button onClick={() => startRecording(isA ? 'A' : 'B')} className="w-24 h-24 rounded-full border-2 border-white/50 flex items-center justify-center hover:bg-white/10 hover:scale-110 transition-all mx-auto group">
-                                <div className="w-6 h-6 bg-red-500 rounded-full animate-pulse group-hover:scale-125 transition-transform" />
+                            <button onClick={() => startRecording(isA ? 'A' : 'B')} className="w-20 h-20 rounded-full border-2 border-white/50 flex items-center justify-center hover:bg-white/10 hover:scale-110 transition-all mx-auto group">
+                                <div className="w-5 h-5 bg-red-500 rounded-full animate-pulse group-hover:scale-125 transition-transform" />
                             </button>
                         </div>
                     ) : (
-                        <div className="text-8xl font-black font-mono tracking-tighter mix-blend-difference">{timeLeft}</div>
+                        <div className="space-y-8">
+                            <div className="glass rounded-xl p-8 border border-pink-500/30 bg-pink-500/5">
+                                <p className="text-2xl md:text-3xl font-medium leading-relaxed font-serif italic text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+                                    "I parked my car in the garage to drink a bottle of water. I am definitely not a robot."
+                                </p>
+                            </div>
+                            <div className="text-6xl font-black font-mono tracking-tighter mix-blend-difference">{timeLeft}</div>
+                        </div>
                     )}
                 </div>
             </main>
