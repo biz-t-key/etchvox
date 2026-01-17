@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { VoiceAnalyzer } from '@/lib/analyzer';
@@ -8,13 +8,23 @@ import { generateResultId } from '@/lib/permalink';
 import { saveResult, getSessionId, VoiceResult } from '@/lib/storage';
 import ParticleVisualizer from '@/components/recording/ParticleVisualizer';
 
-type Phase = 'intro' | 'names' | 'recordA' | 'handoff' | 'recordB' | 'details' | 'analyzing';
+type Phase = 'intro' | 'names' | 'step1' | 'step2' | 'step3' | 'details' | 'analyzing';
 
 const JOBS = [
     'Lawyer', 'Executive', 'Engineer', 'Doctor', 'Founder',
     'Consultant', 'Artist', 'Teacher', 'Designer', 'Nurse',
     'Writer', 'Musician', 'Student', 'Sales', 'Other'
 ];
+
+type StepConfig = {
+    id: 'step1' | 'step2' | 'step3';
+    title: string;
+    subtitle: string;
+    instruction: string;
+    duration: number; // seconds
+    color: string;
+    script: React.ReactNode;
+};
 
 export default function CouplePage() {
     const router = useRouter();
@@ -26,8 +36,11 @@ export default function CouplePage() {
     const [consentGiven, setConsentGiven] = useState(false);
 
     // Data Store
-    const [userA, setUserA] = useState({ name: '', job: JOBS[0], metrics: null as any, audioBlob: null as Blob | null });
-    const [userB, setUserB] = useState({ name: '', job: JOBS[0], metrics: null as any, audioBlob: null as Blob | null });
+    const [names, setNames] = useState({ A: '', B: '' });
+    // We only store the "Main" recording (Step 1) for analysis to keep backend simple for now
+    // In a future update, we could merge all 3 blobs
+    const [mainAudioBlob, setMainAudioBlob] = useState<Blob | null>(null);
+    const [mainMetrics, setMainMetrics] = useState<any>(null);
 
     // Hardware Refs
     const analyzerRef = useRef<VoiceAnalyzer | null>(null);
@@ -45,15 +58,80 @@ export default function CouplePage() {
         };
     }, []);
 
-    const startRecording = async (currentUser: 'A' | 'B') => {
+    const STEPS: Record<string, StepConfig> = {
+        step1: {
+            id: 'step1',
+            title: "Synchronizing Biometric Resonance...",
+            subtitle: "The Bio-Sync",
+            instruction: "Read together in unison. One single take.",
+            duration: 10,
+            color: 'text-cyan-400',
+            script: (
+                <p className="text-xl md:text-2xl font-medium leading-relaxed font-serif italic text-white/90">
+                    "We parked our car in the garage to share a bottle of water. We are certainly not robots."
+                </p>
+            )
+        },
+        step2: {
+            id: 'step2',
+            title: "Simulating Relational Stress Levels...",
+            subtitle: "The Stress Conflict",
+            instruction: "Act out the conflict! A: Warn, B: Panic.",
+            duration: 8,
+            color: 'text-red-500',
+            script: (
+                <div className="space-y-4 text-left max-w-md mx-auto">
+                    <div>
+                        <span className="text-red-500 font-bold uppercase text-xs tracking-widest block mb-1">{names.A || 'Partner A'}</span>
+                        <p className="text-xl font-bold">"System failure! It's going down!"</p>
+                    </div>
+                    <div className="text-right">
+                        <span className="text-red-400 font-bold uppercase text-xs tracking-widest block mb-1">{names.B || 'Partner B'}</span>
+                        <p className="text-2xl font-black">"No! Shut it down! SHUT IT DOWN NOW!"</p>
+                    </div>
+                </div>
+            )
+        },
+        step3: {
+            id: 'step3',
+            title: "Analyzing Neural Processing Speed...",
+            subtitle: "The Neural Flow",
+            instruction: "Alternate words FAST. Don't stumble.",
+            duration: 8,
+            color: 'text-green-400',
+            script: (
+                <div className="flex flex-wrap justify-center gap-3 text-xl md:text-3xl font-mono font-bold leading-relaxed max-w-lg mx-auto">
+                    <span className="text-white bg-white/10 px-2 rounded">
+                        <span className="text-[10px] text-gray-500 block -mb-1">{names.A}</span>Six
+                    </span>
+                    <span className="text-white bg-white/10 px-2 rounded">
+                        <span className="text-[10px] text-gray-500 block -mb-1">{names.B}</span>systems
+                    </span>
+                    <span className="text-white bg-white/10 px-2 rounded">
+                        <span className="text-[10px] text-gray-500 block -mb-1">{names.A}</span>synthesized
+                    </span>
+                    <span className="text-white bg-white/10 px-2 rounded">
+                        <span className="text-[10px] text-gray-500 block -mb-1">{names.B}</span>sixty-six
+                    </span>
+                    <span className="text-white bg-cyan-500/20 px-2 rounded border border-cyan-500/50">
+                        <span className="text-[10px] text-cyan-500 block -mb-1">TOGETHER</span>signals simultaneously!
+                    </span>
+                </div>
+            )
+        }
+    };
+
+    const startRecording = async (currentStep: 'step1' | 'step2' | 'step3') => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
                 audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
             });
 
-            analyzerRef.current = new VoiceAnalyzer();
-            await analyzerRef.current.initialize();
-            analyzerRef.current.connectStream(stream);
+            if (!analyzerRef.current) {
+                analyzerRef.current = new VoiceAnalyzer();
+                await analyzerRef.current.initialize();
+                analyzerRef.current.connectStream(stream);
+            }
 
             mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
             chunksRef.current = [];
@@ -64,9 +142,9 @@ export default function CouplePage() {
 
             mediaRecorderRef.current.start(100);
             setIsRecording(true);
-            setTimeLeft(8); // Short snappy recording
+            setTimeLeft(STEPS[currentStep].duration);
 
-            // Start Visualizer Loop
+            // Visualizer Loop
             const collectLoop = () => {
                 if (analyzerRef.current && isRecording) {
                     analyzerRef.current.collectSample();
@@ -79,7 +157,7 @@ export default function CouplePage() {
             timerRef.current = setInterval(() => {
                 setTimeLeft((prev) => {
                     if (prev <= 1) {
-                        finishRecording(currentUser);
+                        finishRecording(currentStep);
                         return 0;
                     }
                     return prev - 1;
@@ -92,7 +170,7 @@ export default function CouplePage() {
         }
     };
 
-    const finishRecording = async (currentUser: 'A' | 'B') => {
+    const finishRecording = async (currentStep: 'step1' | 'step2' | 'step3') => {
         if (timerRef.current) clearInterval(timerRef.current);
         if (mediaRecorderRef.current) mediaRecorderRef.current.stop();
 
@@ -100,33 +178,32 @@ export default function CouplePage() {
         const analysis = analyzerRef.current?.analyze();
         const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
 
-        if (currentUser === 'A') {
-            setUserA(prev => ({ ...prev, metrics: analysis?.metrics, audioBlob }));
-            setPhase('handoff');
+        // Logic:
+        // - Save Step 1 as "Main Blob" for persistent storage/analysis (it's the clean union)
+        // - Steps 2 & 3 are currently for "Experience" (or we could merge them later)
+        if (currentStep === 'step1') {
+            setMainAudioBlob(audioBlob);
+            setMainMetrics(analysis?.metrics);
+            setTimeout(() => setPhase('step2'), 1500);
+        } else if (currentStep === 'step2') {
+            setTimeout(() => setPhase('step3'), 1500);
         } else {
-            setUserB(prev => ({ ...prev, metrics: analysis?.metrics, audioBlob }));
-            setPhase('details');
+            setTimeout(() => setPhase('details'), 1500);
         }
 
         setIsRecording(false);
     };
 
     const handleNamesSubmit = (nameA: string, nameB: string) => {
-        setUserA(prev => ({ ...prev, name: nameA }));
-        setUserB(prev => ({ ...prev, name: nameB }));
-        setPhase('recordA');
+        setNames({ A: nameA, B: nameB });
+        setPhase('step1');
     };
 
     const handleDetailsSubmit = (jobA: string, jobB: string) => {
-        const finalUserA = { ...userA, job: jobA };
-        const finalUserB = { ...userB, job: jobB };
-        setUserA(finalUserA);
-        setUserB(finalUserB);
-
-        processCoupleResult(finalUserA, finalUserB);
+        processCoupleResult(jobA, jobB);
     };
 
-    const processCoupleResult = async (finalA: typeof userA, finalB: typeof userB) => {
+    const processCoupleResult = async (jobA: string, jobB: string) => {
         setPhase('analyzing');
         const coupleResultId = generateResultId();
 
@@ -134,39 +211,42 @@ export default function CouplePage() {
             id: coupleResultId,
             sessionId: getSessionId(),
             typeCode: 'COUPLE_MIX' as any,
-            metrics: finalA.metrics, // Store A's metrics as primary for indexing
+            metrics: mainMetrics, // Using Step 1 metrics
             accentOrigin: 'Couple',
             createdAt: new Date().toISOString(),
             locale: 'en-US',
             isPremium: false,
             coupleData: {
-                userA: { name: finalA.name, job: finalA.job, metrics: finalA.metrics },
-                userB: { name: finalB.name, job: finalB.job, metrics: finalB.metrics }
+                userA: { name: names.A, job: jobA, metrics: mainMetrics }, // Flattened metrics for now
+                userB: { name: names.B, job: jobB, metrics: mainMetrics }
             }
         } as any;
 
-        // Save with blobs (R2 upload enabled)
-        await saveResult(coupleData, undefined, {
-            userA: finalA.audioBlob!,
-            userB: finalB.audioBlob!
-        });
+        // Save with blobs
+        if (mainAudioBlob) {
+            await saveResult(coupleData, undefined, {
+                userA: mainAudioBlob, // Saving same blob for both slots for now, or just A
+                userB: mainAudioBlob  // Ideally we merge all steps, but Step 1 is the most representative "Voice Print"
+            });
+        }
 
-        // Redirect directly to result page
         setTimeout(() => {
             router.push(`/result/${coupleResultId}`);
-        }, 1500);
+        }, 2000);
     };
 
-    // --- UI COMPONENTS ---
+    // --- UI RENDERING ---
 
-    // 1. Intro (Consent)
+    // 1. INTRO
     if (phase === 'intro') return (
         <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center max-w-md mx-auto">
             <h1 className="text-3xl font-bold uppercase tracking-widest mb-4">
-                <span className="text-pink-500">Couple</span> Resonance
+                <span className="text-pink-500">Couple</span> Analysis
             </h1>
             <p className="text-gray-400 mb-8 text-sm leading-relaxed">
-                Analyze your vocal chemistry and hidden dynamics.
+                Step 1: Bio-Sync (Unison)<br />
+                Step 2: Stress Conflict (Roleplay)<br />
+                Step 3: Neural Flow (Speed)
             </p>
 
             <div className="glass rounded-xl p-6 border border-white/10 bg-white/5 w-full mb-8 text-left">
@@ -190,12 +270,12 @@ export default function CouplePage() {
                 disabled={!consentGiven}
                 className="w-full bg-white text-black font-bold py-4 rounded-full uppercase tracking-[0.2em] hover:bg-pink-500 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
-                Start Analysis
+                Start Sequence
             </button>
         </main>
     );
 
-    // 2. Names Input
+    // 2. NAMES
     if (phase === 'names') return (
         <NamesForm
             onBack={() => setPhase('intro')}
@@ -203,41 +283,57 @@ export default function CouplePage() {
         />
     );
 
-    // 3. Recording Stages
-    if (phase === 'recordA' || phase === 'recordB') {
-        const isA = phase === 'recordA';
-        const name = isA ? userA.name : userB.name;
+    // 3. RECORDING STEPS
+    if (phase === 'step1' || phase === 'step2' || phase === 'step3') {
+        const step = STEPS[phase];
 
         return (
-            <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center relative overflow-hidden">
+            <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center relative overflow-hidden px-4">
+                {/* Visualizer Background */}
                 <ParticleVisualizer analyser={analyzerRef.current?.getAnalyser() || null} isActive={isRecording} />
-                <div className="z-10 text-center space-y-8 max-w-lg px-4">
-                    <div className="uppercase tracking-[0.2em] text-pink-500 text-xs font-bold bg-pink-500/10 px-4 py-2 rounded-full inline-block">
-                        REC: <span className="text-white ml-2 text-sm">{name}</span>
+
+                <div className="z-10 w-full max-w-2xl mx-auto text-center space-y-8">
+                    {/* Header */}
+                    <div className="space-y-2">
+                        <div className={`text-xs font-bold uppercase tracking-[0.3em] ${step.color} animate-pulse`}>
+                            {isRecording ? step.title : `Preparing: ${step.subtitle}`}
+                        </div>
+                        <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500">
+                            {step.subtitle}
+                        </h2>
                     </div>
 
                     {!isRecording ? (
-                        <div className="space-y-8 animate-fade-in">
-                            <div className="glass rounded-xl p-8 border border-white/20 bg-black/40 backdrop-blur-md">
-                                <p className="text-2xl md:text-3xl font-medium leading-relaxed font-serif italic text-gray-200">
-                                    "I parked my car in the garage to drink a bottle of water. I am definitely not a robot."
+                        <div className="space-y-8 animate-fade-in-up">
+                            {/* Instruction Card */}
+                            <div className="glass rounded-2xl p-8 border border-white/10 bg-black/50 backdrop-blur-xl">
+                                <p className="text-gray-400 text-sm uppercase tracking-widest mb-6 border-b border-white/10 pb-4">
+                                    Mission Objective
+                                </p>
+                                <p className="text-xl font-bold text-white mb-2">
+                                    {step.instruction}
                                 </p>
                             </div>
-                            <p className="text-sm text-gray-500 uppercase tracking-widest">
-                                Read the above script
-                            </p>
-                            <button onClick={() => startRecording(isA ? 'A' : 'B')} className="w-20 h-20 rounded-full border-2 border-white/50 flex items-center justify-center hover:bg-white/10 hover:scale-110 transition-all mx-auto group">
-                                <div className="w-5 h-5 bg-red-500 rounded-full animate-pulse group-hover:scale-125 transition-transform" />
+
+                            <button
+                                onClick={() => startRecording(phase)}
+                                className="w-24 h-24 rounded-full border border-white/30 flex items-center justify-center hover:bg-white/10 hover:border-white transition-all mx-auto group relative"
+                            >
+                                <div className={`absolute inset-0 rounded-full border-2 ${step.color.replace('text-', 'border-')} opacity-30 animate-ping`} />
+                                <div className={`w-8 h-8 ${step.color.replace('text-', 'bg-')} rounded-full shadow-[0_0_20px_currentColor]`} />
                             </button>
                         </div>
                     ) : (
-                        <div className="space-y-8">
-                            <div className="glass rounded-xl p-8 border border-pink-500/30 bg-pink-500/5">
-                                <p className="text-2xl md:text-3xl font-medium leading-relaxed font-serif italic text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
-                                    "I parked my car in the garage to drink a bottle of water. I am definitely not a robot."
-                                </p>
+                        <div className="space-y-12 animate-fade-in">
+                            {/* Script Display */}
+                            <div className={`glass rounded-2xl p-8 md:p-12 border border-white/10 bg-black/60 backdrop-blur-xl transform transition-all duration-500 ${phase === 'step2' ? 'border-red-500/30' : ''}`}>
+                                {step.script}
                             </div>
-                            <div className="text-6xl font-black font-mono tracking-tighter mix-blend-difference">{timeLeft}</div>
+
+                            {/* Timer */}
+                            <div className="text-8xl font-black font-mono tracking-tighter mix-blend-difference tabular-nums">
+                                {timeLeft}
+                            </div>
                         </div>
                     )}
                 </div>
@@ -245,33 +341,26 @@ export default function CouplePage() {
         );
     }
 
-    // 4. Handoff
-    if (phase === 'handoff') return (
-        <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center text-center p-6">
-            <div className="text-6xl mb-6 animate-bounce">📱</div>
-            <h2 className="text-xl font-bold uppercase tracking-widest mb-2">Next: {userB.name}</h2>
-            <p className="text-gray-400 text-sm mb-12">Pass the device to your partner.</p>
-            <button onClick={() => setPhase('recordB')} className="bg-pink-500 hover:bg-pink-400 text-white w-full max-w-xs py-4 rounded-full font-bold uppercase tracking-widest transition-all">
-                I'm Ready
-            </button>
-        </main>
-    );
-
-    // 5. Details (Job Selection)
+    // 4. DETAILS
     if (phase === 'details') return (
         <DetailsForm
-            nameA={userA.name}
-            nameB={userB.name}
+            names={names}
             onSubmit={handleDetailsSubmit}
         />
     );
 
-    // 6. Analyzing
+    // 5. ANALYZING
     return (
         <main className="min-h-screen bg-black flex items-center justify-center">
-            <div className="text-center space-y-4">
-                <div className="w-16 h-16 border-4 border-t-pink-500 border-white/10 rounded-full animate-spin mx-auto" />
-                <div className="text-pink-500 text-xs uppercase tracking-widest animate-pulse">Calculating Compatibility...</div>
+            <div className="text-center space-y-6">
+                <div className="w-20 h-20 relative mx-auto">
+                    <div className="absolute inset-0 border-4 border-cyan-500/30 rounded-full animate-ping" />
+                    <div className="absolute inset-0 border-4 border-t-cyan-500 border-r-pink-500 rounded-full animate-spin" />
+                </div>
+                <div className="space-y-2">
+                    <div className="text-xl font-bold uppercase tracking-widest">Processing Data</div>
+                    <div className="text-xs text-gray-500">Compiling 3-Stage Analysis...</div>
+                </div>
             </div>
         </main>
     );
@@ -296,7 +385,7 @@ function NamesForm({ onBack, onSubmit }: { onBack: () => void, onSubmit: (a: str
                         autoFocus
                         value={nameA}
                         onChange={e => setNameA(e.target.value)}
-                        placeholder="Name"
+                        placeholder="Name or Nickname"
                         className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-lg outline-none focus:border-cyan-500 transition-colors"
                     />
                 </div>
@@ -305,7 +394,7 @@ function NamesForm({ onBack, onSubmit }: { onBack: () => void, onSubmit: (a: str
                     <input
                         value={nameB}
                         onChange={e => setNameB(e.target.value)}
-                        placeholder="Name"
+                        placeholder="Name or Nickname"
                         className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-lg outline-none focus:border-pink-500 transition-colors"
                     />
                 </div>
@@ -314,25 +403,25 @@ function NamesForm({ onBack, onSubmit }: { onBack: () => void, onSubmit: (a: str
                     onClick={() => onSubmit(nameA, nameB)}
                     className="w-full bg-gradient-to-r from-cyan-600 to-pink-600 text-white font-bold py-4 rounded-xl uppercase tracking-widest hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed mt-4 transition-all"
                 >
-                    Next Step
+                    Start Step 1
                 </button>
             </div>
         </main>
     );
 }
 
-function DetailsForm({ nameA, nameB, onSubmit }: { nameA: string, nameB: string, onSubmit: (jA: string, jB: string) => void }) {
+function DetailsForm({ names, onSubmit }: { names: { A: string, B: string }, onSubmit: (jA: string, jB: string) => void }) {
     const [jobA, setJobA] = useState(JOBS[0]);
     const [jobB, setJobB] = useState(JOBS[0]);
 
     return (
         <main className="min-h-screen bg-black text-white p-6 flex flex-col justify-center max-w-md mx-auto fade-in">
-            <h2 className="text-xl font-bold uppercase tracking-widest mb-2 text-center">Final Details</h2>
-            <p className="text-center text-gray-500 text-xs mb-8">Role info helps improve accuracy</p>
+            <h2 className="text-xl font-bold uppercase tracking-widest mb-2 text-center">Final Calibration</h2>
+            <p className="text-center text-gray-500 text-xs mb-8">Select Role for SCM Analysis</p>
 
             <div className="space-y-6">
                 <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                    <label className="text-xs uppercase tracking-wider text-cyan-400 mb-2 block">{nameA}</label>
+                    <label className="text-xs uppercase tracking-wider text-cyan-400 mb-2 block">{names.A}</label>
                     <select
                         value={jobA}
                         onChange={(e) => setJobA(e.target.value)}
@@ -343,7 +432,7 @@ function DetailsForm({ nameA, nameB, onSubmit }: { nameA: string, nameB: string,
                 </div>
 
                 <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                    <label className="text-xs uppercase tracking-wider text-pink-500 mb-2 block">{nameB}</label>
+                    <label className="text-xs uppercase tracking-wider text-pink-500 mb-2 block">{names.B}</label>
                     <select
                         value={jobB}
                         onChange={(e) => setJobB(e.target.value)}
@@ -357,7 +446,7 @@ function DetailsForm({ nameA, nameB, onSubmit }: { nameA: string, nameB: string,
                     onClick={() => onSubmit(jobA, jobB)}
                     className="w-full bg-white text-black font-bold py-4 rounded-full uppercase tracking-widest hover:scale-105 transition-all mt-4"
                 >
-                    Reveal Compatibility
+                    View Analysis
                 </button>
             </div>
         </main>
