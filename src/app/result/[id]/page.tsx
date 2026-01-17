@@ -16,7 +16,16 @@ import { MBTIType } from '@/lib/mbti';
 import { isFirebaseConfigured, getDb } from '@/lib/firebase';
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
+// Stripe is loaded on-demand when payment is triggered, not on page load
+// This prevents console errors when NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not set
+const getStripe = () => {
+    const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    if (!key) {
+        console.warn('Stripe publishable key not configured');
+        return null;
+    }
+    return loadStripe(key);
+};
 
 type DisplayStage = 'label' | 'metrics' | 'full';
 
