@@ -161,6 +161,20 @@ export default function ResultPage() {
     }
 
     const voiceType = voiceTypes[result.typeCode];
+
+    // Safety check: if voiceType is undefined, show error
+    if (!voiceType) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-black px-4 text-center">
+                <div className="text-red-400 mb-4">⚠️ Unknown voice type: {result.typeCode}</div>
+                <div className="text-gray-500 text-sm mb-6">This result may be from an incompatible version.</div>
+                <Link href="/" className="btn-primary px-6 py-3 rounded-lg">
+                    Take New Analysis
+                </Link>
+            </div>
+        );
+    }
+
     const colors = groupColors[voiceType.group];
     const bestMatches = getBestMatches(result.typeCode);
     const worstMatches = getWorstMatches(result.typeCode);
