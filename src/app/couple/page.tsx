@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { VoiceAnalyzer } from '@/lib/analyzer';
 import { generateResultId } from '@/lib/permalink';
 import { saveResult, getSessionId, VoiceResult } from '@/lib/storage';
 import ParticleVisualizer from '@/components/recording/ParticleVisualizer';
 
-type Phase = 'intro' | 'recordA' | 'profileA' | 'handoff' | 'recordB' | 'profileB' | 'analyzing' | 'payment';
+type Phase = 'intro' | 'names' | 'recordA' | 'handoff' | 'recordB' | 'details' | 'analyzing';
 
 const JOBS = [
     'Lawyer', 'Executive', 'Engineer', 'Doctor', 'Founder',
@@ -21,9 +22,12 @@ export default function CouplePage() {
     const [timeLeft, setTimeLeft] = useState(10);
     const [isRecording, setIsRecording] = useState(false);
 
+    // Consent
+    const [consentGiven, setConsentGiven] = useState(false);
+
     // Data Store
-    const [userA, setUserA] = useState<any>({});
-    const [userB, setUserB] = useState<any>({});
+    const [userA, setUserA] = useState({ name: '', job: JOBS[0], metrics: null as any, audioBlob: null as Blob | null });
+    const [userB, setUserB] = useState({ name: '', job: JOBS[0], metrics: null as any, audioBlob: null as Blob | null });
 
     // Hardware Refs
     const analyzerRef = useRef<VoiceAnalyzer | null>(null);
@@ -60,7 +64,7 @@ export default function CouplePage() {
 
             mediaRecorderRef.current.start(100);
             setIsRecording(true);
-            setTimeLeft(8); // Short snappy recording for couples
+            setTimeLeft(8); // Short snappy recording
 
             // Start Visualizer Loop
             const collectLoop = () => {
@@ -96,214 +100,252 @@ export default function CouplePage() {
         const analysis = analyzerRef.current?.analyze();
         const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
 
-        const userData = {
-            metrics: analysis?.metrics,
-            audioBlob: audioBlob,
-            tempId: generateResultId()
-        };
-
         if (currentUser === 'A') {
-            setUserA((prev: any) => ({ ...prev, ...userData }));
-            setPhase('profileA');
+            setUserA(prev => ({ ...prev, metrics: analysis?.metrics, audioBlob }));
+            setPhase('handoff');
         } else {
-            setUserB((prev: any) => ({ ...prev, ...userData }));
-            setPhase('profileB');
+            setUserB(prev => ({ ...prev, metrics: analysis?.metrics, audioBlob }));
+            setPhase('details');
         }
 
         setIsRecording(false);
     };
 
-    const handleProfileSubmit = (user: 'A' | 'B', name: string, job: string) => {
-        if (user === 'A') {
-            setUserA((prev: any) => ({ ...prev, name, job }));
-            setPhase('handoff');
-        } else {
-            // ✅ Create final object before state update to avoid race condition
-            const finalUserB = { ...userB, name, job };
-            setUserB(finalUserB);
-            // Pass final data directly instead of relying on state
-            processCoupleResult(finalUserB);
-        }
+    const handleNamesSubmit = (nameA: string, nameB: string) => {
+        setUserA(prev => ({ ...prev, name: nameA }));
+        setUserB(prev => ({ ...prev, name: nameB }));
+        setPhase('recordA');
     };
 
-    const processCoupleResult = async (finalUserB: any) => {
+    const handleDetailsSubmit = (jobA: string, jobB: string) => {
+        const finalUserA = { ...userA, job: jobA };
+        const finalUserB = { ...userB, job: jobB };
+        setUserA(finalUserA);
+        setUserB(finalUserB);
+
+        processCoupleResult(finalUserA, finalUserB);
+    };
+
+    const processCoupleResult = async (finalA: typeof userA, finalB: typeof userB) => {
         setPhase('analyzing');
-
-        // Ensure state is up to date (React batching might delay userB update)
-        // const finalUserB = { ...userB, name: finalNameB, job: finalJobB }; // This line is removed
-
-        // Save Result (Placeholder for couple logic)
-        // Ideally we save a single "Couple Result" containing both metrics
-        // For MVP, we save it as a result with specific metadata
         const coupleResultId = generateResultId();
 
         const coupleData: VoiceResult = {
             id: coupleResultId,
             sessionId: getSessionId(),
-            typeCode: 'COUPLE_MIX' as any, // Placeholder type
-            metrics: userA.metrics, // Main metrics (A) - we'll store B in custom fields
+            typeCode: 'COUPLE_MIX' as any,
+            metrics: finalA.metrics, // Store A's metrics as primary for indexing
             accentOrigin: 'Couple',
             createdAt: new Date().toISOString(),
             locale: 'en-US',
             isPremium: false,
-            // Custom fields for couple (will be saved to Firestore)
             coupleData: {
-                userA: { name: userA.name, job: userA.job, metrics: userA.metrics },
-                userB: { name: finalUserB.name, job: finalUserB.job, metrics: finalUserB.metrics }
+                userA: { name: finalA.name, job: finalA.job, metrics: finalA.metrics },
+                userB: { name: finalB.name, job: finalB.job, metrics: finalB.metrics }
             }
-        } as any; // Cast as any to bypass strict type check for now
+        } as any;
 
-        // ✅ Save with COUPLE AUDIO BLOBS
+        // Save with blobs (R2 upload enabled)
         await saveResult(coupleData, undefined, {
-            userA: userA.audioBlob,
-            userB: finalUserB.audioBlob
+            userA: finalA.audioBlob!,
+            userB: finalB.audioBlob!
         });
 
-        // ✅ Redirect to Stripe Checkout for $15 payment
-        try {
-            const response = await fetch('/api/checkout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    resultId: coupleResultId,
-                    type: 'couple', // Important: tells webhook this is couple analysis
-                    successUrl: `${window.location.origin}/result/${coupleResultId}?payment=success`,
-                    cancelUrl: `${window.location.origin}/couple?canceled=true`
-                })
-            });
-
-            if (!response.ok) throw new Error('Checkout failed');
-
-            const { url } = await response.json();
-            window.location.href = url; // Redirect to Stripe
-        } catch (error) {
-            console.error('Payment error:', error);
-            alert('Payment initialization failed. Please try again.');
-            setPhase('profileB'); // Go back to allow retry
-        }
+        // Redirect directly to result page
+        setTimeout(() => {
+            router.push(`/result/${coupleResultId}`);
+        }, 1500);
     };
 
     // --- UI COMPONENTS ---
 
-    // 1. Intro Screen
+    // 1. Intro (Consent)
     if (phase === 'intro') return (
-        <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center">
+        <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center max-w-md mx-auto">
             <h1 className="text-3xl font-bold uppercase tracking-widest mb-4">
                 <span className="text-pink-500">Couple</span> Resonance
             </h1>
-            <p className="text-gray-400 max-w-md mb-8 text-sm leading-relaxed">
-                Discover the acoustic physics of your relationship.<br />
-                We analyze voice frequency, cadence, and tone to decode your hidden dynamics.
+            <p className="text-gray-400 mb-8 text-sm leading-relaxed">
+                Analyze your vocal chemistry and hidden dynamics.
             </p>
-            <div className="bg-white/5 border border-white/10 p-6 rounded-xl mb-8 w-full max-w-sm">
-                <div className="flex justify-between text-xs text-gray-500 uppercase tracking-widest mb-4">
-                    <span>Includes</span>
-                    <span>$15.00</span>
+
+            <div className="glass rounded-xl p-6 border border-white/10 bg-white/5 w-full mb-8 text-left">
+                <div className="flex items-start gap-4">
+                    <input
+                        type="checkbox"
+                        id="consent"
+                        checked={consentGiven}
+                        onChange={(e) => setConsentGiven(e.target.checked)}
+                        className="mt-1 w-5 h-5 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-pink-500"
+                    />
+                    <label htmlFor="consent" className="text-sm text-gray-400 leading-relaxed cursor-pointer select-none block">
+                        We consent to our voices being <strong className="text-gray-200">recorded and analyzed</strong>.
+                        {' '}<Link href="/privacy" className="text-pink-500 hover:text-pink-400 underline decoration-1 underline-offset-4">Privacy Policy</Link>
+                    </label>
                 </div>
-                <ul className="text-left space-y-3 text-sm text-gray-300">
-                    <li className="flex gap-2"><span>🔬</span> Compatibility Score</li>
-                    <li className="flex gap-2"><span>🎭</span> Vocal Archetype SCM</li>
-                    <li className="flex gap-2"><span>🔥</span> Friction & Flow Analysis</li>
-                </ul>
             </div>
-            <button onClick={() => setPhase('recordA')} className="w-full max-w-xs bg-white text-black font-bold py-4 rounded-full uppercase tracking-[0.2em] hover:bg-pink-500 hover:text-white transition-colors">
+
+            <button
+                onClick={() => setPhase('names')}
+                disabled={!consentGiven}
+                className="w-full bg-white text-black font-bold py-4 rounded-full uppercase tracking-[0.2em] hover:bg-pink-500 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
                 Start Analysis
             </button>
         </main>
     );
 
-    // 2. Recording Screen (Shared)
+    // 2. Names Input
+    if (phase === 'names') return (
+        <NamesForm
+            onBack={() => setPhase('intro')}
+            onSubmit={handleNamesSubmit}
+        />
+    );
+
+    // 3. Recording Stages
     if (phase === 'recordA' || phase === 'recordB') {
-        const currentUser = phase === 'recordA' ? 'Partner A' : 'Partner B';
+        const isA = phase === 'recordA';
+        const name = isA ? userA.name : userB.name;
+
         return (
             <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center relative overflow-hidden">
                 <ParticleVisualizer analyser={analyzerRef.current?.getAnalyser() || null} isActive={isRecording} />
-
-                <div className="z-10 text-center space-y-8">
-                    <div className="uppercase tracking-[0.2em] text-pink-500 text-xs font-bold">
-                        Recording: {currentUser}
+                <div className="z-10 text-center space-y-8 max-w-sm px-4">
+                    <div className="uppercase tracking-[0.2em] text-pink-500 text-xs font-bold bg-pink-500/10 px-4 py-2 rounded-full inline-block">
+                        REC: <span className="text-white ml-2 text-sm">{name}</span>
                     </div>
 
                     {!isRecording ? (
-                        <div className="space-y-6">
-                            <p className="text-2xl font-light">"Tell us about your day in one sentence."</p>
-                            <button onClick={() => startRecording(phase === 'recordA' ? 'A' : 'B')} className="w-20 h-20 rounded-full border-2 border-white flex items-center justify-center hover:bg-white/10 transition-all">
-                                <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse" />
+                        <div className="space-y-8 animate-fade-in">
+                            <p className="text-3xl font-light leading-tight">
+                                "Tell us about your day in one sentence."
+                            </p>
+                            <button onClick={() => startRecording(isA ? 'A' : 'B')} className="w-24 h-24 rounded-full border-2 border-white/50 flex items-center justify-center hover:bg-white/10 hover:scale-110 transition-all mx-auto group">
+                                <div className="w-6 h-6 bg-red-500 rounded-full animate-pulse group-hover:scale-125 transition-transform" />
                             </button>
                         </div>
                     ) : (
-                        <div className="text-6xl font-mono font-bold">{timeLeft}</div>
+                        <div className="text-8xl font-black font-mono tracking-tighter mix-blend-difference">{timeLeft}</div>
                     )}
                 </div>
             </main>
         );
     }
 
-    // 3. Profile Input (Shared)
-    if (phase === 'profileA' || phase === 'profileB') {
-        const currentUser = phase === 'profileA' ? 'A' : 'B';
-        return <ProfileForm user={currentUser} onSubmit={(n, j) => handleProfileSubmit(currentUser, n, j)} />;
-    }
-
     // 4. Handoff
     if (phase === 'handoff') return (
         <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center text-center p-6">
-            <div className="text-4xl mb-6">🔄</div>
-            <h2 className="text-xl font-bold uppercase tracking-widest mb-2">Next: Partner B</h2>
-            <p className="text-gray-400 text-sm mb-8">Pass the device to your partner.</p>
-            <button onClick={() => setPhase('recordB')} className="bg-pink-500 text-white px-8 py-3 rounded-full font-bold uppercase tracking-widest">
-                Ready
+            <div className="text-6xl mb-6 animate-bounce">📱</div>
+            <h2 className="text-xl font-bold uppercase tracking-widest mb-2">Next: {userB.name}</h2>
+            <p className="text-gray-400 text-sm mb-12">Pass the device to your partner.</p>
+            <button onClick={() => setPhase('recordB')} className="bg-pink-500 hover:bg-pink-400 text-white w-full max-w-xs py-4 rounded-full font-bold uppercase tracking-widest transition-all">
+                I'm Ready
             </button>
         </main>
     );
 
+    // 5. Details (Job Selection)
+    if (phase === 'details') return (
+        <DetailsForm
+            nameA={userA.name}
+            nameB={userB.name}
+            onSubmit={handleDetailsSubmit}
+        />
+    );
+
+    // 6. Analyzing
     return (
         <main className="min-h-screen bg-black flex items-center justify-center">
-            <div className="animate-spin text-4xl">⏳</div>
+            <div className="text-center space-y-4">
+                <div className="w-16 h-16 border-4 border-t-pink-500 border-white/10 rounded-full animate-spin mx-auto" />
+                <div className="text-pink-500 text-xs uppercase tracking-widest animate-pulse">Calculating Compatibility...</div>
+            </div>
         </main>
     );
 }
 
-// Sub-component for Profile Form
-function ProfileForm({ user, onSubmit }: { user: 'A' | 'B', onSubmit: (name: string, job: string) => void }) {
-    const [name, setName] = useState('');
-    const [job, setJob] = useState(JOBS[0]);
+// --- Sub Components ---
+
+function NamesForm({ onBack, onSubmit }: { onBack: () => void, onSubmit: (a: string, b: string) => void }) {
+    const [nameA, setNameA] = useState('');
+    const [nameB, setNameB] = useState('');
 
     return (
-        <main className="min-h-screen bg-black text-white p-6 flex flex-col justify-center max-w-md mx-auto">
-            <h2 className="text-xl font-bold uppercase tracking-widest mb-8 text-center text-gray-500">
-                Partner {user} Profile
+        <main className="min-h-screen bg-black text-white p-6 flex flex-col justify-center max-w-md mx-auto fade-in">
+            <button onClick={onBack} className="absolute top-8 left-6 text-gray-500 hover:text-white transition-colors">← Back</button>
+            <h2 className="text-2xl font-bold uppercase tracking-widest mb-8 text-center">
+                Who are you?
             </h2>
-
             <div className="space-y-6">
                 <div>
-                    <label className="block text-xs uppercase tracking-wider text-gray-500 mb-2">Name / Nickname</label>
+                    <label className="text-xs uppercase tracking-wider text-cyan-400 mb-2 block">Partner 1</label>
                     <input
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="w-full bg-white/5 border border-white/10 rounded-lg p-4 text-white placeholder-gray-700 focus:border-pink-500 outline-none transition-colors"
-                        placeholder="e.g. Alex"
+                        autoFocus
+                        value={nameA}
+                        onChange={e => setNameA(e.target.value)}
+                        placeholder="Name"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-lg outline-none focus:border-cyan-500 transition-colors"
                     />
                 </div>
-
                 <div>
-                    <label className="block text-xs uppercase tracking-wider text-gray-500 mb-2">Profession (For SCM)</label>
+                    <label className="text-xs uppercase tracking-wider text-pink-500 mb-2 block">Partner 2</label>
+                    <input
+                        value={nameB}
+                        onChange={e => setNameB(e.target.value)}
+                        placeholder="Name"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-lg outline-none focus:border-pink-500 transition-colors"
+                    />
+                </div>
+                <button
+                    disabled={!nameA.trim() || !nameB.trim()}
+                    onClick={() => onSubmit(nameA, nameB)}
+                    className="w-full bg-gradient-to-r from-cyan-600 to-pink-600 text-white font-bold py-4 rounded-xl uppercase tracking-widest hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed mt-4 transition-all"
+                >
+                    Next Step
+                </button>
+            </div>
+        </main>
+    );
+}
+
+function DetailsForm({ nameA, nameB, onSubmit }: { nameA: string, nameB: string, onSubmit: (jA: string, jB: string) => void }) {
+    const [jobA, setJobA] = useState(JOBS[0]);
+    const [jobB, setJobB] = useState(JOBS[0]);
+
+    return (
+        <main className="min-h-screen bg-black text-white p-6 flex flex-col justify-center max-w-md mx-auto fade-in">
+            <h2 className="text-xl font-bold uppercase tracking-widest mb-2 text-center">Final Details</h2>
+            <p className="text-center text-gray-500 text-xs mb-8">Role info helps improve accuracy</p>
+
+            <div className="space-y-6">
+                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                    <label className="text-xs uppercase tracking-wider text-cyan-400 mb-2 block">{nameA}</label>
                     <select
-                        value={job}
-                        onChange={(e) => setJob(e.target.value)}
-                        className="w-full bg-white/5 border border-white/10 rounded-lg p-4 text-white outline-none appearance-none"
+                        value={jobA}
+                        onChange={(e) => setJobA(e.target.value)}
+                        className="w-full bg-black border border-white/20 rounded-lg p-3 text-white outline-none appearance-none"
                     >
-                        {JOBS.map(j => <option key={j} value={j} className="bg-black">{j}</option>)}
+                        {JOBS.map(j => <option key={j} value={j}>{j}</option>)}
+                    </select>
+                </div>
+
+                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                    <label className="text-xs uppercase tracking-wider text-pink-500 mb-2 block">{nameB}</label>
+                    <select
+                        value={jobB}
+                        onChange={(e) => setJobB(e.target.value)}
+                        className="w-full bg-black border border-white/20 rounded-lg p-3 text-white outline-none appearance-none"
+                    >
+                        {JOBS.map(j => <option key={j} value={j}>{j}</option>)}
                     </select>
                 </div>
 
                 <button
-                    disabled={!name}
-                    onClick={() => onSubmit(name, job)}
-                    className="w-full bg-white text-black font-bold py-4 rounded-lg uppercase tracking-widest hover:bg-gray-200 disabled:opacity-50 mt-8"
+                    onClick={() => onSubmit(jobA, jobB)}
+                    className="w-full bg-white text-black font-bold py-4 rounded-full uppercase tracking-widest hover:scale-105 transition-all mt-4"
                 >
-                    Continue
+                    Reveal Compatibility
                 </button>
             </div>
         </main>
