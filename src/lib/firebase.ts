@@ -4,6 +4,7 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
+import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 
 const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -22,6 +23,19 @@ let storage: FirebaseStorage;
 function initializeFirebase() {
     if (getApps().length === 0) {
         app = initializeApp(firebaseConfig);
+
+        // Initialize App Check (Bot protection)
+        if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) {
+            try {
+                initializeAppCheck(app, {
+                    provider: new ReCaptchaV3Provider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY),
+                    isTokenAutoRefreshEnabled: true
+                });
+                console.log('✅ Firebase App Check initialized (Bot protection active)');
+            } catch (error) {
+                console.warn('⚠️ App Check failed to initialize:', error);
+            }
+        }
     } else {
         app = getApps()[0];
     }
