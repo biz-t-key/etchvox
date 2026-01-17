@@ -394,6 +394,7 @@ const voiceTraits: Record<TypeCode, { roastFragment: string }> = {
     LFCD: { roastFragment: "you sound like you're speaking from the bottom of a well" },
     LSCC: { roastFragment: "you are terrifyingly polite and efficient" },
     LSCD: { roastFragment: "your voice is less a sound and more a vibration in the floorboards" },
+    COUPLE_MIX: { roastFragment: "two voices colliding like binary stars in the void" },
 };
 
 const mbtiThemes: Record<MBTIType, { flaw: string }> = {

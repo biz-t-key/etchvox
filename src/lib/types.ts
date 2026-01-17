@@ -5,7 +5,8 @@ export type TypeCode =
     | 'HFEC' | 'HFED' | 'HSEC' | 'HSED'  // High-Energy Idols
     | 'HFCC' | 'HFCD' | 'HSCC' | 'HSCD'  // Intellectual Artists
     | 'LFEC' | 'LFED' | 'LSEC' | 'LSED'  // Power Leaders
-    | 'LFCC' | 'LFCD' | 'LSCC' | 'LSCD'; // Deep Philosophers
+    | 'LFCC' | 'LFCD' | 'LSCC' | 'LSCD'  // Deep Philosophers
+    | 'COUPLE_MIX';                      // Couple Analysis
 
 export type GroupName = 'idol' | 'intellectual' | 'power' | 'philosopher' | 'special';
 
@@ -304,6 +305,22 @@ export const voiceTypes: Record<TypeCode, VoiceType> = {
         bestMatch: 'HFEC',
         primaryColor: '#00FF66',
         secondaryColor: '#008B8B',
+    },
+
+    // Special: Couple Analysis
+    COUPLE_MIX: {
+        code: 'COUPLE_MIX' as any,
+        name: 'The Binary Stars',
+        nameJa: 'バイナリースター',
+        icon: '💫',
+        group: 'special',
+        catchphrase: 'Two voices, one resonance. A cosmic collision of souls.',
+        catchphraseJa: '二つの声、一つの共鳴。魂の宇宙的衝突。',
+        roast: "You two are like two galaxies colliding—beautiful chaos with a 50% chance of a black hole forming.",
+        roastJa: "君たちは衝突する二つの銀河のようだ—美しいカオスと、50%の確率でブラックホールができる危険性を秘めている。",
+        bestMatch: 'COUPLE_MIX' as any,
+        primaryColor: '#FF1493',
+        secondaryColor: '#00CED1',
     },
 };
 
