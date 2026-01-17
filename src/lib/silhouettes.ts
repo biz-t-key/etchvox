@@ -35,6 +35,7 @@ export const silhouetteMap: Record<TypeCode, SilhouetteKey> = {
     'LFCD': 'hat_man',
     'LSCC': 'neutral',
     'LSCD': 'whale',           // Special: Whale
+    'COUPLE_MIX': 'neutral',
 };
 
 // File paths for silhouettes

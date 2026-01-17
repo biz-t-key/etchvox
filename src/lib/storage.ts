@@ -138,6 +138,7 @@ export async function getResult(resultId: string): Promise<VoiceResult | null> {
                     toxicityProfile: data.toxicityProfile,
                     aiAnalysis: data.aiAnalysis,
                     mbti: data.mbti,
+                    coupleData: data.coupleData,
                 };
 
                 // Cache in localStorage

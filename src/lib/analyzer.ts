@@ -4,7 +4,7 @@
 import { TypeCode, AnalysisMetrics, AnalysisResult } from './types';
 
 // Thresholds for voice type classification
-const THRESHOLDS = {
+export const THRESHOLDS = {
     PITCH: 160,           // Hz - above = High, below = Low
     SPEED: 0.5,           // normalized - above = Fast, below = Slow
     VIBE: 0.15,           // variance ratio - above = Energy, below = Calm
@@ -151,22 +151,7 @@ export class VoiceAnalyzer {
     }
 
     private classifyType(metrics: AnalysisMetrics): TypeCode {
-        // Special cases: Force Robot or Whale
-        if (metrics.vibe < THRESHOLDS.ROBOT_STABILITY && metrics.pitch > THRESHOLDS.PITCH) {
-            return 'HFCC'; // The Bored Robot
-        }
-
-        if (metrics.pitch < THRESHOLDS.WHALE_PITCH && metrics.vibe < THRESHOLDS.VIBE) {
-            return 'LSCD'; // The Deep Whale
-        }
-
-        // Normal classification
-        const p = metrics.pitch > THRESHOLDS.PITCH ? 'H' : 'L';
-        const s = metrics.speed > THRESHOLDS.SPEED ? 'F' : 'S';
-        const v = metrics.vibe > THRESHOLDS.VIBE ? 'E' : 'C';
-        const t = metrics.tone > THRESHOLDS.TONE ? 'C' : 'D';
-
-        return `${p}${s}${v}${t}` as TypeCode;
+        return classifyTypeCode(metrics);
     }
 
     // Pitch detection using autocorrelation
@@ -302,6 +287,25 @@ export class VoiceAnalyzer {
         this.frequencyArray = null;
         this.reset();
     }
+}
+
+export function classifyTypeCode(metrics: AnalysisMetrics): TypeCode {
+    // Special cases: Force Robot or Whale
+    if (metrics.vibe < THRESHOLDS.ROBOT_STABILITY && metrics.pitch > THRESHOLDS.PITCH) {
+        return 'HFCC'; // The Bored Robot
+    }
+
+    if (metrics.pitch < THRESHOLDS.WHALE_PITCH && metrics.vibe < THRESHOLDS.VIBE) {
+        return 'LSCD'; // The Deep Whale
+    }
+
+    // Normal classification
+    const p = metrics.pitch > THRESHOLDS.PITCH ? 'H' : 'L';
+    const s = metrics.speed > THRESHOLDS.SPEED ? 'F' : 'S';
+    const v = metrics.vibe > THRESHOLDS.VIBE ? 'E' : 'C';
+    const t = metrics.tone > THRESHOLDS.TONE ? 'C' : 'D';
+
+    return `${p}${s}${v}${t}` as TypeCode;
 }
 
 // Singleton instance

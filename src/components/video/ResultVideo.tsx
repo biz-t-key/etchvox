@@ -17,9 +17,9 @@ export const ResultVideo: React.FC<ResultVideoProps> = ({ voiceType, metrics }) 
     const frame = useCurrentFrame();
     const { fps } = useVideoConfig();
 
-    // Group Colors
-    const colors = groupColors[voiceType.group];
-    const isGlitch = voiceType.group === 'special';
+    // Group Colors with fallbacks to prevent crashes
+    const colors = (voiceType && groupColors[voiceType.group]) || groupColors['special'];
+    const isGlitch = voiceType?.group === 'special';
 
     // Animations
     const opacity = interpolate(frame, [0, 30], [0, 1]);

@@ -71,6 +71,14 @@ body {
     0 0 40px var(--color-magenta);
 }
 
+.neon-text-pink {
+  color: var(--color-pink);
+  text-shadow:
+    0 0 10px var(--color-pink),
+    0 0 20px var(--color-pink),
+    0 0 40px var(--color-pink);
+}
+
 /* Neon Border */
 .neon-border {
   border: 2px solid var(--color-cyan);

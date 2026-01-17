@@ -11,6 +11,7 @@ import { getBestMatches, getWorstMatches, getCompatibilityTier } from '@/lib/com
 import ShareButtons from '@/components/result/ShareButtons';
 import MBTISelector from '@/components/result/MBTISelector';
 import SoloIdentityCard from '@/components/result/SoloIdentityCard';
+import DuoIdentityCard from '@/components/result/DuoIdentityCard';
 import { VideoPlayerSection } from '@/components/video/VideoPlayerSection';
 import { MBTIType } from '@/lib/mbti';
 import { isFirebaseConfigured, getDb } from '@/lib/firebase';
@@ -20,8 +21,8 @@ import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 // This prevents console errors when NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not set
 const getStripe = () => {
     const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-    if (!key) {
-        console.warn('Stripe publishable key not configured');
+    if (!key || key.trim() === '') {
+        console.warn('Stripe publishable key not configured or empty');
         return null;
     }
     return loadStripe(key);
@@ -79,25 +80,25 @@ export default function ResultPage() {
         const unsubscribe = onSnapshot(resultRef, (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.data();
-                // Update result state when aiAnalysis or premium status changes
                 setResult((prev) => {
                     if (!prev) return prev;
                     return {
                         ...prev,
                         aiAnalysis: data.aiAnalysis,
-                        aiAnalysisError: data.aiAnalysisError, // Also track errors
+                        aiAnalysisError: data.aiAnalysisError,
                         isPremium: data.isPremium,
                         vaultEnabled: data.vaultEnabled,
-                        mbti: data.mbti, // Update MBTI if changed
-                    } as VoiceResult; // Cast to bypass type check for now if interface incomplete
+                        mbti: data.mbti,
+                        metrics: data.metrics || prev.metrics, // Keep previous or fallback
+                    } as VoiceResult;
                 });
-                // Also update selectedMBTI if it was saved
                 if (data.mbti && !selectedMBTI) {
                     setSelectedMBTI(data.mbti as MBTIType);
                 }
             }
         }, (error) => {
             console.error('Firestore listener error:', error);
+            // Optionally set error state here if result is lost
         });
 
         return () => unsubscribe();
@@ -169,24 +170,22 @@ export default function ResultPage() {
         );
     }
 
-    const voiceType = voiceTypes[result.typeCode];
+    const isCouple = result.typeCode === 'COUPLE_MIX' || !!result.coupleData;
+    const voiceType = voiceTypes[result.typeCode] || voiceTypes['HFCC']; // Robust fallback
 
-    // Safety check: if voiceType is undefined, show error
-    if (!voiceType) {
-        return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-black px-4 text-center">
-                <div className="text-red-400 mb-4">⚠️ Unknown voice type: {result.typeCode}</div>
-                <div className="text-gray-500 text-sm mb-6">This result may be from an incompatible version.</div>
-                <Link href="/" className="btn-primary px-6 py-3 rounded-lg">
-                    Take New Analysis
-                </Link>
-            </div>
-        );
-    }
-
-    const colors = groupColors[voiceType.group];
+    // Re-check after possible fallback
+    const colors = groupColors[voiceType.group] || groupColors['special']; // Final safety
     const bestMatches = getBestMatches(result.typeCode);
     const worstMatches = getWorstMatches(result.typeCode);
+
+    // Guaranteed metrics to prevent crashes
+    const safeMetrics = result.metrics || { pitch: 0, speed: 0.5, vibe: 0.5, tone: 0, humanityScore: 0 };
+
+
+    // Debugging logs to help identify why the crash happened in production
+    if (!voiceTypes[result.typeCode]) {
+        console.warn(`[ResultPage] Missing voice type data for code: ${result.typeCode}`);
+    }
 
     // Check if premium (either from stored result or just successful payment)
     const isPremium = result.vaultEnabled === true || searchParams.get('payment') === 'success';
@@ -258,7 +257,7 @@ export default function ResultPage() {
             {/* Background Decoration */}
             <div className="fixed inset-0 pointer-events-none z-0">
                 <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-[100px] opacity-20 animate-pulse-slow" />
-                <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-magenta-500/10 rounded-full blur-[100px] opacity-20 animate-pulse-slow delay-1000" />
+                <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-pink-500/10 rounded-full blur-[100px] opacity-20 animate-pulse-slow delay-1000" />
             </div>
 
             <div className="relative z-10 w-full px-4 py-8 md:py-12 space-y-12 flex flex-col items-center text-center">
@@ -324,10 +323,10 @@ export default function ResultPage() {
                             {/* Meters - Clean & Minimal */}
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                                 {[
-                                    { label: 'Pitch', val: `${Math.round(result.metrics.pitch)} Hz`, color: 'text-cyan-400' },
-                                    { label: 'Speed', val: `${Math.round(result.metrics.speed * 100)}%`, color: 'text-white' },
-                                    { label: 'Vibe', val: `${Math.round(result.metrics.vibe * 100)}%`, color: 'text-yellow-400' },
-                                    { label: 'Sync', val: `${result.metrics.humanityScore}%`, color: colors.primary === '#00FF66' ? 'text-green-400' : 'text-green-500' },
+                                    { label: 'Pitch', val: `${Math.round(safeMetrics.pitch)} Hz`, color: 'text-cyan-400' },
+                                    { label: 'Speed', val: `${Math.round(safeMetrics.speed * 100)}%`, color: 'text-white' },
+                                    { label: 'Vibe', val: `${Math.round(safeMetrics.vibe * 100)}%`, color: 'text-yellow-400' },
+                                    { label: 'Sync', val: `${safeMetrics.humanityScore}%`, color: colors.primary === '#00FF66' ? 'text-green-400' : 'text-green-500' },
                                 ].map((m) => (
                                     <div key={m.label} className="bg-black/40 rounded-xl p-4 border border-white/5 flex flex-col items-center justify-center h-24">
                                         <div className="text-[9px] text-gray-500 uppercase tracking-[0.2em] mb-2">{m.label}</div>
@@ -353,10 +352,10 @@ export default function ResultPage() {
                                         <div className="flex items-center gap-3">
                                             <div className="w-1 h-6 bg-cyan-500" />
                                             <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em]">
-                                                Truth Card
+                                                {isCouple ? 'Duo Identity' : 'Truth Card'}
                                             </h2>
                                         </div>
-                                        {selectedMBTI && !isPremium && (
+                                        {selectedMBTI && !isPremium && !isCouple && (
                                             <button
                                                 onClick={() => setSelectedMBTI(null)}
                                                 className="text-[10px] text-gray-500 hover:text-white transition-colors uppercase tracking-widest"
@@ -366,28 +365,28 @@ export default function ResultPage() {
                                         )}
                                     </div>
 
-                                    {!selectedMBTI && !mbtiSkipped ? (
+                                    {/* Duo/Solo Identity Card */}
+                                    {isCouple && result.coupleData ? (
+                                        <div id="identity-card" className="w-full">
+                                            <DuoIdentityCard
+                                                userA={result.coupleData.userA as any}
+                                                userB={result.coupleData.userB as any}
+                                                resultId={result.id}
+                                            />
+                                        </div>
+                                    ) : (!selectedMBTI && !mbtiSkipped) ? (
                                         <MBTISelector
                                             onSelect={handleMBTISelect}
                                             onSkip={() => setMbtiSkipped(true)}
                                         />
-                                    ) : selectedMBTI ? (
-                                        <div id="identity-card" className="w-full">
-                                            <SoloIdentityCard mbti={selectedMBTI} voiceTypeCode={result.typeCode} />
-                                            <div className="flex justify-center mt-4">
-                                                <div className="flex items-center gap-2 text-[10px] text-gray-500 uppercase tracking-widest border border-white/5 px-4 py-2 rounded-full bg-black/40">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                                                    Screenshot to Save
-                                                </div>
-                                            </div>
-                                        </div>
                                     ) : (
-                                        <button
-                                            onClick={() => setMbtiSkipped(false)}
-                                            className="w-full py-12 border border-dashed border-white/10 rounded-2xl text-gray-500 hover:text-white hover:border-white/30 transition-all text-xs uppercase tracking-[0.2em]"
-                                        >
-                                            + Add Behavioral Data
-                                        </button>
+                                        <div id="identity-card" className="w-full">
+                                            <SoloIdentityCard
+                                                mbti={(selectedMBTI || 'INTJ') as MBTIType}
+                                                voiceTypeCode={result.typeCode}
+                                                userName={result.id}
+                                            />
+                                        </div>
                                     )}
                                 </div>
 
@@ -511,13 +510,13 @@ export default function ResultPage() {
                                                     PREVIEW READY
                                                 </div>
                                             </div>
-                                            <VideoPlayerSection voiceType={voiceType} metrics={result.metrics} />
+                                            <VideoPlayerSection voiceType={voiceType} metrics={safeMetrics} />
                                         </div>
                                     ) : (
                                         <div className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900 border border-white/10 rounded-2xl overflow-hidden">
                                             {/* Blurred Preview */}
                                             <div className="blur-md opacity-30 pointer-events-none">
-                                                <VideoPlayerSection voiceType={voiceType} metrics={result.metrics} />
+                                                <VideoPlayerSection voiceType={voiceType} metrics={safeMetrics} />
                                             </div>
 
                                             {/* Lock Overlay */}
@@ -641,6 +640,6 @@ export default function ResultPage() {
                     </div>
                 )}
             </div>
-        </main>
+        </main >
     );
 }

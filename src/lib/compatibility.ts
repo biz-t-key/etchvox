@@ -45,7 +45,7 @@ export interface CompatibilityReport {
 }
 
 // Type chemistry matrix (some types are naturally compatible)
-const TYPE_CHEMISTRY: Record<TypeCode, TypeCode[]> = {
+const TYPE_CHEMISTRY: Partial<Record<TypeCode, TypeCode[]>> = {
     // High-Energy Idols need grounding
     'HFEC': ['LSCD', 'LFCC', 'LSCC'],
     'HFED': ['LSCC', 'LFCD', 'LSED'],

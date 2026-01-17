@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { VoiceAnalyzer } from '@/lib/analyzer';
+import { VoiceAnalyzer, classifyTypeCode } from '@/lib/analyzer';
 import { generateResultId } from '@/lib/permalink';
 import { saveResult, getSessionId, VoiceResult } from '@/lib/storage';
 import ParticleVisualizer from '@/components/recording/ParticleVisualizer';
@@ -207,6 +207,8 @@ export default function CouplePage() {
         setPhase('analyzing');
         const coupleResultId = generateResultId();
 
+        const unionTypeCode = classifyTypeCode(mainMetrics);
+
         const coupleData: VoiceResult = {
             id: coupleResultId,
             sessionId: getSessionId(),
@@ -217,8 +219,8 @@ export default function CouplePage() {
             locale: 'en-US',
             isPremium: false,
             coupleData: {
-                userA: { name: names.A, job: jobA, metrics: mainMetrics }, // Flattened metrics for now
-                userB: { name: names.B, job: jobB, metrics: mainMetrics }
+                userA: { name: names.A, job: jobA, metrics: mainMetrics, typeCode: unionTypeCode },
+                userB: { name: names.B, job: jobB, metrics: mainMetrics, typeCode: unionTypeCode }
             }
         } as any;
 

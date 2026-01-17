@@ -70,15 +70,15 @@ export default function HomePage() {
               {/* Couple Mode */}
               <button
                 onClick={() => setSelectedMode('couple')}
-                className="group glass rounded-3xl p-8 md:p-10 border-2 border-magenta-500/30 hover:border-magenta-500/60 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_40px_rgba(255,0,255,0.3)] text-center flex flex-col items-center relative w-full"
+                className="group glass rounded-3xl p-8 md:p-10 border-2 border-pink-500/30 hover:border-pink-500/60 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_40px_rgba(255,0,255,0.3)] text-center flex flex-col items-center relative w-full"
               >
-                <span className="absolute top-4 right-4 text-[10px] bg-magenta-500/30 text-magenta-300 px-2 py-1 rounded-full font-bold animate-pulse tracking-widest">NEW</span>
+                <span className="absolute top-4 right-4 text-[10px] bg-pink-500/30 text-pink-300 px-2 py-1 rounded-full font-bold animate-pulse tracking-widest">NEW</span>
                 <div className="text-5xl mb-6 transform group-hover:scale-110 transition-transform">💕</div>
                 <h2 className="text-2xl md:text-3xl font-black mb-4 uppercase tracking-tight">
-                  <span className="neon-text-magenta">COUPLE MODE</span>
+                  <span className="neon-text-pink">COUPLE MODE</span>
                 </h2>
                 <p className="text-gray-300 text-base leading-relaxed mb-6 max-w-xs mx-auto">
-                  Test your <span className="text-magenta-400 font-bold">vocal chemistry</span> together
+                  Test your <span className="text-pink-400 font-bold">vocal chemistry</span> together
                 </p>
                 <p className="text-gray-500 text-xs font-medium uppercase tracking-wider px-4">
                   36 seconds • 2 voices • Compatibility score
