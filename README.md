@@ -4,7 +4,7 @@
 
 EtchVox is an AI-powered voice analysis platform that determines your personality type based on acoustic characteristics. Think MBTI, but for your voice.
 
-🌐 **Demo**: [etchvox.ai](https://etchvox.ai) (Coming Soon)
+🌐 **Live**: [etchvox.com](https://etchvox.com)
 
 ---
 
