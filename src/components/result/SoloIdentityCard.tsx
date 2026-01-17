@@ -42,12 +42,11 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
                 if (cardRef.current) {
                     const canvas = await html2canvas(cardRef.current, {
                         backgroundColor: '#050505',
-                        scale: 2, // High resolution
+                        scale: 2,
                         useCORS: true,
                         logging: false,
                         allowTaint: false,
-                        windowWidth: 400, // Force a consistent width for the capture
-                        windowHeight: 500,
+                        // Removed windowWidth/Height for better compatibility
                     });
                     const imgData = canvas.toDataURL('image/png');
                     setImageUrl(imgData);
@@ -57,7 +56,7 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
             } finally {
                 setGenerating(false);
             }
-        }, 1500);
+        }, 2000); // 2s is safer for fonts
 
         return () => clearTimeout(timer);
     }, [mbti, voiceTypeCode, userName]);
@@ -77,7 +76,7 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
             {/* 1. VISUAL CARD (The one being captured) */}
             <div
                 ref={cardRef}
-                className="relative w-full aspect-[4/5] bg-[#050505] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col p-8 border border-white/10 font-sans select-none"
+                className="relative w-full aspect-[4/5] bg-[#050505] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col p-12 border border-white/10 font-sans select-none"
                 style={{ width: '100%', maxWidth: '400px' }}
             >
                 {/* BACKGROUND DECORATION */}
@@ -92,7 +91,7 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
                 />
 
                 {/* HEADER */}
-                <div className="relative z-10 flex items-center justify-between mb-4">
+                <div className="relative z-10 flex items-center justify-between mb-2">
                     <div className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em]">
                         Truth Card
                     </div>
@@ -164,8 +163,8 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
 
                 {/* STATUS INDICATOR */}
                 <div className="flex items-center gap-2 text-[10px] text-gray-500 uppercase tracking-widest border border-white/5 px-4 py-2 rounded-full bg-black/40 backdrop-blur-sm">
-                    <span className={`w-1.5 h-1.5 rounded-full ${imageUrl ? 'bg-cyan-500' : 'bg-yellow-500 animate-pulse'}`} />
-                    {generating ? 'Capturing Truth Card...' : 'Identity Decrypted'}
+                    <span className={`w-1.5 h-1.5 rounded-full ${imageUrl ? 'bg-cyan-500' : generating ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'}`} />
+                    {generating ? 'Capturing Truth Card...' : imageUrl ? 'Identity Decrypted' : 'Capture Failed'}
                 </div>
 
                 {/* DOWNLOAD BUTTON */}
@@ -175,7 +174,7 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName }: Solo
                     className="group relative w-full flex items-center justify-center gap-3 bg-white text-black px-8 py-5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:scale-100 shadow-[0_20px_40px_rgba(255,255,255,0.1)]"
                 >
                     <span className="relative z-10">
-                        {imageUrl ? '📥 Download Identity Card' : 'Generating Image...'}
+                        {imageUrl ? '📥 Download Identity Card' : generating ? 'Generating Image...' : 'Retry Capture'}
                     </span>
                     {imageUrl && (
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
