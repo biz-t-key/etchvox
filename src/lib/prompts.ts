@@ -52,6 +52,10 @@ Your tone is sophisticated, observant, slightly cynical but ultimately empowerin
 - **Current Spec**: You are running at [Insert relevant raw tag, e.g., "Presto Speed"].
 - **The Fix**: [Specific instruction to balance the voice. Not generic life advice, but ACOUSTIC advice.]
 </Output_Format>
+
+<Question>
+{{JSON_Payload_from_Python}}
+</Question>
 `;
 
 export const COUPLE_AUDIT_SYSTEM_PROMPT = `
@@ -110,4 +114,8 @@ You do not offer generic "love advice." You interpret the raw physics of their v
 2.  **The "Rhythm" Experiment**: "Try swapping roles for 5 minutes. {{User_A_Name}} speaks slowly, {{User_B_Name}} speaks fast. How does it feel?"
 3.  **The "Feedback" Loop**: "Discuss: Which part of this report made you laugh because it was too true?"
 </Output_Format>
+
+<Question>
+{{JSON_Payload_from_Python}}
+</Question>
 `;

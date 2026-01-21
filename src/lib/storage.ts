@@ -20,6 +20,8 @@ export interface VoiceResult {
     sessionId: string;
     typeCode: TypeCode;
     metrics: AnalysisMetrics;
+    gender?: string; // Solo gender
+    birthYear?: number; // Solo birth year
     accentOrigin: string;
     createdAt: string;
     locale: string;
@@ -32,10 +34,11 @@ export interface VoiceResult {
     purchasedAt?: string;
     toxicityProfile?: ToxicityProfile;
     aiAnalysis?: string; // Markdown text from Gemini
-    mbti?: string; // User's self-reported MBTI (e.g., "INTJ")
+    mbti?: string; // User's self-reported MBTI
+    email?: string; // Customer email from Stripe
     coupleData?: {
-        userA: { name: string; job: string; metrics: AnalysisMetrics };
-        userB: { name: string; job: string; metrics: AnalysisMetrics };
+        userA: { name: string; job: string; metrics: AnalysisMetrics; gender?: string; birthYear?: number; typeCode?: TypeCode };
+        userB: { name: string; job: string; metrics: AnalysisMetrics; gender?: string; birthYear?: number; typeCode?: TypeCode };
     };
 }
 
@@ -48,6 +51,17 @@ export async function saveResult(
     // Always save to localStorage first (fallback)
     localStorage.setItem(`etchvox_result_${result.id}`, JSON.stringify(result));
     localStorage.setItem('etchvox_latest_result', result.id);
+
+    // Update history index
+    try {
+        const historyIds = JSON.parse(localStorage.getItem('etchvox_history') || '[]');
+        if (!historyIds.includes(result.id)) {
+            historyIds.unshift(result.id); // Add to beginning
+            localStorage.setItem('etchvox_history', JSON.stringify(historyIds.slice(0, 50))); // Keep last 50
+        }
+    } catch (e) {
+        console.error('Failed to update history index:', e);
+    }
 
     // If Firebase is configured, also save to Firestore
     if (isFirebaseConfigured()) {
@@ -132,6 +146,8 @@ export async function getResult(resultId: string): Promise<VoiceResult | null> {
                     country: data.country,
                     audioUrl: data.audioUrl,
                     audioPath: data.audioPath,
+                    gender: data.gender,
+                    birthYear: data.birthYear,
                     isPremium: data.isPremium,
                     vaultEnabled: data.vaultEnabled,
                     purchasedAt: data.purchasedAt,
@@ -220,4 +236,93 @@ export function getSessionId(): string {
     }
 
     return sessionId;
+}
+
+// Get history from localStorage
+export async function getHistory(): Promise<VoiceResult[]> {
+    if (typeof window === 'undefined') return [];
+
+    try {
+        const historyIds = JSON.parse(localStorage.getItem('etchvox_history') || '[]');
+        const results = historyIds.map((id: string) => {
+            const data = localStorage.getItem(`etchvox_result_${id}`);
+            return data ? JSON.parse(data) : null;
+        }).filter((r: any) => r !== null);
+
+        return results;
+    } catch (e) {
+        console.error('Failed to get history:', e);
+        return [];
+    }
+}
+
+// Sync history by email (from API)
+export async function syncHistoryByEmail(email: string): Promise<boolean> {
+    try {
+        const response = await fetch('/api/results/restore', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email }),
+        });
+
+        if (!response.ok) return false;
+
+        const { results } = await response.json();
+        if (!results || results.length === 0) return false;
+
+        // Update local history index
+        const historyIds = JSON.parse(localStorage.getItem('etchvox_history') || '[]');
+
+        results.forEach((res: VoiceResult) => {
+            // Save actual result data to local storage
+            localStorage.setItem(`etchvox_result_${res.id}`, JSON.stringify(res));
+
+            // Add to index if not present
+            if (!historyIds.includes(res.id)) {
+                historyIds.push(res.id);
+            }
+        });
+
+        // Re-sort by createdAt descending
+        const allStoredResults = historyIds.map((id: string) => {
+            const data = localStorage.getItem(`etchvox_result_${id}`);
+            return data ? JSON.parse(data) : null;
+        }).filter((r: any) => r !== null);
+
+        allStoredResults.sort((a: any, b: any) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+
+        const sortedIds = allStoredResults.map((r: any) => r.id);
+        localStorage.setItem('etchvox_history', JSON.stringify(sortedIds.slice(0, 50)));
+
+        return true;
+    } catch (e) {
+        console.error('Failed to sync history:', e);
+        return false;
+    }
+}
+
+// Remove a result from local history and optionally from server
+export async function removeFromHistory(id: string, deleteFromServer: boolean = false): Promise<void> {
+    try {
+        // 1. Remove from index
+        const historyIds = JSON.parse(localStorage.getItem('etchvox_history') || '[]');
+        const updatedIds = historyIds.filter((itemId: string) => itemId !== id);
+        localStorage.setItem('etchvox_history', JSON.stringify(updatedIds));
+
+        // 2. Remove actual data from local storage
+        localStorage.removeItem(`etchvox_result_${id}`);
+
+        // 3. Optional server-side deletion
+        if (deleteFromServer) {
+            await fetch('/api/results/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ resultId: id }),
+            });
+        }
+    } catch (e) {
+        console.error('Failed to remove from history:', e);
+    }
 }

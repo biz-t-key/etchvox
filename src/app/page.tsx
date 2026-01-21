@@ -1,15 +1,63 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { getHistory, syncHistoryByEmail, removeFromHistory, VoiceResult } from '@/lib/storage';
+import { voiceTypes } from '@/lib/types';
+import { format } from 'date-fns';
 
 type Mode = 'solo' | 'couple' | null;
 
 export default function HomePage() {
   const [selectedMode, setSelectedMode] = useState<Mode>(null);
+  const [history, setHistory] = useState<VoiceResult[]>([]);
+  const [restoreEmail, setRestoreEmail] = useState('');
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [restoreStatus, setRestoreStatus] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
+
+  async function loadHistory() {
+    const data = await getHistory();
+    setHistory(data);
+  }
+
+  useEffect(() => {
+    loadHistory();
+  }, []);
+
+  const handleRestore = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!restoreEmail || !restoreEmail.includes('@')) return;
+
+    setIsRestoring(true);
+    setRestoreStatus(null);
+    try {
+      const success = await syncHistoryByEmail(restoreEmail);
+      if (success) {
+        setRestoreStatus({ type: 'success', msg: 'Vault synchronized successfully!' });
+        setRestoreEmail('');
+        await loadHistory();
+      } else {
+        setRestoreStatus({ type: 'error', msg: 'No results found for this email.' });
+      }
+    } catch (err) {
+      setRestoreStatus({ type: 'error', msg: 'Restoration failed. Try again.' });
+    } finally {
+      setIsRestoring(false);
+    }
+  };
+
+  const handleArchive = async (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (confirm('Archive this diagnostic record? it will be hidden from your active vault view. For permanent data deletion requests compliant with GDPR/CCPA, please contact support at info@etchvox.com.')) {
+      await removeFromHistory(id, false); // Remove from local view
+      await loadHistory();
+    }
+  };
 
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center px-6 md:px-8 overflow-hidden py-20">
+    <div className="relative min-h-screen flex flex-col items-center px-6 md:px-8 overflow-x-hidden py-32 md:py-48">
       {/* Background Effects */}
       <div className="absolute inset-0 bg-gradient-to-b from-black via-gray-900 to-black" />
       <div className="absolute inset-0 opacity-20">
@@ -25,9 +73,9 @@ export default function HomePage() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 text-center max-w-4xl mx-auto space-y-16">
+      <div className="relative z-10 text-center max-w-4xl mx-auto space-y-32 flex-grow flex flex-col justify-center w-full">
         {/* Logo */}
-        <div className="space-y-8">
+        <div className="space-y-12 mb-8">
           <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-black tracking-tight leading-tight">
             <span className="neon-text-cyan">ETCH</span>
             <span className="neon-text-magenta">VOX</span>
@@ -46,8 +94,8 @@ export default function HomePage() {
 
         {/* Mode Selection */}
         {!selectedMode ? (
-          <div className="space-y-12 animate-fade-in">
-            <p className="text-gray-400 text-lg mb-16">Choose your analysis mode:</p>
+          <div className="space-y-16 animate-fade-in py-12">
+            <p className="text-gray-400 text-lg mb-20 uppercase tracking-[0.2em] font-medium opacity-60">Choose your analysis mode:</p>
 
             <div className="grid md:grid-cols-2 gap-12 px-4">
               {/* Solo Mode */}
@@ -88,8 +136,8 @@ export default function HomePage() {
           </div>
         ) : (
           /* Confirmation Step */
-          <div className="space-y-12 animate-fade-in">
-            <div className="glass rounded-2xl p-8 md:p-12 max-w-2xl mx-auto space-y-8">
+          <div className="space-y-12 animate-fade-in py-12">
+            <div className="glass rounded-2xl p-8 md:p-16 max-w-2xl mx-auto space-y-12">
               <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                 <span className="mono">READY TO START</span>
@@ -134,35 +182,141 @@ export default function HomePage() {
 
         {/* Stats */}
         {!selectedMode && (
-          <div className="pt-20 flex justify-center gap-16 text-center">
-            <div className="space-y-3">
-              <div className="mono text-3xl md:text-4xl font-bold neon-text-cyan">14,028</div>
-              <div className="text-sm text-gray-500">Voices Analyzed</div>
-            </div>
-            <div className="space-y-3">
-              <div className="mono text-3xl md:text-4xl font-bold neon-text-magenta">482 TB</div>
-              <div className="text-sm text-gray-500">Data Processed</div>
+          <div className="pt-40 flex flex-col items-center space-y-32">
+            {/* The Vault - History Section */}
+            {history.length > 0 && (
+              <div className="w-full max-w-4xl animate-fade-in-up">
+                <div className="flex flex-col items-center mb-10 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-1.5 h-6 bg-cyan-500 rounded-full" />
+                    <h2 className="text-xl md:text-2xl font-black uppercase tracking-[0.3em] neon-text-cyan">
+                      The Vault
+                    </h2>
+                    <div className="w-1.5 h-6 bg-cyan-500 rounded-full" />
+                  </div>
+                  <p className="text-gray-500 text-[10px] uppercase tracking-[0.2em] font-bold">
+                    Access your vocal identity archives
+                  </p>
+                </div>
+
+                {/* Restore Feature */}
+                <div className="mb-12 max-w-md mx-auto">
+                  <form onSubmit={handleRestore} className="relative group">
+                    <input
+                      type="email"
+                      placeholder="Enter purchase email to sync..."
+                      value={restoreEmail}
+                      onChange={(e) => setRestoreEmail(e.target.value)}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-cyan-500/50 outline-none transition-all pr-32"
+                    />
+                    <button
+                      type="submit"
+                      disabled={isRestoring}
+                      className="absolute right-1 top-1 bottom-1 px-4 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all disabled:opacity-50"
+                    >
+                      {isRestoring ? 'Syncing...' : 'Sync Vault'}
+                    </button>
+                  </form>
+                  {restoreStatus && (
+                    <p className={`mt-3 text-[10px] uppercase font-bold tracking-widest ${restoreStatus.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                      {restoreStatus.msg}
+                    </p>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {history.map((item) => {
+                    const isCouple = !!item.coupleData;
+                    const vType = isCouple ? null : voiceTypes[item.typeCode as keyof typeof voiceTypes];
+
+                    return (
+                      <Link
+                        key={item.id}
+                        href={`/result/${item.id}`}
+                        className="group relative glass rounded-2xl p-6 border border-white/5 hover:border-cyan-500/30 transition-all duration-500 hover:scale-[1.02] overflow-hidden block text-left"
+                      >
+                        {/* Background Pulse */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                        <div className="relative z-10 space-y-4">
+                          <div className="flex justify-between items-start">
+                            <span className="text-3xl filter drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+                              {isCouple ? '💕' : (vType?.icon || '🎤')}
+                            </span>
+                            <span className="text-[9px] font-mono text-gray-500 group-hover:text-cyan-400 transition-colors uppercase">
+                              {format(new Date(item.createdAt), 'MMM dd, yyyy')}
+                            </span>
+                            <button
+                              onClick={(e) => handleArchive(e, item.id)}
+                              className="w-6 h-6 rounded-full flex items-center justify-center text-gray-700 hover:text-cyan-500 hover:bg-white/5 transition-all ml-2"
+                              title="Archive record"
+                            >
+                              ✕
+                            </button>
+                          </div>
+
+                          <div>
+                            <div className="text-xs font-black text-white uppercase tracking-wider mb-1">
+                              {isCouple ? 'Couple Resonance' : vType?.name}
+                            </div>
+                            <div className="text-[10px] font-mono text-cyan-600 tracking-widest uppercase opacity-70">
+                              {item.typeCode}
+                            </div>
+                          </div>
+
+                          <div className="pt-2 flex items-center justify-between">
+                            <div className="flex -space-x-2">
+                              <div className={`w-1 h-1 rounded-full ${isCouple ? 'bg-pink-500' : 'bg-cyan-500'} animate-pulse`} />
+                              <div className={`w-1 h-1 rounded-full ${isCouple ? 'bg-pink-500' : 'bg-cyan-500'} animate-pulse delay-75`} />
+                              <div className={`w-1 h-1 rounded-full ${isCouple ? 'bg-pink-500' : 'bg-cyan-500'} animate-pulse delay-150`} />
+                            </div>
+                            <span className="text-[9px] font-bold text-gray-400 group-hover:text-white transition-colors">
+                              VIEW ARCHIVE →
+                            </span>
+                          </div>
+                        </div>
+                      </Link>
+                    )
+                  })}
+                </div>
+                {/* Archive Note */}
+                <div className="mt-8 text-center">
+                  <p className="text-[9px] text-gray-500 uppercase tracking-widest font-mono">
+                    Archived records are hidden from active view. Contact <a href="mailto:info@etchvox.com" className="text-cyan-600 hover:underline">support</a> for permanent deletion.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-6 pt-10">
+              <p className="text-[10px] uppercase tracking-[0.4em] text-gray-600 font-black">Mission Objectives: Our Future Scale</p>
+              <div className="flex justify-center gap-16 text-center">
+                <div className="space-y-3">
+                  <div className="mono text-3xl md:text-4xl font-bold neon-text-cyan">14,028</div>
+                  <div className="text-sm text-gray-500 uppercase tracking-widest text-[10px]">Voices Analyzed</div>
+                </div>
+                <div className="space-y-3">
+                  <div className="mono text-3xl md:text-4xl font-bold neon-text-magenta">482 TB</div>
+                  <div className="text-sm text-gray-500 uppercase tracking-widest text-[10px]">Data Processed</div>
+                </div>
+              </div>
             </div>
           </div>
         )}
       </div>
 
       {/* Footer */}
-      <footer className="absolute bottom-8 left-0 right-0 text-center text-xs text-gray-600 space-y-4">
-        <div className="flex justify-center gap-6">
-          <Link href="/terms" className="hover:text-gray-400 transition-colors">
+      <footer className="relative z-10 w-full mt-48 pb-16 text-center text-[10px] text-gray-500 space-y-6">
+        <div className="flex justify-center gap-8 uppercase tracking-widest font-bold">
+          <Link href="/terms" className="hover:text-cyan-400 transition-colors">
             Terms
           </Link>
-          <Link href="/privacy" className="hover:text-gray-400 transition-colors">
+          <Link href="/privacy" className="hover:text-cyan-400 transition-colors">
             Privacy
           </Link>
-          <Link href="/tokusho" className="hover:text-gray-400 transition-colors">
-            特商法
-          </Link>
         </div>
-        <p className="leading-relaxed">
-          Built by a husband who was told he sounds like a robot.
-        </p>
+        <div className="max-w-xs mx-auto text-gray-700 leading-relaxed font-mono">
+          © 2026 EtchVox Archive. Built for entertainment purposes.
+        </div>
       </footer>
     </div>
   );

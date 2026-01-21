@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getDb, isFirebaseConfigured } from '@/lib/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { r2Client } from '@/lib/r2';
+import { CopyObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 
 // ✅ Configuration for Vercel/Next.js
 export const maxDuration = 60; // 60 seconds max timeout
@@ -29,6 +31,7 @@ export async function POST(req: NextRequest) {
         if (event.type === 'checkout.session.completed') {
             const session = event.data.object as Stripe.Checkout.Session;
             const { resultId, type } = session.metadata || {};
+            const customerEmail = session.customer_details?.email;
 
             if (!resultId) {
                 console.error('No resultId in session metadata');
@@ -39,8 +42,7 @@ export async function POST(req: NextRequest) {
             if (isFirebaseConfigured()) {
                 try {
                     const db = getDb();
-                    // First, get the current result data to perform analysis
-                    const { getDoc } = await import('firebase/firestore');
+                    // Import only what's not imported at the top
                     const { SoloIdentityEngine, CoupleResonanceEngine, normalizeMetricsForEngine } = await import('@/lib/voiceProcessor');
                     const { generateContent } = await import('@/lib/gemini');
                     const { SOLO_AUDIT_SYSTEM_PROMPT, COUPLE_AUDIT_SYSTEM_PROMPT } = await import('@/lib/prompts');
@@ -53,8 +55,8 @@ export async function POST(req: NextRequest) {
                     if (resultSnap.exists()) {
                         const data = resultSnap.data();
 
-                        // --- SOLO FLOW ---
-                        if (type === 'solo' && data.metrics) {
+                        // --- SOLO / VAULT FLOW ---
+                        if ((type === 'solo' || type === 'vault') && data.metrics) {
                             // ✅ Normalize raw metrics to 0-100 scale
                             const normalized = normalizeMetricsForEngine(data.metrics);
 
@@ -63,7 +65,9 @@ export async function POST(req: NextRequest) {
                                 normalized.s,
                                 normalized.v,
                                 normalized.t,
-                                data.mbti || 'INTJ' // Will be fixed in Phase 2
+                                data.mbti || 'INTJ',
+                                data.gender,
+                                data.birthYear
                             );
 
                             const payload = engine.generatePayload();
@@ -81,8 +85,8 @@ export async function POST(req: NextRequest) {
                                 const normalizedB = normalizeMetricsForEngine(userB.metrics);
 
                                 const engine = new CoupleResonanceEngine(
-                                    { ...normalizedA, name: userA.name, job: userA.job, accent: 'Unknown' },
-                                    { ...normalizedB, name: userB.name, job: userB.job, accent: 'Unknown' }
+                                    { ...normalizedA, name: userA.name, job: userA.job, accent: 'Unknown', gender: userA.gender, birthYear: userA.birthYear },
+                                    { ...normalizedB, name: userB.name, job: userB.job, accent: 'Unknown', gender: userB.gender, birthYear: userB.birthYear }
                                 );
 
                                 const payload = engine.generatePayload();
@@ -94,15 +98,49 @@ export async function POST(req: NextRequest) {
                         // Update Doc with Payment AND AI Result
                         await updateDoc(resultRef, {
                             isPremium: true,
-                            vaultEnabled: type === 'vault' || type === 'solo_video',
+                            vaultEnabled: type === 'vault' || type === 'solo' || type === 'couple',
                             purchasedAt: new Date().toISOString(),
                             stripeSessionId: session.id,
                             amountPaid: session.amount_total,
+                            email: customerEmail,
                             // ✅ Save the AI Report
                             ...(aiReport ? { aiAnalysis: aiReport } : {})
                         });
 
                         console.log(`Updated result ${resultId} with payment info & AI Analysis`);
+
+                        // ✅ Promote audio files to Vault
+                        const bucketName = process.env.R2_BUCKET_NAME;
+                        if (bucketName) {
+                            const filesToMove = [
+                                `${resultId}.webm`,
+                                `${resultId}_userA.webm`,
+                                `${resultId}_userB.webm`
+                            ];
+
+                            for (const file of filesToMove) {
+                                try {
+                                    // Move from temp/ to vault/
+                                    const sourceKey = `temp/${file}`;
+                                    const destKey = `vault/${file}`;
+
+                                    await r2Client.send(new CopyObjectCommand({
+                                        Bucket: bucketName,
+                                        CopySource: `${bucketName}/${sourceKey}`,
+                                        Key: destKey,
+                                    }));
+
+                                    await r2Client.send(new DeleteObjectCommand({
+                                        Bucket: bucketName,
+                                        Key: sourceKey,
+                                    }));
+                                    console.log(`Promoted ${file} to vault/`);
+                                } catch (e) {
+                                    // Ignore if file doesn't exist in temp (might already be moved or didn't upload)
+                                    console.log(`Promotion skipped for ${file} (not found in temp/)`);
+                                }
+                            }
+                        }
                     }
                 } catch (err: any) {
                     console.error('Firestore update/AI generation error:', err);

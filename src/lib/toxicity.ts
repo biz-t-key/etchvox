@@ -13,19 +13,19 @@ export interface ToxicityProfile {
 
 export const toxicityLabels = {
     nicotine: {
-        none: { en: 'None', ja: 'なし', emoji: '🚭' },
-        social: { en: 'Social', ja: 'たまに', emoji: '🚬' },
-        chimney: { en: 'Chimney', ja: '煙突', emoji: '💨' },
+        none: { en: 'None', emoji: '🚭' },
+        social: { en: 'Social', emoji: '🚬' },
+        chimney: { en: 'Chimney', emoji: '💨' },
     },
     ethanol: {
-        none: { en: 'None', ja: 'なし', emoji: '🚫' },
-        weekend: { en: 'Weekend', ja: '週末', emoji: '🍺' },
-        liver_failure: { en: 'Liver Failure', ja: '肝不全寸前', emoji: '🍷' },
+        none: { en: 'None', emoji: '🚫' },
+        weekend: { en: 'Weekend', emoji: '🍺' },
+        liver_failure: { en: 'Liver Failure', emoji: '🍷' },
     },
     sleep: {
-        zombie: { en: 'Zombie (3h)', ja: 'ゾンビ (3h)', emoji: '🧟' },
-        human: { en: 'Human (7h)', ja: '人間 (7h)', emoji: '😴' },
-        koala: { en: 'Koala (10h+)', ja: 'コアラ (10h+)', emoji: '🐨' },
+        zombie: { en: 'Zombie (3h)', emoji: '🧟' },
+        human: { en: 'Human (7h)', emoji: '😴' },
+        koala: { en: 'Koala (10h+)', emoji: '🐨' },
     },
 } as const;
 

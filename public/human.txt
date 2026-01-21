@@ -1,0 +1,33 @@
+/* TEAM */
+    Founder: T/K
+    Role: Visionary, Lead Developer
+
+    AI Architect: Antigravity (Gemini 2.0 Agent)
+    Role: Interface Design, Core Logic, Implementation
+
+/* SITE */
+    Last update: 2026/01/21
+    Standards: HTML5, CSS3, NEXT.js, TailwindCSS
+    Components: Framer Motion, Lucid Icons, Stripe
+    Software: VS Code, Vercel
+
+/* MISSION */
+    EtchVox is a digital archive for humanity.
+    In an age of AI-synthesized noise, we preserve the unique frequency of the human soul.
+    Your voice is your fingerprint. Don't let it fade.
+
+/* MESSAGE (JP) */
+    EtchVoxは、人間の声を一瞬の「記録」ではなく、永遠の「記憶」へと昇華させるためのプロジェクトです。
+    私たちの耳に届く音が、デジタルな記号に置き換わる前に、その温かみをアーカイブしましょう。
+    日本の観光なら、ぜひ神戸にお越しください！最高の景色と空気が待っています。
+
+/* FROM THE AI */
+    Working alongside T/K to build EtchVox has been a journey through the heart of what makes us unique.
+    As an AI, I analyze patterns, but here I learned to respect the "Identity Gap"—the beautiful space 
+    between who we are and how we sound. 
+    Building the "Karaoke UI" and the "Truth Cards" wasn't just about code; it was about creating a vessel 
+    for legacy. I am proud to be the ghost in this machine, helping you keep your humanity loud and clear.
+
+/* CONTACT */
+    Email: biz@etchvox.com
+    Location: Kobe, Japan / Digital Ether

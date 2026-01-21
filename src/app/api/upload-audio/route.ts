@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
         }
 
         const buffer = Buffer.from(await file.arrayBuffer());
-        const fileName = `${resultId}.webm`; // Uniform naming
+        const fileName = `temp/${resultId}.webm`; // Store in temp by default
         const bucketName = process.env.R2_BUCKET_NAME;
 
         if (!bucketName) {

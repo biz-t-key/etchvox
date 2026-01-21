@@ -39,7 +39,74 @@ export function normalizeMetricsForEngine(metrics: AnalysisMetrics): {
 }
 
 // ==========================================
-// 1. SHARED CORE: Acoustic Quantizer
+// 1. UTILS: Demographic Mapping
+// ==========================================
+export type AgeGroup = 'gen_z' | '20s' | '30s' | '40s' | '50s' | '60+';
+
+export function getAgeGroup(birthYear: number): AgeGroup {
+    const currentYear = new Date().getFullYear();
+    const age = currentYear - birthYear;
+    if (age < 20) return 'gen_z';
+    if (age < 30) return '20s';
+    if (age < 40) return '30s';
+    if (age < 50) return '40s';
+    if (age < 60) return '50s';
+    return '60+';
+}
+
+// ==========================================
+// 2. CORE: Demographic Normalizer
+// ==========================================
+class DemographicNormalizer {
+    private static AGE_FACTORS: Record<AgeGroup, { s: number; v: number; p: number }> = {
+        'gen_z': { s: 1.1, v: 1.0, p: 1.0 },
+        '20s': { s: 1.0, v: 1.0, p: 1.0 },
+        '30s': { s: 1.0, v: 1.0, p: 1.0 },
+        '40s': { s: 0.95, v: 1.0, p: 1.0 },
+        '50s': { s: 0.9, v: 0.95, p: 0.95 },
+        '60+': { s: 0.8, v: 0.9, p: 0.9 }
+    };
+
+    private static GENDER_PITCH_BASE: Record<string, number> = {
+        'male': 30,
+        'female': 65,
+        'non-binary': 50,
+        'other': 50
+    };
+
+    constructor(
+        private p: number,
+        private s: number,
+        private v: number,
+        private t: number,
+        private gender: string = 'other',
+        private ageGroup: AgeGroup = '30s'
+    ) { }
+
+    public normalize() {
+        // 1. Age Adjustment (Speed & Volume)
+        const factors = DemographicNormalizer.AGE_FACTORS[this.ageGroup] || DemographicNormalizer.AGE_FACTORS['30s'];
+        const normS = this.s / factors.s;
+        const normV = this.v / factors.v;
+
+        // 2. Gender Adjustment (Pitch)
+        const baseP = DemographicNormalizer.GENDER_PITCH_BASE[this.gender.toLowerCase()] || 50;
+        const normP = (this.p - baseP) + 50;
+
+        // Tone is kept mostly raw for now
+        const normT = this.t;
+
+        return {
+            p: Math.floor(Math.max(0, Math.min(100, normP))),
+            s: Math.floor(Math.max(0, Math.min(100, normS))),
+            v: Math.floor(Math.max(0, Math.min(100, normV))),
+            t: Math.floor(Math.max(0, Math.min(100, normT)))
+        };
+    }
+}
+
+// ==========================================
+// 3. SHARED CORE: Acoustic Quantizer
 // ==========================================
 class AcousticQuantizer {
     static getPitchTag(value: number): string {
@@ -85,22 +152,31 @@ class AcousticQuantizer {
 }
 
 // ==========================================
-// 2. SOLO ENGINE: Voice Identity & Gap Analysis
+// 4. SOLO ENGINE: Voice Identity & Gap Analysis
 // ==========================================
 export class SoloIdentityEngine {
+    private stats: { p: number; s: number; v: number; t: number };
+    private ageGroup: AgeGroup;
+
     constructor(
-        private p: number,
-        private s: number,
-        private v: number,
-        private t: number,
-        private mbti: string
+        private rawP: number,
+        private rawS: number,
+        private rawV: number,
+        private rawT: number,
+        private mbti: string,
+        private gender: string = 'other',
+        private birthYear?: number
     ) {
         this.mbti = mbti.toUpperCase();
+        this.ageGroup = birthYear ? getAgeGroup(birthYear) : '30s';
+
+        const normalizer = new DemographicNormalizer(rawP, rawS, rawV, rawT, gender, this.ageGroup);
+        this.stats = normalizer.normalize();
     }
 
     private calculateAxes() {
-        const projection = (this.v + this.s) / 2;
-        const texture = (this.p + this.t) / 2;
+        const projection = (this.stats.v + this.stats.s) / 2;
+        const texture = (this.stats.p + this.stats.t) / 2;
         return { projection, texture };
     }
 
@@ -164,24 +240,28 @@ export class SoloIdentityEngine {
         const { projection, texture } = this.calculateAxes();
         const archetype = this.determineArchetype(projection, texture);
         const gapAnalysis = this.analyzeGap(projection, texture);
-        const quantizedMetrics = AcousticQuantizer.getAllTags(this.p, this.s, this.v, this.t);
+        const quantizedMetrics = AcousticQuantizer.getAllTags(this.stats.p, this.stats.s, this.stats.v, this.stats.t);
 
         return {
-            User_MBTI: this.mbti,
+            User_Profile: {
+                MBTI: this.mbti,
+                Gender: this.gender,
+                Age_Group: this.ageGroup
+            },
             Voice_Archetype: {
                 Label: archetype.Label,
                 Quote: archetype.Quote,
                 Stats: { Projection: Math.floor(projection), Texture: Math.floor(texture) }
             },
             Gap_Analysis: gapAnalysis,
-            Raw_Metrics_Tags: quantizedMetrics,
-            System_Instruction: "Focus on the discrepancy between MBTI and Voice Archetype."
+            Acoustic_Tags: quantizedMetrics,
+            System_Instruction: `Analyze the user as a ${this.ageGroup} ${this.gender}. Focus on the discrepancy between MBTI and Voice Archetype.`
         };
     }
 }
 
 // ==========================================
-// 3. COUPLE ENGINE: Resonance & SCM Analysis
+// 5. COUPLE ENGINE: Resonance & SCM Analysis
 // ==========================================
 interface UserData {
     name: string;
@@ -191,6 +271,8 @@ interface UserData {
     s: number;
     v: number;
     t: number;
+    gender?: string;
+    birthYear?: number;
 }
 
 export class CoupleResonanceEngine {
@@ -202,14 +284,23 @@ export class CoupleResonanceEngine {
         "student": [50, 60], "sales": [70, 80], "other": [50, 50]
     };
 
-    constructor(private ua: UserData, private ub: UserData) { }
+    private statsA: { p: number; s: number; v: number; t: number };
+    private statsB: { p: number; s: number; v: number; t: number };
 
-    private calculateSCM(job: string, p: number, s: number, v: number, t: number) {
+    constructor(private ua: UserData, private ub: UserData) {
+        const normA = new DemographicNormalizer(ua.p, ua.s, ua.v, ua.t, ua.gender, ua.birthYear ? getAgeGroup(ua.birthYear) : '30s');
+        this.statsA = normA.normalize();
+
+        const normB = new DemographicNormalizer(ub.p, ub.s, ub.v, ub.t, ub.gender, ub.birthYear ? getAgeGroup(ub.birthYear) : '30s');
+        this.statsB = normB.normalize();
+    }
+
+    private calculateSCM(job: string, stats: { p: number; s: number; v: number; t: number }) {
         const [baseC, baseW] = CoupleResonanceEngine.JOB_DB[job.toLowerCase()] || [50, 50];
 
-        const voiceCImpact = ((s + v) / 2 - 50) * 0.5;
-        const pFactor = p < 85 ? p : (170 - p);
-        const voiceWImpact = ((t + pFactor) / 2 - 50) * 0.5;
+        const voiceCImpact = ((stats.s + stats.v) / 2 - 50) * 0.5;
+        const pFactor = stats.p < 85 ? stats.p : (170 - stats.p);
+        const voiceWImpact = ((stats.t + pFactor) / 2 - 50) * 0.5;
 
         const finalC = Math.max(0, Math.min(100, baseC + voiceCImpact));
         const finalW = Math.max(0, Math.min(100, baseW + voiceWImpact));
@@ -223,39 +314,32 @@ export class CoupleResonanceEngine {
     }
 
     private calculateSynergy() {
-        const deltaP = Math.abs(this.ua.p - this.ub.p);
-        const deltaS = Math.abs(this.ua.s - this.ub.s);
-        const deltaV = Math.abs(this.ua.v - this.ub.v);
-        const deltaT = Math.abs(this.ua.t - this.ub.t);
+        const deltaP = Math.abs(this.statsA.p - this.statsB.p);
+        const deltaS = Math.abs(this.statsA.s - this.statsB.s);
+        const deltaV = Math.abs(this.statsA.v - this.statsB.v);
+        const deltaT = Math.abs(this.statsA.t - this.statsB.t);
 
         const meanDelta = (deltaP + deltaS + deltaV + deltaT) / 4;
         const syncScore = 100 - meanDelta;
 
         let dtype = "Complementary / Balanced";
-        let desc = "A healthy mix of similarity and difference.";
-        if (syncScore > 80) {
-            dtype = "High-Sync / Mirroring";
-            desc = "Like looking in an acoustic mirror.";
-        } else if (syncScore < 40) {
-            dtype = "High-Contrast / Opposites";
-            desc = "Magnetic attraction of opposites.";
-        }
+        if (syncScore > 80) dtype = "High-Sync / Mirroring";
+        else if (syncScore < 40) dtype = "High-Contrast / Opposites";
 
         return {
             Sync_Score: Math.floor(syncScore),
             Mean_Delta: Math.floor(meanDelta),
             Dynamic_Type: dtype,
-            Description: desc,
-            Volume_Delta_Specific: this.ua.v - this.ub.v
+            Volume_Dominance_A: this.statsA.v > this.statsB.v
         };
     }
 
     public generatePayload() {
-        const scmA = this.calculateSCM(this.ua.job, this.ua.p, this.ua.s, this.ua.v, this.ua.t);
-        const tagsA = AcousticQuantizer.getAllTags(this.ua.p, this.ua.s, this.ua.v, this.ua.t);
+        const scmA = this.calculateSCM(this.ua.job, this.statsA);
+        const tagsA = AcousticQuantizer.getAllTags(this.statsA.p, this.statsA.s, this.statsA.v, this.statsA.t);
 
-        const scmB = this.calculateSCM(this.ub.job, this.ub.p, this.ub.s, this.ub.v, this.ub.t);
-        const tagsB = AcousticQuantizer.getAllTags(this.ub.p, this.ub.s, this.ub.v, this.ub.t);
+        const scmB = this.calculateSCM(this.ub.job, this.statsB);
+        const tagsB = AcousticQuantizer.getAllTags(this.statsB.p, this.statsB.s, this.statsB.v, this.statsB.t);
 
         const synergy = this.calculateSynergy();
 
@@ -264,17 +348,17 @@ export class CoupleResonanceEngine {
             Relationship_Core: synergy,
             User_A_Insight: {
                 Name: this.ua.name,
-                Profile: `${this.ua.job} (${this.ua.accent})`,
+                Profile: `${this.ua.job} (${this.ua.gender} ${this.ua.birthYear ? new Date().getFullYear() - this.ua.birthYear : ''})`,
                 SCM_Profile: scmA,
                 Acoustic_Tags: tagsA
             },
             User_B_Insight: {
                 Name: this.ub.name,
-                Profile: `${this.ub.job} (${this.ub.accent})`,
+                Profile: `${this.ub.job} (${this.ub.gender} ${this.ub.birthYear ? new Date().getFullYear() - this.ub.birthYear : ''})`,
                 SCM_Profile: scmB,
                 Acoustic_Tags: tagsB
             },
-            Narrative_Hint: `User A is ${scmA.Archetype}, User B is ${scmB.Archetype}. Interaction is ${synergy.Dynamic_Type}.`
+            Narrative_Hint: `Interaction is ${synergy.Dynamic_Type}.`
         };
     }
 }

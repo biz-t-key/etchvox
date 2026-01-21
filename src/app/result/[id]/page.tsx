@@ -39,6 +39,7 @@ export default function ResultPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [processingPayment, setProcessingPayment] = useState(false);
+    const [verifyingPayment, setVerifyingPayment] = useState(false); // New state for post-redirect
     const [displayStage, setDisplayStage] = useState<DisplayStage>('label');
     const [selectedMBTI, setSelectedMBTI] = useState<MBTIType | null>(null);
     const [mbtiSkipped, setMbtiSkipped] = useState(false);
@@ -68,7 +69,14 @@ export default function ResultPage() {
             }
         }
         loadResult();
-    }, [resultId]);
+
+        // Check query params for payment success
+        if (searchParams.get('payment') === 'success') {
+            setVerifyingPayment(true);
+            // Remove param from URL to clean up without refresh
+            window.history.replaceState({}, '', `/result/${resultId}`);
+        }
+    }, [resultId]); // Removed searchParams to avoid loop, it's read once on mount
 
     // ✅ Real-time updates: Listen for AI analysis completion
     useEffect(() => {
@@ -92,6 +100,12 @@ export default function ResultPage() {
                         metrics: data.metrics || prev.metrics, // Keep previous or fallback
                     } as VoiceResult;
                 });
+
+                // If we were verifying and now we see premium, stop verifying
+                if (data.isPremium) {
+                    setVerifyingPayment(false);
+                }
+
                 if (data.mbti && !selectedMBTI) {
                     setSelectedMBTI(data.mbti as MBTIType);
                 }
@@ -129,26 +143,21 @@ export default function ResultPage() {
         }, 100);
     };
 
-    const handleCheckout = async (type: 'unlock' | 'vault') => {
-        setProcessingPayment(true);
-        try {
-            const res = await fetch('/api/checkout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ resultId, type }),
-            });
+    const handleCheckout = async (type: 'unlock' | 'vault' | 'couple') => {
+        // BMAC Page URL (Replace with your actual BMAC handle)
+        const bmacHandle = 'etchvox';
+        const amount = type === 'couple' ? 15 : (type === 'vault' ? 10 : 5);
 
-            const { sessionId, url } = await res.json();
+        // Construct the BMAC URL with pre-filled message containing the ID
+        // This ensures your webhook can identify which result to unlock
+        const message = encodeURIComponent(`ID: ${resultId}`);
+        const bmacUrl = `https://www.buymeacoffee.com/${bmacHandle}/?amount=${amount}&message=${message}`;
 
-            if (url) {
-                window.location.href = url;
-            }
-        } catch (err) {
-            console.error('Checkout error:', err);
-            alert('Payment failed. Please try again.');
-        } finally {
-            setProcessingPayment(false);
-        }
+        // Open in new tab or redirect
+        window.open(bmacUrl, '_blank');
+
+        // Show the verifying state so the user knows we're waiting for the "coffee" to arrive
+        setVerifyingPayment(true);
     };
 
     if (loading) {
@@ -188,12 +197,11 @@ export default function ResultPage() {
     }
 
     // Check if premium (either from stored result or just successful payment)
-    const isPremium = result.vaultEnabled === true || searchParams.get('payment') === 'success';
-    // Note: If payment=success just happened, we might need to reload or update state manually if getResult is cached.
-    // For now we assume standard reload flow or rely on isPremium check logic.
-    // Actually, let's trust the 'result' object from getResult which should be updated if we navigated back.
-    // However, if we didn't wait for webhook, simple param check is useful for instant feedback UI.
-    const showVideo = result.vaultEnabled || (searchParams.get('payment') === 'success');
+    const isPremium = result.isPremium === true || result.vaultEnabled === true || searchParams.get('payment') === 'success';
+
+    // Logic for specific features
+    const showVideo = isPremium; // Any payment unlocks video
+    const showAIReport = result.vaultEnabled === true || (searchParams.get('payment') === 'success' && searchParams.get('type') !== 'unlock');
 
     return (
         <main className="min-h-screen bg-black text-white selection:bg-cyan-500/30 font-sans flex flex-col items-center overflow-x-hidden w-full relative">
@@ -217,15 +225,15 @@ export default function ResultPage() {
                         <ul className="text-left text-sm text-gray-300 space-y-3 mb-8 bg-white/5 p-6 rounded-xl border border-white/5">
                             <li className="flex items-center gap-3">
                                 <span className="text-green-400">✓</span>
-                                <span><strong>Permanent Video Storage:</strong> Never lose your analysis video.</span>
+                                <span><strong>Deep AI Identity Audit:</strong> Gap analysis of your voice vs MBTI.</span>
                             </li>
                             <li className="flex items-center gap-3">
                                 <span className="text-green-400">✓</span>
-                                <span><strong>Detailed PDF Report:</strong> Deep dive into your vocal psychology.</span>
+                                <span><strong>Permanent Voice Storage:</strong> Track your vocal evolution over time.</span>
                             </li>
                             <li className="flex items-center gap-3">
                                 <span className="text-green-400">✓</span>
-                                <span><strong>Priority Generation:</strong> Skip the queue for future updates.</span>
+                                <span><strong>High-Quality Video:</strong> Unlock your shareable visualization.</span>
                             </li>
                         </ul>
 
@@ -248,32 +256,32 @@ export default function ResultPage() {
                             disabled={processingPayment}
                             className="text-xs text-gray-500 hover:text-white underline decoration-gray-700 underline-offset-4 uppercase tracking-widest transition-colors"
                         >
-                            No thanks, I'll take the video only ($4.99)
+                            No thanks, I'll take the video only ($5.00)
                         </button>
                     </div>
                 </div>
             )}
 
             {/* Background Decoration */}
-            <div className="fixed inset-0 pointer-events-none z-0">
-                <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-[100px] opacity-20 animate-pulse-slow" />
-                <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-pink-500/10 rounded-full blur-[100px] opacity-20 animate-pulse-slow delay-1000" />
+            <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+                <div className={`absolute top-[-20%] left-[-10%] w-[600px] h-[600px] ${isCouple ? 'bg-pink-500/10' : 'bg-cyan-500/10'} rounded-full blur-[100px] opacity-20 animate-pulse-slow`} />
+                <div className={`absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] ${isCouple ? 'bg-cyan-500/10' : 'bg-pink-500/10'} rounded-full blur-[100px] opacity-20 animate-pulse-slow delay-1000`} />
             </div>
 
-            <div className="relative z-10 w-full px-4 py-8 md:py-12 space-y-12 flex flex-col items-center text-center">
+            <div className="relative z-10 w-full px-4 py-20 md:py-48 space-y-32 flex flex-col items-center text-center">
                 {/* Header */}
-                <header className="flex flex-col items-center justify-center space-y-4 w-full max-w-2xl">
+                <header className="flex flex-col items-center justify-center space-y-4 w-full max-w-2xl px-4">
                     <Link
                         href="/"
-                        className="text-xs font-bold tracking-widest text-gray-500 hover:text-white transition-colors duration-300 uppercase"
+                        className="text-[10px] font-black tracking-[0.4em] text-gray-600 hover:text-white transition-colors duration-300 uppercase"
                     >
-                        ← New Analysis
+                        ← [ NEW_ANALYSIS_PROTOCOL ]
                     </Link>
-                    <div className="relative">
-                        <h1 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-cyan-200 drop-shadow-[0_0_15px_rgba(34,211,238,0.5)]">
-                            Analysis Summary
+                    <div className="relative pt-4">
+                        <h1 className={`text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r ${isCouple ? 'from-pink-400 to-pink-200' : 'from-cyan-400 to-cyan-200'} drop-shadow-[0_0_15px_${isCouple ? 'rgba(236,72,153,0.5)' : 'rgba(34,211,238,0.5)'}] uppercase tracking-widest`}>
+                            {isCouple ? 'Resonance Report' : 'Identity Audit'}
                         </h1>
-                        <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-cyan-500 rounded-full blur-[2px]" />
+                        <div className={`absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-12 h-0.5 ${isCouple ? 'bg-pink-500' : 'bg-cyan-500'} rounded-full blur-[1px]`} />
                     </div>
                 </header>
 
@@ -294,7 +302,7 @@ export default function ResultPage() {
 
                 {/* STAGE 2 & 3 CONTENT */}
                 {(displayStage === 'metrics' || displayStage === 'full') && (
-                    <div className="animate-fade-in w-full space-y-20 section-spacing">
+                    <div className="animate-fade-in w-full space-y-40 section-spacing pt-12">
                         {/* Metrics Card */}
                         <div
                             className="glass rounded-3xl p-8 relative overflow-hidden border border-white/10"
@@ -345,10 +353,10 @@ export default function ResultPage() {
 
 
                         {displayStage === 'full' && (
-                            <div className="animate-slide-up space-y-20 w-full max-w-2xl">
+                            <div className="animate-slide-up space-y-40 w-full max-w-2xl">
                                 {/* MBTI / Truth Card Section */}
                                 <div className="w-full">
-                                    <div className="flex items-end justify-between mb-6 px-1">
+                                    <div className="flex items-end justify-between mb-12 px-1">
                                         <div className="flex items-center gap-3">
                                             <div className="w-1 h-6 bg-cyan-500" />
                                             <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em]">
@@ -374,17 +382,13 @@ export default function ResultPage() {
                                                 resultId={result.id}
                                             />
                                         </div>
-                                    ) : (!selectedMBTI && !mbtiSkipped) ? (
-                                        <MBTISelector
-                                            onSelect={handleMBTISelect}
-                                            onSkip={() => setMbtiSkipped(true)}
-                                        />
                                     ) : (
                                         <div id="identity-card" className="w-full">
                                             <SoloIdentityCard
-                                                mbti={(selectedMBTI || 'INTJ') as MBTIType}
+                                                mbti={(result.mbti || 'INTJ') as MBTIType}
                                                 voiceTypeCode={result.typeCode}
                                                 userName={result.id}
+                                                metrics={safeMetrics}
                                             />
                                         </div>
                                     )}
@@ -394,7 +398,7 @@ export default function ResultPage() {
 
                                 {/* Genetic Matches */}
                                 <div className="w-full">
-                                    <div className="flex items-center gap-3 mb-6 px-1">
+                                    <div className="flex items-center gap-3 mb-10 px-1">
                                         <div className="w-1 h-6 bg-purple-500" />
                                         <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em]">
                                             Matches
@@ -437,13 +441,12 @@ export default function ResultPage() {
                                 </div>
 
                                 {/* AI AUDIT REPORT (PREMIUM) */}
-                                {/* AI AUDIT REPORT (PREMIUM) */}
-                                {(result.isPremium || result.aiAnalysis) && (
+                                {showAIReport && (
                                     <div className="w-full mb-12">
-                                        <div className="flex items-center gap-3 mb-6 px-1">
-                                            <div className="w-1 h-6 bg-cyan-500" />
+                                        <div className="flex items-center gap-3 mb-12 px-1">
+                                            <div className={`w-1 h-6 ${isCouple ? 'bg-pink-500' : 'bg-cyan-500'}`} />
                                             <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em]">
-                                                AI Identity Audit
+                                                {isCouple ? 'Acoustic Dynamic Analysis' : 'Full Identity Audit'}
                                             </h2>
                                         </div>
 
@@ -496,21 +499,32 @@ export default function ResultPage() {
 
                                 {/* VIDEO EXPORT */}
                                 <div className="w-full">
-                                    <div className="flex items-center gap-3 mb-6 px-1">
+                                    <div className="flex items-center gap-3 mb-12 px-1">
                                         <div className="w-1 h-6 bg-pink-500" />
                                         <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em]">
                                             Export
                                         </h2>
                                     </div>
 
-                                    {showVideo ? (
+                                    {/* Video / Lock Section */}
+                                    {(showVideo || verifyingPayment) ? (
                                         <div className="space-y-4">
-                                            <div className="text-center">
-                                                <div className="inline-block border border-green-500/50 text-green-400 px-3 py-1 rounded text-[10px] font-bold mb-4 uppercase tracking-widest">
-                                                    PREVIEW READY
+                                            {verifyingPayment && !showVideo ? (
+                                                <div className="relative bg-black/50 border border-cyan-500/50 rounded-2xl p-12 text-center animate-pulse">
+                                                    <div className="text-4xl mb-4 animate-spin">💠</div>
+                                                    <h3 className="text-xl font-bold text-cyan-400 mb-2">FINALIZING DECRYPTION</h3>
+                                                    <p className="text-gray-400 text-xs">Verifying blockchain signature & generating audit...</p>
                                                 </div>
-                                            </div>
-                                            <VideoPlayerSection voiceType={voiceType} metrics={safeMetrics} />
+                                            ) : (
+                                                <>
+                                                    <div className="text-center">
+                                                        <div className={`inline-block border ${isCouple ? 'border-pink-500/50 text-pink-400' : 'border-green-500/50 text-green-400'} px-3 py-1 rounded text-[10px] font-bold mb-4 uppercase tracking-widest`}>
+                                                            {isCouple ? 'SYMMETRY FOUND' : 'PREVIEW READY'}
+                                                        </div>
+                                                    </div>
+                                                    <VideoPlayerSection voiceType={voiceType} metrics={safeMetrics} />
+                                                </>
+                                            )}
                                         </div>
                                     ) : (
                                         <div className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900 border border-white/10 rounded-2xl overflow-hidden">
@@ -523,35 +537,50 @@ export default function ResultPage() {
                                             <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm">
                                                 <div className="text-center p-8 max-w-md">
                                                     <div className="text-4xl mb-4">🔒</div>
-                                                    <h3 className="text-2xl font-bold text-white mb-2 uppercase tracking-wide">Unlock Video</h3>
+                                                    <h3 className="text-2xl font-bold text-white mb-2 uppercase tracking-wide">
+                                                        {isCouple ? 'Decode Resonance' : 'Unlock Video'}
+                                                    </h3>
                                                     <p className="text-gray-400 text-sm mb-8 leading-relaxed">
-                                                        Get your personalized voice × waveform visualization. High-quality, shareable video for your social profiles.
+                                                        {isCouple
+                                                            ? 'Get your synchronized relationship visualization. A breakdown of your vocal symmetry.'
+                                                            : 'Get your personalized voice × waveform visualization. High-quality, shareable video for your social profiles.'}
                                                     </p>
 
                                                     {/* Premium Option - $10 Vault */}
-                                                    <div className="bg-gradient-to-br from-pink-500/10 to-violet-500/10 border-2 border-pink-500/30 rounded-xl p-6 mb-4">
-                                                        <div className="text-[10px] text-pink-400 font-bold uppercase tracking-[0.3em] mb-2">
-                                                            💎 Lifetime Access
+                                                    <div className={`bg-gradient-to-br ${isCouple ? 'from-pink-500/10 to-cyan-500/10 border-pink-500/30' : 'from-pink-500/10 to-violet-500/10 border-pink-500/30'} border-2 rounded-xl p-6 mb-4`}>
+                                                        <div className={`text-[10px] ${isCouple ? 'text-cyan-400' : 'text-pink-400'} font-bold uppercase tracking-[0.3em] mb-2`}>
+                                                            💎 {isCouple ? 'RESONANCE DECRYPTED' : 'LIFETIME ACCESS'}
                                                         </div>
-                                                        <h4 className="text-xl font-black text-white uppercase mb-3">EtchVox Vault</h4>
-                                                        <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-violet-400 mb-4">
+                                                        <h4 className="text-xl font-black text-white uppercase mb-3">
+                                                            {isCouple ? 'Couple Vault' : 'EtchVox Vault'}
+                                                        </h4>
+                                                        <div className={`text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r ${isCouple ? 'from-pink-400 to-cyan-400' : 'from-pink-400 to-violet-400'} mb-4`}>
                                                             $10.00
                                                         </div>
 
                                                         {/* THE SELL - Simplified Copy */}
                                                         <div className="text-center text-xs text-gray-400 mb-6">
-                                                            <p className="mb-2">Human voices change <span className="text-yellow-400 font-bold">0.5%/year</span> due to stress and aging.</p>
-                                                            <p className="text-pink-400">This is the youngest voice you have left.</p>
+                                                            {isCouple ? (
+                                                                <>
+                                                                    <p className="mb-2">Relationships thrive on <span className="text-cyan-400 font-bold">Resonance</span>, not just words.</p>
+                                                                    <p className="text-pink-400">Decode your hidden dynamic.</p>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <p className="mb-2">Human voices change <span className="text-yellow-400 font-bold">0.5%/year</span> due to stress and aging.</p>
+                                                                    <p className="text-pink-400">This is the youngest voice you have left.</p>
+                                                                </>
+                                                            )}
                                                         </div>
 
                                                         <ul className="text-left text-xs text-gray-300 space-y-2 mb-6">
                                                             <li className="flex items-center gap-2">
                                                                 <span className="text-green-400">✓</span>
-                                                                <span><strong>AI Identity Audit Report</strong></span>
+                                                                <span><strong>{isCouple ? 'Deep Compatibility Audit' : 'AI Identity Audit Report'}</strong></span>
                                                             </li>
                                                             <li className="flex items-center gap-2">
                                                                 <span className="text-green-400">✓</span>
-                                                                <span><strong>Permanent Raw Audio Storage</strong></span>
+                                                                <span><strong>{isCouple ? 'Date Night Discussion Kit' : 'Permanent Raw Audio Storage'}</strong></span>
                                                             </li>
                                                             <li className="flex items-center gap-2">
                                                                 <span className="text-green-400">✓</span>
@@ -559,22 +588,23 @@ export default function ResultPage() {
                                                             </li>
                                                             <li className="flex items-center gap-2">
                                                                 <span className="text-green-400">✓</span>
-                                                                <span>Track your voice evolution over time</span>
+                                                                <span>Track evolution over time</span>
                                                             </li>
                                                         </ul>
                                                         <button
                                                             onClick={() => handleCheckout('vault')}
                                                             disabled={processingPayment}
-                                                            className="w-full bg-gradient-to-r from-pink-600 to-violet-600 hover:from-pink-500 hover:to-violet-500 text-white font-bold py-4 rounded-xl text-sm uppercase tracking-widest shadow-lg transform hover:scale-[1.02] transition-all"
+                                                            className={`w-full bg-gradient-to-r ${isCouple ? 'from-pink-600 to-cyan-600' : 'from-pink-600 to-violet-600'} hover:opacity-90 text-white font-bold py-4 rounded-xl text-sm uppercase tracking-widest shadow-lg transform hover:scale-[1.02] transition-all`}
                                                         >
-                                                            {processingPayment ? 'Processing...' : 'Preserve My Voice — $10.00'}
+                                                            {processingPayment ? 'Processing...' : isCouple ? 'Decode Our Bond — $10.00' : 'Preserve My Voice — $10.00'}
                                                         </button>
                                                     </div>
 
                                                     {/* Basic Option - $5 Video Only */}
                                                     <div className="border border-white/10 rounded-xl p-4">
-                                                        <h4 className="text-sm font-bold text-gray-300 uppercase mb-1">Video Only</h4>
-                                                        <div className="text-xl font-black text-cyan-400 mb-3">
+                                                        <h4 className="text-sm font-bold text-gray-300 uppercase mb-1">Standard Export</h4>
+                                                        <p className="text-[10px] text-gray-500 mb-3 italic">Waveform Visualizer • MP4 Format</p>
+                                                        <div className={`text-xl font-black ${isCouple ? 'text-pink-400' : 'text-cyan-400'} mb-3`}>
                                                             $5.00
                                                         </div>
                                                         <button
@@ -582,7 +612,7 @@ export default function ResultPage() {
                                                             disabled={processingPayment}
                                                             className="w-full bg-white/10 hover:bg-white/20 border border-white/20 text-white py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
                                                         >
-                                                            {processingPayment ? 'Processing...' : 'Video Only — $5.00'}
+                                                            {processingPayment ? 'Processing...' : 'Unlock HD Video — $5.00'}
                                                         </button>
                                                     </div>
                                                 </div>
@@ -593,7 +623,7 @@ export default function ResultPage() {
 
                                 {/* COPY FOR BIO - Independent Section */}
                                 <div className="w-full">
-                                    <div className="flex items-center gap-3 mb-6 px-1">
+                                    <div className="flex items-center gap-3 mb-12 px-1">
                                         <div className="w-1 h-6 bg-cyan-500" />
                                         <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em]">
                                             Copy for Bio
@@ -618,7 +648,7 @@ export default function ResultPage() {
                                 </div>
 
                                 {/* Footer & Share */}
-                                <div className="pt-20 pb-20 border-t border-white/5 space-y-12">
+                                <div className="pt-32 pb-48 border-t border-white/5 space-y-20">
                                     <div className="w-full">
                                         <ShareButtons
                                             resultId={resultId}
@@ -628,8 +658,13 @@ export default function ResultPage() {
                                             typeCode={result.typeCode}
                                         />
 
-                                        <div className="text-center mt-16">
-                                            <Link href="/" className="text-[10px] text-gray-600 hover:text-white transition-colors uppercase tracking-[0.2em] border-b border-transparent hover:border-gray-500 pb-1">
+                                        <div className="text-center mt-16 space-y-6">
+                                            <div className="flex justify-center gap-8 uppercase tracking-[0.2em] font-mono text-[9px] text-gray-500">
+                                                <Link href="/terms" className="hover:text-cyan-400 transition-colors">Terms</Link>
+                                                <Link href="/privacy" className="hover:text-cyan-400 transition-colors">Privacy</Link>
+                                                <Link href="/tokusho" className="hover:text-cyan-400 transition-colors">Legal</Link>
+                                            </div>
+                                            <Link href="/" className="inline-block text-[10px] text-gray-600 hover:text-white transition-colors uppercase tracking-[0.2em] border-b border-transparent hover:border-gray-500 pb-1">
                                                 Start New Analysis
                                             </Link>
                                         </div>

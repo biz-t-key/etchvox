@@ -22,12 +22,9 @@ export default function AccentSelector({ onSelect }: AccentSelectorProps) {
                 CALIBRATING REGIONAL PATTERNS...
             </div>
 
-            <h2 className="text-xl font-bold mb-2">
+            <h2 className="text-xl font-bold mb-6">
                 To improve accuracy, where did you learn English?
             </h2>
-            <p className="text-gray-500 text-sm mb-6">
-                精度向上のため、英語をどこで覚えましたか？
-            </p>
 
             {/* Accent Grid */}
             <div className="grid grid-cols-3 gap-3 mb-6">

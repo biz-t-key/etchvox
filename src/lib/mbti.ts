@@ -71,3 +71,48 @@ export const mbtiOrder: MBTIType[] = [
     // Explorers
     'ISTP', 'ISFP', 'ESTP', 'ESFP',
 ];
+
+/**
+ * Calculates the "Identity Gap" level (0-100) between self-reported MBTI
+ * and the actual biometric vocal metrics recorded.
+ */
+export function calculateGapLevel(mbti: MBTIType, metrics: { pitch: number; speed: number; vibe: number; tone: number }): number {
+    // Simplified psycho-acoustic mapping
+    // We define "Ideal" metric centers for each MBTI trait
+    const isE = mbti.startsWith('E');
+    const isN = mbti[1] === 'N';
+    const isF = mbti[2] === 'F';
+    const isP = mbti.endsWith('P');
+
+    // Targets (Normalized 0-1)
+    const targetPitch = isE ? 0.7 : 0.4;  // Extraverts tend to have higher social energy/pitch
+    const targetSpeed = isP ? 0.8 : 0.5;  // Perceivers often have more dynamic/variable speed
+    const targetVibe = isN ? 0.7 : 0.3;   // Intuitive types often have higher vocal variance
+    const targetTone = isF ? 0.3 : 0.7;   // Feeling types often have warmer (lower centroid) tones
+
+    // Actuals (Normalized - pitch and tone need scaling as they are raw Hz)
+    // Based on analyzer.ts ranges usually seen
+    const normPitch = Math.min(Math.max((metrics.pitch - 80) / 220, 0), 1);
+    const normTone = Math.min(Math.max((metrics.tone - 500) / 3500, 0), 1);
+    const normSpeed = metrics.speed;
+    const normVibe = metrics.vibe;
+
+    // Calculate absolute Euclidean distance
+    const dist = Math.sqrt(
+        Math.pow(targetPitch - normPitch, 2) +
+        Math.pow(targetSpeed - normSpeed, 2) +
+        Math.pow(targetVibe - normVibe, 2) +
+        Math.pow(targetTone - normTone, 2)
+    );
+
+    // Max distance is 2.0 (sqrt of 1^2 * 4). Scale to 0-100.
+    // We add a baseline randomness for "humanness"
+    let gap = (dist / 1.5) * 100;
+
+    // Salt the gap based on the specific type personality to ensure 
+    // it's not just a flat distance but feels "personal"
+    const salt = (mbti.charCodeAt(0) + mbti.charCodeAt(3)) % 15;
+    gap += salt;
+
+    return Math.min(Math.max(Math.round(gap), 12), 98);
+}

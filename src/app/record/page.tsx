@@ -10,9 +10,11 @@ import { ToxicityProfile } from '@/lib/toxicity';
 import ParticleVisualizer from '@/components/recording/ParticleVisualizer';
 import AccentSelector from '@/components/recording/AccentSelector';
 import ToxicitySelector from '@/components/recording/ToxicitySelector';
+import MBTISelector from '@/components/result/MBTISelector';
+import { MBTIType } from '@/lib/mbti';
 
 type RecordingStep = 1 | 2 | 3;
-type Phase = 'ready' | 'recording' | 'analyzing' | 'toxicity' | 'accent' | 'complete';
+type Phase = 'ready' | 'recording' | 'analyzing' | 'calibration' | 'mbti' | 'toxicity' | 'accent' | 'complete';
 
 const SCRIPTS = {
     1: {
@@ -41,6 +43,10 @@ export default function RecordPage() {
     const [selectedAccent, setSelectedAccent] = useState<string | null>(null);
     const [toxicity, setToxicity] = useState<ToxicityProfile | null>(null);
     const [consentGiven, setConsentGiven] = useState(false);
+    const [isOver13, setIsOver13] = useState(false);
+    const [gender, setGender] = useState<string>('non-binary');
+    const [birthYear, setBirthYear] = useState<number>(new Date().getFullYear() - 25);
+    const [mbti, setMbti] = useState<MBTIType | null>(null);
 
     const analyzerRef = useRef<VoiceAnalyzer | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -82,9 +88,9 @@ export default function RecordPage() {
 
         setPhase('analyzing');
 
-        // Show toxicity selector after brief delay
+        // Show calibration after brief delay
         setTimeout(() => {
-            setPhase('toxicity');
+            setPhase('calibration');
         }, 1500);
     }, []);
 
@@ -169,6 +175,17 @@ export default function RecordPage() {
         }, 1000);
     }, [finishRecording]);
 
+    const handleCalibrationSubmit = (g: string, y: number) => {
+        setGender(g);
+        setBirthYear(y);
+        setPhase('mbti');
+    };
+
+    const handleMBTISelect = (selectedMbti: MBTIType | null) => {
+        setMbti(selectedMbti);
+        setPhase('toxicity');
+    };
+
     const handleToxicitySelect = (profile: ToxicityProfile) => {
         setToxicity(profile);
         setPhase('accent'); // Go directly to Accent
@@ -198,7 +215,9 @@ export default function RecordPage() {
                 typeCode: analysisResult.typeCode,
                 metrics: analysisResult.metrics,
                 accentOrigin: accent,
-                // mbti: undefined, // Let user select on Result page
+                gender: gender,
+                birthYear: birthYear,
+                mbti: mbti || undefined,
                 createdAt: new Date().toISOString(),
                 locale: 'en',
                 userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
@@ -222,7 +241,7 @@ export default function RecordPage() {
     };
 
     return (
-        <div className="relative min-h-screen flex flex-col items-center justify-center px-6 md:px-8 py-12 bg-black">
+        <div className="relative min-h-screen flex flex-col items-center justify-center px-6 md:px-8 py-32 md:py-48 bg-black">
             {/* Background */}
             <div className="absolute inset-0">
                 <div className="absolute top-1/3 left-1/3 w-64 h-64 bg-cyan-500/20 rounded-full blur-[100px]" />
@@ -232,8 +251,8 @@ export default function RecordPage() {
             <div className="relative z-10 w-full max-w-2xl mx-auto text-center">
                 {/* Ready Phase */}
                 {phase === 'ready' && (
-                    <div className="fade-in space-y-12">
-                        <div className="space-y-6">
+                    <div className="fade-in space-y-20">
+                        <div className="space-y-10">
                             <h1 className="text-4xl md:text-5xl font-bold leading-tight">
                                 <span className="neon-text-cyan">Voice Analysis</span>
                             </h1>
@@ -258,36 +277,50 @@ export default function RecordPage() {
                             </div>
                         )}
 
-                        {/* Privacy Consent - Required */}
-                        <div className="glass rounded-xl p-6 border-2 border-white/5 bg-white/5 max-w-xl mx-auto">
-                            <div className="flex items-start gap-4">
-                                <input
-                                    type="checkbox"
-                                    id="consent"
-                                    checked={consentGiven}
-                                    onChange={(e) => setConsentGiven(e.target.checked)}
-                                    className="mt-1 w-5 h-5 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-cyan-500"
-                                />
-                                <label htmlFor="consent" className="text-sm text-gray-400 leading-relaxed cursor-pointer select-none text-left block">
-                                    I consent to my voice being <strong className="text-gray-200">recorded, analyzed, and stored</strong> on EtchVox servers.
-                                    My voice data and analysis results will be kept unless I request deletion.
-                                    {' '}<Link href="/privacy" className="text-cyan-500 hover:text-cyan-400 underline decoration-1 underline-offset-4">Privacy Policy</Link>
+                        <div className="glass rounded-xl p-8 border-2 border-cyan-500/20 bg-white/5 max-w-xl mx-auto space-y-6">
+                            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-cyan-400">Security Clearance</h3>
+                            <div className="space-y-4">
+                                <label className="flex items-start gap-4 p-4 rounded-lg bg-black/40 hover:bg-black/60 transition-colors cursor-pointer group text-left">
+                                    <input
+                                        type="checkbox"
+                                        checked={isOver13}
+                                        onChange={(e) => setIsOver13(e.target.checked)}
+                                        className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-cyan-500"
+                                    />
+                                    <span className="text-sm text-gray-300 leading-relaxed select-none block font-bold transition-colors group-hover:text-white">
+                                        I confirm that I am at least 13 years of age.
+                                    </span>
                                 </label>
+
+                                <label className="flex items-start gap-4 p-4 rounded-lg bg-black/40 hover:bg-black/60 transition-colors cursor-pointer group text-left">
+                                    <input
+                                        type="checkbox"
+                                        checked={consentGiven}
+                                        onChange={(e) => setConsentGiven(e.target.checked)}
+                                        className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-cyan-500"
+                                    />
+                                    <span className="text-sm text-gray-300 leading-relaxed select-none block font-bold transition-colors group-hover:text-white">
+                                        I consent to my voice being recorded and analyzed by EtchVox.
+                                    </span>
+                                </label>
+                            </div>
+                            <div className="text-[10px] text-gray-500 uppercase tracking-widest font-mono">
+                                Read our <Link href="/privacy" className="text-cyan-500 hover:underline">Privacy Policy</Link> for details.
                             </div>
                         </div>
 
                         <button
                             onClick={startRecording}
-                            disabled={!consentGiven}
+                            disabled={!consentGiven || !isOver13}
                             className="btn-metallic text-lg md:text-xl px-12 py-5 rounded-full font-bold transition-all hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 min-w-[280px]"
                         >
                             <span className="mr-3 text-2xl">🎤</span>
                             START RECORDING
                         </button>
 
-                        {!consentGiven && (
+                        {(!consentGiven || !isOver13) && (
                             <p className="text-amber-400 text-sm font-semibold animate-pulse">
-                                ↑ Please accept the consent to continue
+                                ↑ Please complete the requirements to continue
                             </p>
                         )}
                     </div>
@@ -295,7 +328,7 @@ export default function RecordPage() {
 
                 {/* Recording Phase */}
                 {phase === 'recording' && (
-                    <div className="fade-in space-y-8">
+                    <div className="fade-in space-y-16">
                         {/* Step Indicator */}
                         <div className="flex justify-center gap-3">
                             {[1, 2, 3].map((s) => (
@@ -313,7 +346,7 @@ export default function RecordPage() {
                         </div>
 
                         {/* Visualizer */}
-                        <div className="my-8">
+                        <div className="my-16">
                             <ParticleVisualizer
                                 analyser={analyzerRef.current?.getAnalyser() || null}
                                 isActive={phase === 'recording'}
@@ -363,6 +396,17 @@ export default function RecordPage() {
                     </div>
                 )}
 
+                {/* MBTI Selection Phase */}
+                {phase === 'mbti' && (
+                    <div className="space-y-8">
+                        <div className="text-center space-y-2">
+                            <h2 className="text-2xl font-black neon-text-magenta uppercase italic tracking-tighter">Psychological Baseline</h2>
+                            <p className="text-gray-500 text-xs">Self-perception calibration for Identity Gap calculation.</p>
+                        </div>
+                        <MBTISelector onSelect={handleMBTISelect} onSkip={() => handleMBTISelect(null)} />
+                    </div>
+                )}
+
                 {/* Toxicity Selection Phase */}
                 {phase === 'toxicity' && (
                     <ToxicitySelector onComplete={handleToxicitySelect} />
@@ -373,6 +417,63 @@ export default function RecordPage() {
                     <AccentSelector onSelect={handleAccentSelect} />
                 )}
             </div>
+
+        </div>
+    );
+}
+
+// --- Sub-components ---
+
+function CalibrationForm({ onComplete, currentGender, currentYear }: { onComplete: (g: string, y: number) => void, currentGender: string, currentYear: number }) {
+    const [gender, setGender] = useState(currentGender);
+    const [year, setYear] = useState(currentYear);
+
+    return (
+        <div className="fade-in max-w-xl mx-auto space-y-12 pb-20">
+            <div className="space-y-4">
+                <h2 className="text-3xl font-black neon-text-cyan uppercase italic tracking-widest">Vocal Calibration</h2>
+                <p className="text-gray-400 text-sm">Targeting demographic baseline to adjust resonance markers.</p>
+            </div>
+
+            <div className="glass rounded-2xl p-10 border border-white/10 bg-white/5 space-y-12 shadow-2xl">
+                <div className="space-y-6">
+                    <label className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold block text-left">Gender Identity</label>
+                    <div className="grid grid-cols-3 gap-4">
+                        {['male', 'female', 'non-binary'].map((g) => (
+                            <button
+                                key={g}
+                                onClick={() => setGender(g)}
+                                className={`px-2 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${gender === g
+                                    ? 'bg-cyan-500 border-cyan-400 text-black shadow-[0_0_20px_rgba(34,211,238,0.5)]'
+                                    : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/30'
+                                    }`}
+                            >
+                                {g === 'non-binary' ? 'Fluid' : g}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="space-y-6">
+                    <label className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold block text-left">Year of Origin (Birth)</label>
+                    <select
+                        value={year}
+                        onChange={(e) => setYear(parseInt(e.target.value))}
+                        className="w-full bg-black border-2 border-white/10 rounded-xl p-5 text-white font-bold text-lg outline-none focus:border-cyan-500 transition-all appearance-none text-center"
+                    >
+                        {Array.from({ length: 80 }, (_, i) => new Date().getFullYear() - 13 - i).map((y) => (
+                            <option key={y} value={y}>{y}</option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+
+            <button
+                onClick={() => onComplete(gender, year)}
+                className="btn-metallic w-full py-5 rounded-2xl font-black text-xl uppercase tracking-[0.2em]"
+            >
+                Confirm Baseline →
+            </button>
         </div>
     );
 }
