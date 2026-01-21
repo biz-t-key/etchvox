@@ -38,18 +38,31 @@ export default function DuoIdentityCard({ userA, userB, resultId }: DuoIdentityC
                 if (cardRef.current) {
                     const canvas = await html2canvas(cardRef.current, {
                         backgroundColor: '#050505',
-                        scale: 2,
+                        scale: 3, // High quality
                         useCORS: true,
                         logging: false,
                         allowTaint: false,
+                        width: cardRef.current.offsetWidth,
+                        height: cardRef.current.offsetHeight,
+                        scrollX: -window.scrollX,
+                        scrollY: -window.scrollY,
+                        windowWidth: document.documentElement.offsetWidth,
+                        windowHeight: document.documentElement.offsetHeight,
                         onclone: (clonedDoc) => {
-                            const blurs = clonedDoc.querySelectorAll('*');
-                            blurs.forEach((el: any) => {
-                                if (el.style) {
-                                    el.style.backdropFilter = 'none';
-                                    el.style.webkitBackdropFilter = 'none';
-                                }
-                            });
+                            const clonedCard = clonedDoc.querySelector('[data-capture-target="duo-card"]') as HTMLElement;
+                            if (clonedCard) {
+                                // 1. Extra breathing room for the capture engine
+                                clonedCard.style.paddingTop = '60px';
+                                clonedCard.style.paddingBottom = '60px';
+
+                                const allElements = clonedDoc.querySelectorAll('*');
+                                allElements.forEach((el: any) => {
+                                    if (el.style) {
+                                        (el.style as any).backdropFilter = 'none';
+                                        (el.style as any).webkitBackdropFilter = 'none';
+                                    }
+                                });
+                            }
                         }
                     });
                     const imgData = canvas.toDataURL('image/png');
@@ -70,11 +83,14 @@ export default function DuoIdentityCard({ userA, userB, resultId }: DuoIdentityC
             {/* 1. VISUAL CARD (The one being captured) */}
             <div
                 ref={cardRef}
+                data-capture-target="duo-card"
                 className="relative w-full aspect-[4/5] bg-[#050505] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col p-10 border border-white/10 font-sans"
             >
-                {/* BACKGROUND DECORATION */}
-                <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-pink-500/10 rounded-full blur-[100px] pointer-events-none" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none" />
+                {/* BACKGROUND DECORATION - Using radial-gradient instead of blur for html2canvas compatibility */}
+                <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full pointer-events-none"
+                    style={{ background: 'radial-gradient(circle, #ec489926 0%, transparent 70%)' }} />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full pointer-events-none"
+                    style={{ background: 'radial-gradient(circle, #06b6d426 0%, transparent 70%)' }} />
 
                 {/* NOISE OVERLAY */}
                 <div
@@ -82,8 +98,8 @@ export default function DuoIdentityCard({ userA, userB, resultId }: DuoIdentityC
                     style={{ backgroundImage: `url("${NOISE_DATA_URL}")`, backgroundRepeat: 'repeat' }}
                 />
 
-                {/* HEADER */}
-                <div className="relative z-10 flex items-center justify-between px-2">
+                {/* HEADER - Safe margin added */}
+                <div className="relative z-10 flex items-center justify-between px-2 pt-4">
                     <div className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em]">
                         Duo Matrix Analysis
                     </div>
@@ -194,8 +210,8 @@ export default function DuoIdentityCard({ userA, userB, resultId }: DuoIdentityC
                     </p>
                 </div>
 
-                {/* FOOTER */}
-                <div className="relative z-10 flex justify-between items-center opacity-30 mt-4 px-2">
+                {/* FOOTER - Safe margin added */}
+                <div className="relative z-10 flex justify-between items-center opacity-30 mt-4 px-2 pb-4">
                     <div className="text-[9px] font-black tracking-widest uppercase">Bio-Auth Matrix</div>
                     <div className="text-[9px] font-mono">etchvox.com</div>
                 </div>

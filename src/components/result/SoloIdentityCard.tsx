@@ -45,28 +45,37 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                 if (cardRef.current) {
                     const canvas = await html2canvas(cardRef.current, {
                         backgroundColor: '#050505',
-                        scale: 2,
+                        scale: 3, // Increased scale for even higher print quality
                         useCORS: true,
                         logging: false,
                         allowTaint: false,
-                        // Fix for oklab/oklch error: force standard color space
-                        imageTimeout: 0,
+                        width: cardRef.current.offsetWidth,
+                        height: cardRef.current.offsetHeight,
+                        scrollX: -window.scrollX,
+                        scrollY: -window.scrollY,
+                        windowWidth: document.documentElement.offsetWidth,
+                        windowHeight: document.documentElement.offsetHeight,
                         onclone: (clonedDoc) => {
                             const clonedCard = clonedDoc.querySelector('[data-capture-target="solo-card"]') as HTMLElement;
                             if (clonedCard) {
-                                // 1. Fix clipping by adding a tiny bit of "outer padding" in the clone
-                                clonedCard.style.padding = '48px'; // Ensure internal p-12 isn't the absolute edge
+                                // 1. Ensure the clone doesn't clip by adding temporary internal safety
+                                clonedCard.style.paddingTop = '60px';
+                                clonedCard.style.paddingBottom = '60px';
 
-                                // 2. Remove any oklab/oklch styles that might have leaked from Tailwind 4
-                                // html2canvas 1.4.1 doesn't support them.
+                                // 2. Remove backdrop-filter as html2canvas doesn't support it
+                                // and it can cause rendering glitches.
                                 const allElements = clonedDoc.querySelectorAll('*');
                                 allElements.forEach((el: any) => {
-                                    if (el.style) {
-                                        el.style.backdropFilter = 'none';
-                                        el.style.webkitBackdropFilter = 'none';
+                                    if (el instanceof HTMLElement && el.style) {
+                                        (el.style as any).backdropFilter = 'none';
+                                        (el.style as any).webkitBackdropFilter = 'none';
 
-                                        // Manual override for some common oklab-prone classes if needed
-                                        // But we'll try to use HEX in the component directly.
+                                        // 2. Fix potential oklch color leakage from Tailwind 4
+                                        // We'll trust the explicit style overrides in the component mostly,
+                                        // but ensure the background isn't some weird oklch value.
+                                        if (el.className.includes('bg-')) {
+                                            // Optional: Force standard colors here if needed
+                                        }
                                     }
                                 });
                             }
@@ -104,11 +113,11 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                 className="relative w-full aspect-[4/5] bg-[#050505] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col p-12 border border-white/10 font-sans select-none"
                 style={{ width: '100%', maxWidth: '400px', backgroundColor: '#050505' }}
             >
-                {/* BACKGROUND DECORATION */}
-                <div className="absolute top-[-20%] right-[-20%] w-[80%] h-[80%] rounded-full blur-[120px] pointer-events-none"
-                    style={{ backgroundColor: '#06b6d41a' }} />
-                <div className="absolute bottom-[-20%] left-[-20%] w-[80%] h-[80%] rounded-full blur-[120px] pointer-events-none"
-                    style={{ backgroundColor: `${mbtiInfo.color}15` }} />
+                {/* BACKGROUND DECORATION - Using radial-gradient instead of blur for html2canvas compatibility */}
+                <div className="absolute top-[-20%] right-[-20%] w-[80%] h-[80%] rounded-full pointer-events-none"
+                    style={{ background: `radial-gradient(circle, #06b6d433 0%, transparent 70%)` }} />
+                <div className="absolute bottom-[-20%] left-[-20%] w-[80%] h-[80%] rounded-full pointer-events-none"
+                    style={{ background: `radial-gradient(circle, ${mbtiInfo.color}33 0%, transparent 70%)` }} />
 
                 {/* NOISE OVERLAY */}
                 <div
@@ -116,8 +125,8 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                     style={{ backgroundImage: `url("${NOISE_DATA_URL}")`, backgroundRepeat: 'repeat' }}
                 />
 
-                {/* HEADER */}
-                <div className="relative z-10 flex items-center justify-between mb-2 px-6">
+                {/* HEADER - Added pt-4 to prevent top edge clipping */}
+                <div className="relative z-10 flex items-center justify-between mb-2 px-6 pt-4">
                     <div className="text-[10px] font-black uppercase tracking-[0.4em]" style={{ color: '#ffffff66' }}>
                         Truth Card
                     </div>
@@ -189,8 +198,8 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                     </div>
                 </div>
 
-                {/* FOOTER */}
-                <div className="relative z-10 mt-6 flex justify-between items-center px-8" style={{ opacity: 0.2 }}>
+                {/* FOOTER - Added pb-4 to prevent bottom edge clipping */}
+                <div className="relative z-10 mt-6 flex justify-between items-center px-8 pb-4" style={{ opacity: 0.2 }}>
                     <div className="text-[8px] font-black tracking-[0.2em] uppercase" style={{ color: '#ffffff' }}>Auth: Bio-Metric</div>
                     <div className="text-[8px] font-mono" style={{ color: '#ffffff' }}>v1.0.4.SOLO</div>
                 </div>
