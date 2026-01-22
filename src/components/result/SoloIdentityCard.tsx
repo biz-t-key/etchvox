@@ -121,18 +121,26 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
             <div
                 ref={cardRef}
                 data-capture-target="solo-card"
-                className="relative w-full aspect-[4/5] bg-[#050505] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col p-8 md:p-12 border border-white/10 font-sans select-none"
-                style={{ width: '100%', backgroundColor: '#050505' }}
+                className="relative w-full aspect-[4/5] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col p-8 md:p-12 border border-white/10 font-sans select-none"
+                style={{
+                    width: '100%',
+                    backgroundColor: '#050505',
+                    color: '#ffffff',
+                    position: 'relative'
+                }}
             >
-                {/* BACKGROUND DECORATION */}
-                <div className="absolute top-[-20%] right-[-20%] w-[80%] h-[80%] rounded-full pointer-events-none"
-                    style={{ background: `radial-gradient(circle, #06b6d433 0%, transparent 70%)` }} />
-                <div className="absolute bottom-[-20%] left-[-20%] w-[80%] h-[80%] rounded-full pointer-events-none"
-                    style={{ background: `radial-gradient(circle, ${mbtiInfo.color}33 0%, transparent 70%)` }} />
+                {/* SAFE BACKGROUND FOR CAPTURE */}
+                <div className="absolute inset-0 z-0" style={{ backgroundColor: '#050505' }} />
+
+                {/* BACKGROUND DECORATION - Use absolute positioning and explicit colors */}
+                <div className="absolute top-[-20%] right-[-20%] w-[80%] h-[80%] rounded-full pointer-events-none z-0"
+                    style={{ background: 'radial-gradient(circle, #06b6d433 0%, rgba(6, 182, 212, 0) 70%)' }} />
+                <div className="absolute bottom-[-20%] left-[-20%] w-[80%] h-[80%] rounded-full pointer-events-none z-0"
+                    style={{ background: `radial-gradient(circle, ${mbtiInfo.color}33 0%, rgba(0, 0, 0, 0) 70%)` }} />
 
                 {/* NOISE OVERLAY */}
                 <div
-                    className="absolute inset-0 opacity-[0.05] pointer-events-none mix-blend-overlay"
+                    className="absolute inset-0 opacity-[0.05] pointer-events-none mix-blend-overlay z-0"
                     style={{ backgroundImage: `url("${NOISE_DATA_URL}")`, backgroundRepeat: 'repeat' }}
                 />
 
@@ -151,14 +159,14 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
 
                     {/* PSYCHOLOGICAL BLUEPRINT */}
                     <div className="text-center relative">
-                        <div className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.6em] opacity-40 mb-1" style={{ color: mbtiInfo.color }}>
+                        <div className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.6em] opacity-40 mb-1" style={{ color: mbtiInfo.color || '#ffffff' }}>
                             Personality Code
                         </div>
                         <div className="text-7xl md:text-8xl font-black uppercase tracking-tighter leading-none"
-                            style={{ color: mbtiInfo.color, textShadow: `0 0 50px ${mbtiInfo.color}60` }}>
+                            style={{ color: mbtiInfo.color || '#ffffff' }}>
                             {mbti}
                         </div>
-                        <div className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.4em] mt-2 opacity-90" style={{ color: mbtiInfo.color }}>
+                        <div className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.4em] mt-2 opacity-90" style={{ color: mbtiInfo.color || '#ffffff' }}>
                             {mbtiInfo.nickname}
                         </div>
                     </div>
@@ -166,10 +174,10 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                     {/* GAP INDICATOR */}
                     <div className="relative py-2 px-6 md:px-12">
                         <div className="flex justify-between items-center mb-2">
-                            <span className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.3em]" style={{ color: '#ffffff4d' }}>Identity Gap</span>
+                            <span className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.3em]" style={{ color: 'rgba(255, 255, 255, 0.3)' }}>Identity Gap</span>
                             <span className="text-[10px] md:text-[12px] font-mono font-bold" style={{ color: '#22d3ee' }}>{gapLevel}%</span>
                         </div>
-                        <div className="h-[2px] md:h-[4px] w-full rounded-full overflow-hidden" style={{ backgroundColor: '#ffffff0d' }}>
+                        <div className="h-[2px] md:h-[4px] w-full rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}>
                             <div
                                 className="h-full transition-all duration-1000"
                                 style={{ width: `${gapLevel}%`, background: 'linear-gradient(to right, #0891b2, #ffffff)' }}
@@ -179,13 +187,13 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
 
                     {/* ACOUSTIC DATA */}
                     <div className="text-center">
-                        <div className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.6em] mb-1" style={{ color: '#22d3ee66' }}>
+                        <div className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.6em] mb-1" style={{ color: 'rgba(34, 211, 238, 0.4)' }}>
                             Acoustic Signal
                         </div>
                         <div className="text-7xl md:text-8xl font-black uppercase tracking-tighter leading-none" style={{ color: '#22d3ee' }}>
                             {voiceTypeCode}
                         </div>
-                        <div className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.4em] mt-2" style={{ color: '#22d3ee99' }}>
+                        <div className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.4em] mt-2" style={{ color: 'rgba(34, 211, 238, 0.6)' }}>
                             {voiceInfo.name}
                         </div>
                     </div>
@@ -193,8 +201,8 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
 
                 {/* IDENTITY ARCHETYPE BOX */}
                 <div className="relative z-10 rounded-[1.5rem] p-6 md:p-8 border shadow-2xl mt-6 mx-2 md:mx-4"
-                    style={{ backgroundColor: '#00000099', borderColor: '#ffffff1a' }}>
-                    <div className="text-[9px] md:text-[11px] font-black uppercase tracking-[0.3em] mb-3 text-center" style={{ color: '#22d3ee99' }}>
+                    style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)', borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+                    <div className="text-[9px] md:text-[11px] font-black uppercase tracking-[0.3em] mb-3 text-center" style={{ color: '#22d3ee' }}>
                         Identity Result
                     </div>
                     <div className="text-3xl md:text-4xl font-black text-white uppercase italic tracking-tighter text-center leading-[1] mb-4">
@@ -203,7 +211,7 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                     <p className="text-[11px] md:text-[13px] font-medium italic leading-relaxed text-center px-4" style={{ color: '#9ca3af' }}>
                         {displayIdentity.roast}
                     </p>
-                    <div className="mt-6 text-[8px] uppercase tracking-[0.4em] text-center" style={{ color: '#ffffff0d' }}>
+                    <div className="mt-6 text-[8px] uppercase tracking-[0.4em] text-center" style={{ color: 'rgba(255, 255, 255, 0.05)' }}>
                         etchvox.com fingerprint
                     </div>
                 </div>
@@ -211,7 +219,7 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                 {/* FOOTER */}
                 <div className="relative z-10 mt-8 flex justify-between items-center px-8 pb-4" style={{ opacity: 0.2 }}>
                     <div className="text-[8px] font-black tracking-[0.2em] uppercase" style={{ color: '#ffffff' }}>Auth: Bio-Metric</div>
-                    <div className="text-[8px] font-mono" style={{ color: '#ffffff' }}>v1.0.4.SOLO</div>
+                    <div className="text-[8px] font-mono text-white">v1.0.4.SOLO</div>
                 </div>
             </div>
 

@@ -578,90 +578,102 @@ export default function ResultPage() {
                                                             : 'Get your personalized voice × waveform visualization. High-quality, shareable video for your social profiles.'}
                                                     </p>
 
-                                                    {/* Premium Option - $10 Vault */}
-                                                    <div className={`bg-gradient-to-br ${isCouple ? 'from-pink-500/10 to-cyan-500/10 border-pink-500/30' : 'from-pink-500/10 to-violet-500/10 border-pink-500/30'} border-2 rounded-xl p-6 mb-4`}>
-                                                        <div className={`text-[10px] ${isCouple ? 'text-cyan-400' : 'text-pink-400'} font-bold uppercase tracking-[0.3em] mb-2`}>
-                                                            💎 {isCouple ? 'RESONANCE DECRYPTED' : 'LIFETIME ACCESS'}
+                                                    {/* Goal Management / Kill-Switch logic */}
+                                                    {FEATURE_FLAGS.DISABLE_PAYMENTS ? (
+                                                        <div className="bg-white/5 border border-white/10 rounded-xl p-8 text-center">
+                                                            <div className="text-3xl mb-4">✨</div>
+                                                            <p className="text-gray-300 text-sm leading-relaxed italic">
+                                                                {FEATURE_FLAGS.PAYMENT_DISABLED_MESSAGE}
+                                                            </p>
                                                         </div>
-                                                        <h4 className="text-xl font-black text-white uppercase mb-3">
-                                                            {isCouple ? 'Couple Vault' : 'EtchVox Vault'}
-                                                        </h4>
-                                                        <div className={`text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r ${isCouple ? 'from-pink-400 to-cyan-400' : 'from-pink-400 to-violet-400'} mb-4`}>
-                                                            {isCouple ? '$15.00' : '$10.00'}
-                                                        </div>
-
-                                                        {/* THE SELL - Simplified Copy */}
-                                                        <div className="text-center text-xs text-gray-400 mb-6">
-                                                            {isCouple ? (
-                                                                <>
-                                                                    <p className="mb-2">Relationships thrive on <span className="text-cyan-400 font-bold">Resonance</span>, not just words.</p>
-                                                                    <p className="text-pink-400">Decode your hidden dynamic.</p>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <p className="mb-2">Human voices change <span className="text-yellow-400 font-bold">0.5%/year</span> due to stress and aging.</p>
-                                                                    <p className="text-pink-400">This is the youngest voice you have left.</p>
-                                                                </>
-                                                            )}
-                                                        </div>
-
-                                                        <ul className="text-left text-xs text-gray-300 space-y-3 mb-8">
-                                                            <li className="flex items-start gap-2">
-                                                                <span className="text-green-400 mt-1">✓</span>
-                                                                <div className="flex flex-col">
-                                                                    <span className="font-bold">{isCouple ? 'Deep Compatibility Audit' : 'AI Identity Audit Report'}</span>
-                                                                    <span className="text-[10px] text-gray-500">Exhaustive personality analysis & vocal fingerprint.</span>
+                                                    ) : (
+                                                        <>
+                                                            {/* Premium Option - $10 Vault */}
+                                                            <div className={`bg-gradient-to-br ${isCouple ? 'from-pink-500/10 to-cyan-500/10 border-pink-500/30' : 'from-pink-500/10 to-violet-500/10 border-pink-500/30'} border-2 rounded-xl p-6 mb-4`}>
+                                                                <div className={`text-[10px] ${isCouple ? 'text-cyan-400' : 'text-pink-400'} font-bold uppercase tracking-[0.3em] mb-2`}>
+                                                                    💎 {isCouple ? 'RESONANCE DECRYPTED' : 'LIFETIME ACCESS'}
                                                                 </div>
-                                                            </li>
-                                                            <li className="flex items-start gap-2">
-                                                                <span className="text-green-400 mt-1">✓</span>
-                                                                <div className="flex flex-col">
-                                                                    <span className="font-bold">{isCouple ? 'Permanent Vaulting' : 'Lifetime Audio Storage'}</span>
-                                                                    <span className="text-[10px] text-gray-500">Prevent automatic deletion after 30 days. Your voice is archived forever.</span>
+                                                                <h4 className="text-xl font-black text-white uppercase mb-3">
+                                                                    {isCouple ? 'Couple Vault' : 'EtchVox Vault'}
+                                                                </h4>
+                                                                <div className={`text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r ${isCouple ? 'from-pink-400 to-cyan-400' : 'from-pink-400 to-violet-400'} mb-4`}>
+                                                                    {isCouple ? '$15.00' : '$10.00'}
                                                                 </div>
-                                                            </li>
-                                                            <li className="flex items-start gap-2">
-                                                                <span className="text-green-400 mt-1">✓</span>
-                                                                <div className="flex flex-col">
-                                                                    <span className="font-bold">Social Video Master</span>
-                                                                    <span className="text-[10px] text-gray-500">High-fidelity 4K visualizer export for sharing.</span>
+
+                                                                {/* THE SELL - Simplified Copy */}
+                                                                <div className="text-center text-xs text-gray-400 mb-6">
+                                                                    {isCouple ? (
+                                                                        <>
+                                                                            <p className="mb-2">Relationships thrive on <span className="text-cyan-400 font-bold">Resonance</span>, not just words.</p>
+                                                                            <p className="text-pink-400">Decode your hidden dynamic.</p>
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <p className="mb-2">Human voices change <span className="text-yellow-400 font-bold">0.5%/year</span> due to stress and aging.</p>
+                                                                            <p className="text-pink-400">This is the youngest voice you have left.</p>
+                                                                        </>
+                                                                    )}
                                                                 </div>
-                                                            </li>
-                                                        </ul>
 
-                                                        <div className="text-[9px] text-center text-gray-500 uppercase tracking-widest mb-4 font-mono">
-                                                            🔒 One-Time Purchase · Permanent Access
-                                                        </div>
+                                                                <ul className="text-left text-xs text-gray-300 space-y-3 mb-8">
+                                                                    <li className="flex items-start gap-2">
+                                                                        <span className="text-green-400 mt-1">✓</span>
+                                                                        <div className="flex flex-col">
+                                                                            <span className="font-bold">{isCouple ? 'Deep Compatibility Audit' : 'AI Identity Audit Report'}</span>
+                                                                            <span className="text-[10px] text-gray-500">Exhaustive personality analysis & vocal fingerprint.</span>
+                                                                        </div>
+                                                                    </li>
+                                                                    <li className="flex items-start gap-2">
+                                                                        <span className="text-green-400 mt-1">✓</span>
+                                                                        <div className="flex flex-col">
+                                                                            <span className="font-bold">{isCouple ? 'Permanent Vaulting' : 'Lifetime Audio Storage'}</span>
+                                                                            <span className="text-[10px] text-gray-500">Prevent automatic deletion after 30 days. Your voice is archived forever.</span>
+                                                                        </div>
+                                                                    </li>
+                                                                    <li className="flex items-start gap-2">
+                                                                        <span className="text-green-400 mt-1">✓</span>
+                                                                        <div className="flex flex-col">
+                                                                            <span className="font-bold">Social Video Master</span>
+                                                                            <span className="text-[10px] text-gray-500">High-fidelity 4K visualizer export for sharing.</span>
+                                                                        </div>
+                                                                    </li>
+                                                                </ul>
 
-                                                        <button
-                                                            onClick={() => handleCheckout(isCouple ? 'couple' : 'vault')}
-                                                            disabled={processingPayment}
-                                                            className={`w-full bg-gradient-to-r ${isCouple ? 'from-pink-600 to-cyan-600' : 'from-pink-600 to-violet-600'} hover:opacity-90 text-white font-bold py-4 rounded-xl text-sm uppercase tracking-widest shadow-lg transform hover:scale-[1.02] transition-all`}
-                                                        >
-                                                            {processingPayment ? 'Processing...' : isCouple ? 'Unlock Compatibility — $15.00' : 'Secure Vault Access — $10.00'}
-                                                        </button>
+                                                                <div className="text-[9px] text-center text-gray-500 uppercase tracking-widest mb-4 font-mono">
+                                                                    🔒 One-Time Purchase · Permanent Access
+                                                                </div>
 
-                                                        <p className="mt-4 text-[10px] text-gray-500 italic">
-                                                            *Non-vault audio data is automatically purged from our servers after 30 days for your privacy.
-                                                        </p>
-                                                    </div>
+                                                                <button
+                                                                    onClick={() => handleCheckout(isCouple ? 'couple' : 'vault')}
+                                                                    disabled={processingPayment}
+                                                                    className={`w-full bg-gradient-to-r ${isCouple ? 'from-pink-600 to-cyan-600' : 'from-pink-600 to-violet-600'} hover:opacity-90 text-white font-bold py-4 rounded-xl text-sm uppercase tracking-widest shadow-lg transform hover:scale-[1.02] transition-all`}
+                                                                >
+                                                                    {processingPayment ? 'Processing...' : isCouple ? 'Unlock Compatibility — $15.00' : 'Secure Vault Access — $10.00'}
+                                                                </button>
 
-                                                    {/* Basic Option - Controlled by Flag */}
-                                                    {FEATURE_FLAGS.ENABLE_BASIC_UNLOCK && (
-                                                        <div className="mt-8 border border-white/10 rounded-xl p-4">
-                                                            <h4 className="text-sm font-bold text-gray-300 uppercase mb-1">Standard Export</h4>
-                                                            <p className="text-[10px] text-gray-500 mb-3 italic">Waveform Visualizer • MP4 Format</p>
-                                                            <div className={`text-xl font-black ${isCouple ? 'text-pink-400' : 'text-cyan-400'} mb-3`}>
-                                                                $5.00
+                                                                <p className="mt-4 text-[10px] text-gray-500 italic">
+                                                                    *Non-vault audio data is automatically purged from our servers after 30 days for your privacy.
+                                                                </p>
                                                             </div>
-                                                            <button
-                                                                onClick={() => handleCheckout('unlock')}
-                                                                disabled={processingPayment}
-                                                                className="w-full bg-white/10 hover:bg-white/20 border border-white/20 text-white py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
-                                                            >
-                                                                {processingPayment ? 'Processing...' : 'Unlock HD Video — $5.00'}
-                                                            </button>
-                                                        </div>
+
+                                                            {/* Basic Option - Controlled by Flag */}
+                                                            {FEATURE_FLAGS.ENABLE_BASIC_UNLOCK && (
+                                                                <div className="mt-8 border border-white/10 rounded-xl p-4">
+                                                                    <h4 className="text-sm font-bold text-gray-300 uppercase mb-1">Standard Export</h4>
+                                                                    <p className="text-[10px] text-gray-500 mb-3 italic">Waveform Visualizer • MP4 Format</p>
+                                                                    <div className={`text-xl font-black ${isCouple ? 'text-pink-400' : 'text-cyan-400'} mb-3`}>
+                                                                        $5.00
+                                                                    </div>
+                                                                    <button
+                                                                        onClick={() => handleCheckout('unlock')}
+                                                                        disabled={processingPayment}
+                                                                        className="w-full bg-white/10 hover:bg-white/20 border border-white/20 text-white py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
+                                                                    >
+                                                                        {processingPayment ? 'Processing...' : 'Unlock HD Video — $5.00'}
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </>
                                                     )}
                                                 </div>
                                             </div>

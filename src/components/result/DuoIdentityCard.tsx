@@ -104,18 +104,21 @@ export default function DuoIdentityCard({ userA, userB, resultId }: DuoIdentityC
             <div
                 ref={cardRef}
                 data-capture-target="duo-card"
-                className="relative w-full aspect-[4/5] bg-[#050505] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col p-8 md:p-12 border border-white/10 font-sans"
-                style={{ backgroundColor: '#050505' }}
+                className="relative w-full aspect-[4/5] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col p-8 md:p-12 border border-white/10 font-sans"
+                style={{ backgroundColor: '#050505', color: '#ffffff', position: 'relative' }}
             >
-                {/* BACKGROUND DECORATION - Using radial-gradient instead of blur for html2canvas compatibility */}
-                <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full pointer-events-none"
-                    style={{ background: 'radial-gradient(circle, #ec489926 0%, transparent 70%)' }} />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full pointer-events-none"
-                    style={{ background: 'radial-gradient(circle, #06b6d426 0%, transparent 70%)' }} />
+                {/* SAFE BACKGROUND FOR CAPTURE */}
+                <div className="absolute inset-0 z-0" style={{ backgroundColor: '#050505' }} />
+
+                {/* BACKGROUND DECORATION - Using explicit RGBA colors for html2canvas */}
+                <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full pointer-events-none z-0"
+                    style={{ background: 'radial-gradient(circle, rgba(236, 72, 153, 0.15) 0%, rgba(236, 72, 153, 0) 70%)' }} />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full pointer-events-none z-0"
+                    style={{ background: 'radial-gradient(circle, rgba(6, 182, 212, 0.15) 0%, rgba(6, 182, 212, 0) 70%)' }} />
 
                 {/* NOISE OVERLAY */}
                 <div
-                    className="absolute inset-0 opacity-[0.05] pointer-events-none mix-blend-overlay"
+                    className="absolute inset-0 opacity-[0.05] pointer-events-none mix-blend-overlay z-0"
                     style={{ backgroundImage: `url("${NOISE_DATA_URL}")`, backgroundRepeat: 'repeat' }}
                 />
 
@@ -134,7 +137,8 @@ export default function DuoIdentityCard({ userA, userB, resultId }: DuoIdentityC
                     <div className="flex justify-between items-start gap-4">
                         {/* User A */}
                         <div className="flex-1 flex flex-col items-center">
-                            <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-pink-500/10 border border-pink-500/30 flex items-center justify-center text-3xl md:text-4xl mb-3">
+                            <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl border flex items-center justify-center text-3xl md:text-4xl mb-3"
+                                style={{ backgroundColor: 'rgba(236, 72, 153, 0.1)', borderColor: 'rgba(236, 72, 153, 0.3)' }}>
                                 {voiceA.icon}
                             </div>
                             <div className="text-[10px] md:text-[12px] font-black text-pink-400 uppercase tracking-widest text-center truncate w-full mb-1">{userA.name}</div>
@@ -161,7 +165,8 @@ export default function DuoIdentityCard({ userA, userB, resultId }: DuoIdentityC
 
                         {/* User B */}
                         <div className="flex-1 flex flex-col items-center">
-                            <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-3xl md:text-4xl mb-3">
+                            <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl border flex items-center justify-center text-3xl md:text-4xl mb-3"
+                                style={{ backgroundColor: 'rgba(6, 182, 212, 0.1)', borderColor: 'rgba(6, 182, 212, 0.3)' }}>
                                 {voiceB.icon}
                             </div>
                             <div className="text-[10px] md:text-[12px] font-black text-cyan-400 uppercase tracking-widest text-center truncate w-full mb-1">{userB.name}</div>
@@ -170,7 +175,7 @@ export default function DuoIdentityCard({ userA, userB, resultId }: DuoIdentityC
                     </div>
 
                     {/* COMPARISON CHART */}
-                    <div className="bg-white/5 rounded-2xl p-6 md:p-8 border border-white/5 space-y-6">
+                    <div className="rounded-2xl p-6 md:p-8 border space-y-6" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.05)' }}>
                         <div className="space-y-3">
                             <div className="flex justify-between text-[8px] md:text-[10px] font-black uppercase tracking-widest text-white/30 px-1">
                                 <span>Frequency</span>
@@ -180,21 +185,21 @@ export default function DuoIdentityCard({ userA, userB, resultId }: DuoIdentityC
                             {/* Pitch Bar */}
                             <div className="flex items-center gap-3">
                                 <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden flex justify-end">
-                                    <div className="h-full bg-pink-500/50" style={{ width: `${Math.min(userA.metrics.pitch / 400 * 100, 100)}%` }} />
+                                    <div className="h-full" style={{ width: `${Math.min(userA.metrics.pitch / 400 * 100, 100)}%`, backgroundColor: 'rgba(236, 72, 153, 0.5)' }} />
                                 </div>
                                 <div className="text-[9px] font-mono text-white/40">Hz</div>
                                 <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
-                                    <div className="h-full bg-cyan-500/50" style={{ width: `${Math.min(userB.metrics.pitch / 400 * 100, 100)}%` }} />
+                                    <div className="h-full" style={{ width: `${Math.min(userB.metrics.pitch / 400 * 100, 100)}%`, backgroundColor: 'rgba(6, 182, 212, 0.5)' }} />
                                 </div>
                             </div>
                             {/* Speed Bar */}
                             <div className="flex items-center gap-3">
                                 <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden flex justify-end">
-                                    <div className="h-full bg-pink-500/30" style={{ width: `${userA.metrics.speed * 100}%` }} />
+                                    <div className="h-full" style={{ width: `${userA.metrics.speed * 100}%`, backgroundColor: 'rgba(236, 72, 153, 0.3)' }} />
                                 </div>
                                 <div className="text-[9px] font-mono text-white/40">BPM</div>
                                 <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
-                                    <div className="h-full bg-cyan-500/30" style={{ width: `${userB.metrics.speed * 100}%` }} />
+                                    <div className="h-full" style={{ width: `${userB.metrics.speed * 100}%`, backgroundColor: 'rgba(6, 182, 212, 0.3)' }} />
                                 </div>
                             </div>
                         </div>
@@ -225,7 +230,7 @@ export default function DuoIdentityCard({ userA, userB, resultId }: DuoIdentityC
                 </div>
 
                 {/* ROAST BOX */}
-                <div className="bg-black/40 backdrop-blur-3xl rounded-[1.5rem] p-6 border border-white/10 mt-auto">
+                <div className="rounded-[1.5rem] p-6 border mt-auto" style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)', borderColor: 'rgba(255, 255, 255, 0.1)' }}>
                     <p className="text-[11px] md:text-[13px] text-gray-400 leading-relaxed text-center font-medium italic opacity-90 px-2 line-clamp-3">
                         {duoIdentity.roast}
                     </p>
@@ -234,7 +239,7 @@ export default function DuoIdentityCard({ userA, userB, resultId }: DuoIdentityC
                 {/* FOOTER */}
                 <div className="relative z-10 flex justify-between items-center opacity-30 mt-6 px-2 pb-4">
                     <div className="text-[9px] font-black tracking-widest uppercase">Bio-Auth Matrix</div>
-                    <div className="text-[9px] font-mono">etchvox.com</div>
+                    <div className="text-[9px] font-mono text-white">etchvox.com</div>
                 </div>
             </div>
 

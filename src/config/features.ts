@@ -14,4 +14,11 @@ export const FEATURE_FLAGS = {
 
     // Payment Gateway: 'bmac' | 'stripe'
     PAYMENT_GATEWAY: 'bmac' as 'bmac' | 'stripe',
+
+    // --- GOAL MANAGEMENT ---
+    // Set to true to stop taking payments (e.g. when you reach 1.28M yen)
+    DISABLE_PAYMENTS: false,
+
+    // Message to show when payments are disabled
+    PAYMENT_DISABLED_MESSAGE: "Thank you! We've reached our development goal. Premium features are temporarily paused.",
 };
