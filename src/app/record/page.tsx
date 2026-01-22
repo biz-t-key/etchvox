@@ -396,6 +396,15 @@ export default function RecordPage() {
                     </div>
                 )}
 
+                {/* Calibration Phase */}
+                {phase === 'calibration' && (
+                    <CalibrationForm
+                        currentGender={gender}
+                        currentYear={birthYear}
+                        onComplete={handleCalibrationSubmit}
+                    />
+                )}
+
                 {/* MBTI Selection Phase */}
                 {phase === 'mbti' && (
                     <div className="space-y-8">

@@ -16,6 +16,7 @@ import { VideoPlayerSection } from '@/components/video/VideoPlayerSection';
 import { MBTIType } from '@/lib/mbti';
 import { isFirebaseConfigured, getDb } from '@/lib/firebase';
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { FEATURE_FLAGS } from '@/config/features';
 
 // Stripe is loaded on-demand when payment is triggered, not on page load
 // This prevents console errors when NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not set
@@ -144,20 +145,38 @@ export default function ResultPage() {
     };
 
     const handleCheckout = async (type: 'unlock' | 'vault' | 'couple') => {
-        // BMAC Page URL (Replace with your actual BMAC handle)
-        const bmacHandle = 'etchvox';
-        const amount = type === 'couple' ? 15 : (type === 'vault' ? 10 : 5);
+        setProcessingPayment(true);
 
-        // Construct the BMAC URL with pre-filled message containing the ID
-        // This ensures your webhook can identify which result to unlock
-        const message = encodeURIComponent(`ID: ${resultId}`);
-        const bmacUrl = `https://www.buymeacoffee.com/${bmacHandle}/?amount=${amount}&message=${message}`;
+        if (FEATURE_FLAGS.PAYMENT_GATEWAY === 'stripe') {
+            // STRIPE LOGIC
+            try {
+                const response = await fetch('/api/checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ resultId, type }),
+                });
+                const { sessionId } = await response.json();
+                const stripe = await getStripe() as any;
+                if (stripe) {
+                    await stripe.redirectToCheckout({ sessionId });
+                }
+            } catch (err) {
+                console.error('Stripe Checkout Error:', err);
+                alert('Payment failed to initialize.');
+            } finally {
+                setProcessingPayment(false);
+            }
+        } else {
+            // BMAC LOGIC (Default/Current)
+            const bmacHandle = FEATURE_FLAGS.BMAC_HANDLE;
+            const amount = type === 'couple' ? 15 : (type === 'vault' ? 10 : 5);
+            const message = encodeURIComponent(`ID: ${resultId}`);
+            const bmacUrl = `https://www.buymeacoffee.com/${bmacHandle}/?amount=${amount}&message=${message}`;
 
-        // Open in new tab or redirect
-        window.open(bmacUrl, '_blank');
-
-        // Show the verifying state so the user knows we're waiting for the "coffee" to arrive
-        setVerifyingPayment(true);
+            window.open(bmacUrl, '_blank');
+            setVerifyingPayment(true);
+            setProcessingPayment(false);
+        }
     };
 
     if (loading) {
@@ -555,7 +574,7 @@ export default function ResultPage() {
                                                             {isCouple ? 'Couple Vault' : 'EtchVox Vault'}
                                                         </h4>
                                                         <div className={`text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r ${isCouple ? 'from-pink-400 to-cyan-400' : 'from-pink-400 to-violet-400'} mb-4`}>
-                                                            $10.00
+                                                            {isCouple ? '$15.00' : '$10.00'}
                                                         </div>
 
                                                         {/* THE SELL - Simplified Copy */}
@@ -573,48 +592,64 @@ export default function ResultPage() {
                                                             )}
                                                         </div>
 
-                                                        <ul className="text-left text-xs text-gray-300 space-y-2 mb-6">
-                                                            <li className="flex items-center gap-2">
-                                                                <span className="text-green-400">✓</span>
-                                                                <span><strong>{isCouple ? 'Deep Compatibility Audit' : 'AI Identity Audit Report'}</strong></span>
+                                                        <ul className="text-left text-xs text-gray-300 space-y-3 mb-8">
+                                                            <li className="flex items-start gap-2">
+                                                                <span className="text-green-400 mt-1">✓</span>
+                                                                <div className="flex flex-col">
+                                                                    <span className="font-bold">{isCouple ? 'Deep Compatibility Audit' : 'AI Identity Audit Report'}</span>
+                                                                    <span className="text-[10px] text-gray-500">Exhaustive personality analysis & vocal fingerprint.</span>
+                                                                </div>
                                                             </li>
-                                                            <li className="flex items-center gap-2">
-                                                                <span className="text-green-400">✓</span>
-                                                                <span><strong>{isCouple ? 'Date Night Discussion Kit' : 'Permanent Raw Audio Storage'}</strong></span>
+                                                            <li className="flex items-start gap-2">
+                                                                <span className="text-green-400 mt-1">✓</span>
+                                                                <div className="flex flex-col">
+                                                                    <span className="font-bold">{isCouple ? 'Permanent Vaulting' : 'Lifetime Audio Storage'}</span>
+                                                                    <span className="text-[10px] text-gray-500">Prevent automatic deletion after 30 days. Your voice is archived forever.</span>
+                                                                </div>
                                                             </li>
-                                                            <li className="flex items-center gap-2">
-                                                                <span className="text-green-400">✓</span>
-                                                                <span>High-quality downloadable video</span>
-                                                            </li>
-                                                            <li className="flex items-center gap-2">
-                                                                <span className="text-green-400">✓</span>
-                                                                <span>Track evolution over time</span>
+                                                            <li className="flex items-start gap-2">
+                                                                <span className="text-green-400 mt-1">✓</span>
+                                                                <div className="flex flex-col">
+                                                                    <span className="font-bold">Social Video Master</span>
+                                                                    <span className="text-[10px] text-gray-500">High-fidelity 4K visualizer export for sharing.</span>
+                                                                </div>
                                                             </li>
                                                         </ul>
+
+                                                        <div className="text-[9px] text-center text-gray-500 uppercase tracking-widest mb-4 font-mono">
+                                                            🔒 One-Time Purchase · Permanent Access
+                                                        </div>
+
                                                         <button
-                                                            onClick={() => handleCheckout('vault')}
+                                                            onClick={() => handleCheckout(isCouple ? 'couple' : 'vault')}
                                                             disabled={processingPayment}
                                                             className={`w-full bg-gradient-to-r ${isCouple ? 'from-pink-600 to-cyan-600' : 'from-pink-600 to-violet-600'} hover:opacity-90 text-white font-bold py-4 rounded-xl text-sm uppercase tracking-widest shadow-lg transform hover:scale-[1.02] transition-all`}
                                                         >
-                                                            {processingPayment ? 'Processing...' : isCouple ? 'Decode Our Bond — $10.00' : 'Preserve My Voice — $10.00'}
+                                                            {processingPayment ? 'Processing...' : isCouple ? 'Unlock Compatibility — $15.00' : 'Secure Vault Access — $10.00'}
                                                         </button>
+
+                                                        <p className="mt-4 text-[10px] text-gray-500 italic">
+                                                            *Non-vault audio data is automatically purged from our servers after 30 days for your privacy.
+                                                        </p>
                                                     </div>
 
-                                                    {/* Basic Option - $5 Video Only */}
-                                                    <div className="border border-white/10 rounded-xl p-4">
-                                                        <h4 className="text-sm font-bold text-gray-300 uppercase mb-1">Standard Export</h4>
-                                                        <p className="text-[10px] text-gray-500 mb-3 italic">Waveform Visualizer • MP4 Format</p>
-                                                        <div className={`text-xl font-black ${isCouple ? 'text-pink-400' : 'text-cyan-400'} mb-3`}>
-                                                            $5.00
+                                                    {/* Basic Option - Controlled by Flag */}
+                                                    {FEATURE_FLAGS.ENABLE_BASIC_UNLOCK && (
+                                                        <div className="mt-8 border border-white/10 rounded-xl p-4">
+                                                            <h4 className="text-sm font-bold text-gray-300 uppercase mb-1">Standard Export</h4>
+                                                            <p className="text-[10px] text-gray-500 mb-3 italic">Waveform Visualizer • MP4 Format</p>
+                                                            <div className={`text-xl font-black ${isCouple ? 'text-pink-400' : 'text-cyan-400'} mb-3`}>
+                                                                $5.00
+                                                            </div>
+                                                            <button
+                                                                onClick={() => handleCheckout('unlock')}
+                                                                disabled={processingPayment}
+                                                                className="w-full bg-white/10 hover:bg-white/20 border border-white/20 text-white py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
+                                                            >
+                                                                {processingPayment ? 'Processing...' : 'Unlock HD Video — $5.00'}
+                                                            </button>
                                                         </div>
-                                                        <button
-                                                            onClick={() => handleCheckout('unlock')}
-                                                            disabled={processingPayment}
-                                                            className="w-full bg-white/10 hover:bg-white/20 border border-white/20 text-white py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
-                                                        >
-                                                            {processingPayment ? 'Processing...' : 'Unlock HD Video — $5.00'}
-                                                        </button>
-                                                    </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -662,7 +697,6 @@ export default function ResultPage() {
                                             <div className="flex justify-center gap-8 uppercase tracking-[0.2em] font-mono text-[9px] text-gray-500">
                                                 <Link href="/terms" className="hover:text-cyan-400 transition-colors">Terms</Link>
                                                 <Link href="/privacy" className="hover:text-cyan-400 transition-colors">Privacy</Link>
-                                                <Link href="/tokusho" className="hover:text-cyan-400 transition-colors">Legal</Link>
                                             </div>
                                             <Link href="/" className="inline-block text-[10px] text-gray-600 hover:text-white transition-colors uppercase tracking-[0.2em] border-b border-transparent hover:border-gray-500 pb-1">
                                                 Start New Analysis
