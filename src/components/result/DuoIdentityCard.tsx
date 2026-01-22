@@ -51,10 +51,30 @@ export default function DuoIdentityCard({ userA, userB, resultId }: DuoIdentityC
                         onclone: (clonedDoc) => {
                             const clonedCard = clonedDoc.querySelector('[data-capture-target="duo-card"]') as HTMLElement;
                             if (clonedCard) {
-                                // 1. Extra breathing room for the capture engine
-                                clonedCard.style.paddingTop = '60px';
-                                clonedCard.style.paddingBottom = '60px';
+                                // 1. Fix potential oklch/oklab color leakage from Tailwind 4
+                                // html2canvas crashes on these modern color functions.
+                                try {
+                                    for (let i = 0; i < clonedDoc.styleSheets.length; i++) {
+                                        const sheet = clonedDoc.styleSheets[i] as any;
+                                        try {
+                                            const rules = sheet.cssRules || sheet.rules;
+                                            if (rules) {
+                                                for (let j = rules.length - 1; j >= 0; j--) {
+                                                    const rule = rules[j];
+                                                    if (rule.cssText.includes('oklch') || rule.cssText.includes('oklab') || rule.cssText.includes('color-mix')) {
+                                                        sheet.deleteRule(j);
+                                                    }
+                                                }
+                                            }
+                                        } catch (e) {
+                                            // Ignore cross-origin stylesheet errors
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.warn("Failed to sanitize stylesheets for capture:", e);
+                                }
 
+                                // 2. Remove backdrop-filter
                                 const allElements = clonedDoc.querySelectorAll('*');
                                 allElements.forEach((el: any) => {
                                     if (el.style) {

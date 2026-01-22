@@ -58,24 +58,35 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                         onclone: (clonedDoc) => {
                             const clonedCard = clonedDoc.querySelector('[data-capture-target="solo-card"]') as HTMLElement;
                             if (clonedCard) {
-                                // 1. Ensure the clone doesn't clip by adding temporary internal safety
-                                clonedCard.style.paddingTop = '60px';
-                                clonedCard.style.paddingBottom = '60px';
+                                // 1. Fix potential oklch/oklab color leakage from Tailwind 4
+                                // html2canvas crashes on these modern color functions.
+                                try {
+                                    for (let i = 0; i < clonedDoc.styleSheets.length; i++) {
+                                        const sheet = clonedDoc.styleSheets[i] as any;
+                                        try {
+                                            const rules = sheet.cssRules || sheet.rules;
+                                            if (rules) {
+                                                for (let j = rules.length - 1; j >= 0; j--) {
+                                                    const rule = rules[j];
+                                                    if (rule.cssText.includes('oklch') || rule.cssText.includes('oklab') || rule.cssText.includes('color-mix')) {
+                                                        sheet.deleteRule(j);
+                                                    }
+                                                }
+                                            }
+                                        } catch (e) {
+                                            // Ignore cross-origin stylesheet errors
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.warn("Failed to sanitize stylesheets for capture:", e);
+                                }
 
                                 // 2. Remove backdrop-filter as html2canvas doesn't support it
-                                // and it can cause rendering glitches.
                                 const allElements = clonedDoc.querySelectorAll('*');
                                 allElements.forEach((el: any) => {
                                     if (el instanceof HTMLElement && el.style) {
                                         (el.style as any).backdropFilter = 'none';
                                         (el.style as any).webkitBackdropFilter = 'none';
-
-                                        // 2. Fix potential oklch color leakage from Tailwind 4
-                                        // We'll trust the explicit style overrides in the component mostly,
-                                        // but ensure the background isn't some weird oklch value.
-                                        if (el.className.includes('bg-')) {
-                                            // Optional: Force standard colors here if needed
-                                        }
                                     }
                                 });
                             }
@@ -113,7 +124,7 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                 className="relative w-full aspect-[4/5] bg-[#050505] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col p-8 md:p-12 border border-white/10 font-sans select-none"
                 style={{ width: '100%', backgroundColor: '#050505' }}
             >
-                {/* BACKGROUND DECORATION - Using radial-gradient instead of blur for html2canvas compatibility */}
+                {/* BACKGROUND DECORATION */}
                 <div className="absolute top-[-20%] right-[-20%] w-[80%] h-[80%] rounded-full pointer-events-none"
                     style={{ background: `radial-gradient(circle, #06b6d433 0%, transparent 70%)` }} />
                 <div className="absolute bottom-[-20%] left-[-20%] w-[80%] h-[80%] rounded-full pointer-events-none"
@@ -234,7 +245,7 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                 </div>
             </div>
 
-            {/* 3. INVISIBLE OVERLAY */}
+            {/* 3. INVISIBLE OVERLAY FOR MOBILE SAVE */}
             {imageUrl && (
                 <img
                     src={imageUrl}
