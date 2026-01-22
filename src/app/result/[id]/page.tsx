@@ -321,139 +321,152 @@ export default function ResultPage() {
 
                 {/* STAGE 2 & 3 CONTENT */}
                 {(displayStage === 'metrics' || displayStage === 'full') && (
-                    <div className="animate-fade-in w-full space-y-40 section-spacing pt-12">
-                        {/* Metrics Card */}
+                    <div className="animate-fade-in w-full space-y-24 md:space-y-40 pt-12 flex flex-col items-center">
+                        {/* Metrics Card - Balanced & Cinematic */}
                         <div
-                            className="glass rounded-3xl p-8 relative overflow-hidden border border-white/10"
+                            className="glass rounded-3xl p-8 md:p-12 relative overflow-hidden border border-white/10 w-full max-w-4xl mx-auto"
                             style={{ boxShadow: `0 0 60px ${colors.primary}10` }}
                         >
-                            <div className="flex flex-col items-center border-b border-white/5 pb-8 mb-8">
-                                <span className="text-6xl mb-4 filter drop-shadow-[0_0_25px_rgba(255,255,255,0.15)]">
+                            <div className="flex flex-col items-center border-b border-white/5 pb-8 mb-8 text-center">
+                                <span className="text-6xl mb-6 filter drop-shadow-[0_0_25px_rgba(255,255,255,0.15)]">
                                     {voiceType.icon}
                                 </span>
-                                {/* Voice Type Code - Large */}
-                                <div className="text-5xl md:text-6xl font-black uppercase tracking-tighter mb-3 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-white">
+                                <div className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-white">
                                     {result.typeCode}
                                 </div>
-                                {/* Voice Type Name - Secondary */}
-                                <h1 className="text-2xl md:text-3xl font-bold uppercase tracking-tight mb-6 text-white/90">
+                                <h1 className="text-2xl md:text-4xl font-bold uppercase tracking-tight mb-8 text-white/90">
                                     {voiceType.name}
                                 </h1>
-                                {/* Analysis - Below Name */}
-                                <div className="max-w-lg text-center">
-                                    <p className="text-gray-400 leading-relaxed text-sm md:text-base font-medium italic">
-                                        {voiceType.roast}
+                                <div className="max-w-2xl">
+                                    <p className="text-gray-400 leading-relaxed text-base md:text-lg font-medium italic">
+                                        "{voiceType.roast}"
                                     </p>
                                 </div>
                             </div>
 
-                            {/* Meters - Clean & Minimal */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                            {/* Meters - Responsive Grid */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
                                 {[
                                     { label: 'Pitch', val: `${Math.round(safeMetrics.pitch)} Hz`, color: 'text-cyan-400' },
                                     { label: 'Speed', val: `${Math.round(safeMetrics.speed * 100)}%`, color: 'text-white' },
                                     { label: 'Vibe', val: `${Math.round(safeMetrics.vibe * 100)}%`, color: 'text-yellow-400' },
                                     { label: 'Sync', val: `${safeMetrics.humanityScore}%`, color: colors.primary === '#00FF66' ? 'text-green-400' : 'text-green-500' },
                                 ].map((m) => (
-                                    <div key={m.label} className="bg-black/40 rounded-xl p-4 border border-white/5 flex flex-col items-center justify-center h-24">
-                                        <div className="text-[9px] text-gray-500 uppercase tracking-[0.2em] mb-2">{m.label}</div>
-                                        <div className={`text-xl font-bold ${m.color} font-mono`}>{m.val}</div>
+                                    <div key={m.label} className="bg-black/40 rounded-2xl p-6 border border-white/5 flex flex-col items-center justify-center transition-all hover:border-white/10 hover:bg-black/60 group/meter">
+                                        <div className="text-[10px] text-gray-500 uppercase tracking-[0.2em] mb-2 group-hover/meter:text-gray-400 transition-colors">{m.label}</div>
+                                        <div className={`text-2xl font-bold ${m.color} font-mono`}>{m.val}</div>
                                     </div>
                                 ))}
                             </div>
 
-                            {/* Processing Indicator */}
                             {displayStage === 'metrics' && (
-                                <div className="mt-8 text-center animate-bounce">
-                                    <div className="text-gray-500 text-[10px] uppercase tracking-widest">Generating Report</div>
+                                <div className="mt-12 text-center animate-pulse">
+                                    <div className="text-gray-500 text-[10px] uppercase tracking-[0.3em] font-black">Decrypting Neural Signal...</div>
                                 </div>
                             )}
                         </div>
 
-
                         {displayStage === 'full' && (
-                            <div className="animate-slide-up space-y-40 w-full max-w-2xl">
-                                {/* MBTI / Truth Card Section */}
-                                <div className="w-full">
-                                    <div className="flex items-end justify-between mb-12 px-1">
-                                        <div className="flex items-center gap-3">
+                            <div className="animate-slide-up space-y-32 md:space-y-48 w-full flex flex-col items-center">
+
+                                {/* Main Layout Grid for PC */}
+                                <div className="grid lg:grid-cols-12 gap-12 md:gap-20 w-full max-w-6xl items-start">
+
+                                    {/* LEFT: TRUTH CARD (Larger on PC) */}
+                                    <div className="lg:col-span-7 space-y-12">
+                                        <div className="flex items-center gap-3 mb-8">
                                             <div className="w-1 h-6 bg-cyan-500" />
                                             <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em]">
                                                 {isCouple ? 'Duo Identity' : 'Truth Card'}
                                             </h2>
                                         </div>
-                                        {selectedMBTI && !isPremium && !isCouple && (
-                                            <button
-                                                onClick={() => setSelectedMBTI(null)}
-                                                className="text-[10px] text-gray-500 hover:text-white transition-colors uppercase tracking-widest"
-                                            >
-                                                Edit
-                                            </button>
-                                        )}
+
+                                        <div id="identity-card" className="w-full">
+                                            {isCouple && result.coupleData ? (
+                                                <DuoIdentityCard
+                                                    userA={result.coupleData.userA as any}
+                                                    userB={result.coupleData.userB as any}
+                                                    resultId={result.id}
+                                                />
+                                            ) : (
+                                                <SoloIdentityCard
+                                                    mbti={(result.mbti || 'INTJ') as MBTIType}
+                                                    voiceTypeCode={result.typeCode}
+                                                    userName={result.id}
+                                                    metrics={safeMetrics}
+                                                />
+                                            )}
+                                        </div>
                                     </div>
 
-                                    {/* Duo/Solo Identity Card */}
-                                    {isCouple && result.coupleData ? (
-                                        <div id="identity-card" className="w-full">
-                                            <DuoIdentityCard
-                                                userA={result.coupleData.userA as any}
-                                                userB={result.coupleData.userB as any}
-                                                resultId={result.id}
-                                            />
-                                        </div>
-                                    ) : (
-                                        <div id="identity-card" className="w-full">
-                                            <SoloIdentityCard
-                                                mbti={(result.mbti || 'INTJ') as MBTIType}
-                                                voiceTypeCode={result.typeCode}
-                                                userName={result.id}
-                                                metrics={safeMetrics}
-                                            />
-                                        </div>
-                                    )}
-                                </div>
+                                    {/* RIGHT: MATCHES & BIO */}
+                                    <div className="lg:col-span-5 space-y-20">
+                                        {/* Genetic Matches */}
+                                        <div className="w-full">
+                                            <div className="flex items-center gap-3 mb-10">
+                                                <div className="w-1 h-6 bg-purple-500" />
+                                                <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em]">
+                                                    Matches
+                                                </h2>
+                                            </div>
 
-
-
-                                {/* Genetic Matches */}
-                                <div className="w-full">
-                                    <div className="flex items-center gap-3 mb-10 px-1">
-                                        <div className="w-1 h-6 bg-purple-500" />
-                                        <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em]">
-                                            Matches
-                                        </h2>
-                                    </div>
-
-                                    <div className="grid md:grid-cols-2 gap-6">
-                                        {/* Good Matches */}
-                                        <div className="space-y-4">
-                                            <div className="text-[10px] font-bold text-green-500 uppercase tracking-widest pl-1">Compatible Patterns</div>
-                                            <div className="space-y-2">
-                                                {bestMatches.slice(0, 3).map(({ type, score }) => (
-                                                    <div key={type} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5">
-                                                        <div className="flex items-center gap-3">
-                                                            <span className="text-xl opacity-80">{voiceTypes[type].icon}</span>
-                                                            <span className="text-xs font-bold text-gray-300 tracking-wide">{voiceTypes[type].name}</span>
-                                                        </div>
-                                                        <span className="font-mono text-xs text-green-400">{score}%</span>
+                                            <div className="grid gap-4">
+                                                {/* Good Matches */}
+                                                <div className="space-y-4">
+                                                    <div className="text-[10px] font-bold text-green-500 uppercase tracking-widest">Compatible Patterns</div>
+                                                    <div className="space-y-2">
+                                                        {bestMatches.slice(0, 3).map(({ type, score }) => (
+                                                            <div key={type} className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
+                                                                <div className="flex items-center gap-3">
+                                                                    <span className="text-xl opacity-80">{voiceTypes[type].icon}</span>
+                                                                    <span className="text-xs font-bold text-gray-300 tracking-wide">{voiceTypes[type].name}</span>
+                                                                </div>
+                                                                <span className="font-mono text-xs text-green-400">{score}%</span>
+                                                            </div>
+                                                        ))}
                                                     </div>
-                                                ))}
+                                                </div>
+
+                                                {/* Bad Matches */}
+                                                <div className="space-y-4 mt-6">
+                                                    <div className="text-[10px] font-bold text-red-500 uppercase tracking-widest">Conflict Patterns</div>
+                                                    <div className="space-y-2">
+                                                        {worstMatches.slice(0, 3).map(({ type, score }) => (
+                                                            <div key={type} className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
+                                                                <div className="flex items-center gap-3">
+                                                                    <span className="text-xl opacity-80">{voiceTypes[type].icon}</span>
+                                                                    <span className="text-xs font-bold text-gray-300 tracking-wide">{voiceTypes[type].name}</span>
+                                                                </div>
+                                                                <span className="font-mono text-xs text-red-500">{score}%</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
 
-                                        {/* Bad Matches */}
-                                        <div className="space-y-4">
-                                            <div className="text-[10px] font-bold text-red-500 uppercase tracking-widest pl-1">Conflict Patterns</div>
-                                            <div className="space-y-2">
-                                                {worstMatches.slice(0, 3).map(({ type, score }) => (
-                                                    <div key={type} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5">
-                                                        <div className="flex items-center gap-3">
-                                                            <span className="text-xl opacity-80">{voiceTypes[type].icon}</span>
-                                                            <span className="text-xs font-bold text-gray-300 tracking-wide">{voiceTypes[type].name}</span>
-                                                        </div>
-                                                        <span className="font-mono text-xs text-red-500">{score}%</span>
+                                        {/* COPY FOR BIO - Integrated into side column */}
+                                        <div className="w-full">
+                                            <div className="flex items-center gap-3 mb-10">
+                                                <div className="w-1 h-6 bg-cyan-500" />
+                                                <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em]">
+                                                    Social Bio
+                                                </h2>
+                                            </div>
+                                            <div className="bg-black/40 border border-white/10 p-6 rounded-2xl relative group hover:border-cyan-500/50 transition-all cursor-pointer" onClick={() => {
+                                                navigator.clipboard.writeText(`${voiceType.icon} ${voiceType.name} | ${result.typeCode}\n${voiceType.catchphrase}`);
+                                            }}>
+                                                <div className="flex items-center gap-4 mb-4">
+                                                    <span className="text-2xl filter grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all">{voiceType.icon}</span>
+                                                    <div>
+                                                        <div className="text-white font-bold uppercase text-xs tracking-wide">{voiceType.name}</div>
+                                                        <div className="text-cyan-600 font-mono text-[9px] tracking-widest uppercase">TYPE: {result.typeCode}</div>
                                                     </div>
-                                                ))}
+                                                </div>
+                                                <p className="text-gray-400 text-xs leading-relaxed italic border-l-2 border-white/5 pl-4 mb-2">
+                                                    "{voiceType.catchphrase}"
+                                                </p>
+                                                <div className="absolute top-4 right-4 text-[8px] text-gray-600 font-bold uppercase tracking-widest group-hover:text-cyan-500">COPY</div>
                                             </div>
                                         </div>
                                     </div>
@@ -516,12 +529,12 @@ export default function ResultPage() {
                                     </div>
                                 )}
 
-                                {/* VIDEO EXPORT */}
-                                <div className="w-full">
-                                    <div className="flex items-center gap-3 mb-12 px-1">
+                                {/* EXPORT / UNLOCK SECTION */}
+                                <div className="w-full max-w-4xl mt-32 md:mt-48">
+                                    <div className="flex items-center gap-3 mb-12 px-1 justify-center">
                                         <div className="w-1 h-6 bg-pink-500" />
                                         <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em]">
-                                            Export
+                                            Export Vault
                                         </h2>
                                     </div>
 
@@ -532,7 +545,7 @@ export default function ResultPage() {
                                                 <div className="relative bg-black/50 border border-cyan-500/50 rounded-2xl p-12 text-center animate-pulse">
                                                     <div className="text-4xl mb-4 animate-spin">💠</div>
                                                     <h3 className="text-xl font-bold text-cyan-400 mb-2">FINALIZING DECRYPTION</h3>
-                                                    <p className="text-gray-400 text-xs">Verifying blockchain signature & generating audit...</p>
+                                                    <div className="text-gray-400 text-xs">Verifying blockchain signature & generating audit...</div>
                                                 </div>
                                             ) : (
                                                 <>
@@ -656,52 +669,24 @@ export default function ResultPage() {
                                     )}
                                 </div>
 
-                                {/* COPY FOR BIO - Independent Section */}
-                                <div className="w-full">
-                                    <div className="flex items-center gap-3 mb-12 px-1">
-                                        <div className="w-1 h-6 bg-cyan-500" />
-                                        <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em]">
-                                            Copy for Bio
-                                        </h2>
-                                    </div>
-                                    <div className="bg-black border border-white/10 p-6 rounded-xl relative group hover:border-cyan-500/50 transition-colors cursor-pointer" onClick={() => {
-                                        navigator.clipboard.writeText(`${voiceType.icon} ${voiceType.name} | ${result.typeCode}\n${voiceType.catchphrase}`);
-                                        // Ideally add a toast here
-                                    }}>
-                                        <div className="flex items-center gap-4 mb-3">
-                                            <span className="text-2xl filter grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all">{voiceType.icon}</span>
-                                            <div>
-                                                <div className="text-white font-bold uppercase text-sm tracking-wide">{voiceType.name}</div>
-                                                <div className="text-cyan-600 font-mono text-[10px] tracking-widest">TYPE: {result.typeCode}</div>
-                                            </div>
-                                        </div>
-                                        <div className="text-gray-500 text-xs leading-relaxed pl-1 border-l border-white/10">
-                                            {voiceType.catchphrase}
-                                        </div>
-                                        <div className="absolute top-4 right-4 text-[9px] text-gray-600 font-bold uppercase tracking-widest group-hover:text-cyan-500">COPY</div>
-                                    </div>
-                                </div>
+                                {/* SHARE SECTION */}
+                                <div className="w-full max-w-2xl mx-auto pt-32 pb-48 space-y-20 border-t border-white/5">
+                                    <ShareButtons
+                                        resultId={resultId}
+                                        typeName={voiceType.name}
+                                        typeIcon={voiceType.icon}
+                                        catchphrase={voiceType.catchphrase}
+                                        typeCode={result.typeCode}
+                                    />
 
-                                {/* Footer & Share */}
-                                <div className="pt-32 pb-48 border-t border-white/5 space-y-20">
-                                    <div className="w-full">
-                                        <ShareButtons
-                                            resultId={resultId}
-                                            typeName={voiceType.name}
-                                            typeIcon={voiceType.icon}
-                                            catchphrase={voiceType.catchphrase}
-                                            typeCode={result.typeCode}
-                                        />
-
-                                        <div className="text-center mt-16 space-y-6">
-                                            <div className="flex justify-center gap-8 uppercase tracking-[0.2em] font-mono text-[9px] text-gray-500">
-                                                <Link href="/terms" className="hover:text-cyan-400 transition-colors">Terms</Link>
-                                                <Link href="/privacy" className="hover:text-cyan-400 transition-colors">Privacy</Link>
-                                            </div>
-                                            <Link href="/" className="inline-block text-[10px] text-gray-600 hover:text-white transition-colors uppercase tracking-[0.2em] border-b border-transparent hover:border-gray-500 pb-1">
-                                                Start New Analysis
-                                            </Link>
+                                    <div className="text-center space-y-6">
+                                        <div className="flex justify-center gap-8 uppercase tracking-[0.2em] font-mono text-[10px] text-gray-500">
+                                            <Link href="/terms" className="hover:text-cyan-400 transition-colors">Terms</Link>
+                                            <Link href="/privacy" className="hover:text-cyan-400 transition-colors">Privacy</Link>
                                         </div>
+                                        <Link href="/" className="inline-block text-[11px] text-gray-600 hover:text-white transition-colors uppercase tracking-[0.3em] border-b border-transparent hover:border-gray-500 pb-1 font-black">
+                                            [ START NEW ANALYSIS ]
+                                        </Link>
                                     </div>
                                 </div>
                             </div>
@@ -709,6 +694,6 @@ export default function ResultPage() {
                     </div>
                 )}
             </div>
-        </main >
+        </main>
     );
 }

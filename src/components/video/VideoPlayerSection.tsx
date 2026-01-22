@@ -15,7 +15,7 @@ interface VideoPlayerSectionProps {
 
 export const VideoPlayerSection: React.FC<VideoPlayerSectionProps> = ({ voiceType, metrics }) => {
     return (
-        <div className="w-full max-w-sm mx-auto bg-black rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] border border-white/10 relative group">
+        <div className="w-full max-w-sm md:max-w-md mx-auto bg-black rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] border border-white/10 relative group">
             <div className="aspect-[9/16] relative">
                 <Player
                     component={ResultVideo}
