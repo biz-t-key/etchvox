@@ -136,26 +136,6 @@ export default function ResultPage() {
         };
     }, [resultId, selectedMBTI]);
 
-    // ✅ Trigger Free AI Analysis if community goal achieved
-    const hasTriggeredRef = useRef(false);
-    useEffect(() => {
-        if (!result || result.aiAnalysis || hasTriggeredRef.current) return;
-
-        const isSolo = result.typeCode !== 'COUPLE_MIX' && !result.coupleData;
-        const isCouple = !isSolo;
-
-        const isSoloUnlocked = isSolo && features.isSoloReportUnlocked;
-        const isCoupleUnlocked = isCouple && features.isCoupleReportUnlocked;
-
-        if (isSoloUnlocked || isCoupleUnlocked) {
-            hasTriggeredRef.current = true;
-            fetch('/api/results/generate-free', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ resultId })
-            }).catch(err => console.error('Failed to trigger free AI generation:', err));
-        }
-    }, [result, features, resultId]);
 
     // ✅ Save MBTI to Firestore when selected
     const handleMBTISelect = async (mbti: MBTIType | null) => {
@@ -257,13 +237,10 @@ export default function ResultPage() {
     const isPremium = result.isPremium === true || result.vaultEnabled === true || searchParams.get('payment') === 'success';
 
     // Logic for specific features
-    const isSolo = !isCouple;
     const showAIReport = result.vaultEnabled === true ||
-        (searchParams.get('payment') === 'success' && searchParams.get('type') !== 'unlock') ||
-        (isSolo && features.isSoloReportUnlocked) ||
-        (isCouple && features.isCoupleReportUnlocked);
+        (searchParams.get('payment') === 'success' && searchParams.get('type') !== 'unlock');
 
-    const showVideo = isPremium || showAIReport; // Any report unlock also unlocks video for consistency
+    const showVideo = isPremium; // Any payment unlocks video
 
     return (
         <main className="min-h-screen bg-black text-white selection:bg-cyan-500/30 font-sans flex flex-col items-center overflow-x-hidden w-full relative">

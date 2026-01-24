@@ -7,9 +7,9 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { MILESTONES as TARGETS } from '@/config/milestones';
 
 const DISPLAY_MILESTONES = [
-    { label: 'Solo AI Analysis Unlock', goal: TARGETS.SOLO_REPORT_UNLOCK },
+    { label: 'Initial Community Support', goal: TARGETS.SOLO_REPORT_UNLOCK },
     { label: 'Establish Entity in Japan ($8.5k)', goal: TARGETS.COUPLE_MODE_UNLOCK },
-    { label: 'Universal Duo Reports Unlock', goal: TARGETS.COUPLE_REPORT_UNLOCK },
+    { label: 'Full Operations & Scaling', goal: TARGETS.COUPLE_REPORT_UNLOCK },
 ];
 
 export default function FundingProgressBar() {

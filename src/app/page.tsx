@@ -155,9 +155,6 @@ export default function HomePage() {
                 onClick={() => setSelectedMode('solo')}
                 className="group glass rounded-3xl p-8 md:p-12 border-2 border-cyan-500/30 hover:border-cyan-500/60 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_50px_rgba(0,240,255,0.4)] text-center flex flex-col items-center w-full relative"
               >
-                {features.isSoloReportUnlocked && (
-                  <span className="absolute top-4 right-4 text-[9px] bg-cyan-500/30 text-cyan-300 px-3 py-1 rounded-full font-black tracking-widest border border-cyan-500/20">UNLOCKED BY COMMUNITY</span>
-                )}
                 <div className="text-6xl mb-6 transform group-hover:scale-110 transition-transform">🎤</div>
                 <h2 className="text-3xl md:text-4xl font-black mb-4 uppercase tracking-tight">
                   <span className="neon-text-cyan">{features.isCoupleModeUnlocked ? 'SOLO MODE' : 'START ANALYSIS'}</span>
