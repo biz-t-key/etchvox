@@ -159,15 +159,15 @@ export default function ResultPage() {
 
         if (type === 'vault') {
             // Solo Vault - Use fixed product URL
-            bmacUrl = `https://www.buymeacoffee.com/${bmacHandle}/e/502513`;
+            bmacUrl = `https://buymeacoffee.com/${bmacHandle}/e/502513`;
         } else if (type === 'couple') {
             // Couple Resonance - Use fixed product URL
-            bmacUrl = `https://www.buymeacoffee.com/${bmacHandle}/e/502517`;
+            bmacUrl = `https://buymeacoffee.com/${bmacHandle}/e/502517`;
         } else {
             // Fallback for Unlock ($5) until Extras URL is provided
             const amount = 5;
             const message = encodeURIComponent(`ID: ${resultId}`);
-            bmacUrl = `https://www.buymeacoffee.com/${bmacHandle}/?amount=${amount}&message=${message}`;
+            bmacUrl = `https://buymeacoffee.com/${bmacHandle}/?amount=${amount}&message=${message}`;
         }
 
         window.open(bmacUrl, '_blank');
@@ -703,7 +703,7 @@ export default function ResultPage() {
                                             <Link href="/terms" className="hover:text-cyan-400 transition-colors">Terms</Link>
                                             <Link href="/privacy" className="hover:text-cyan-400 transition-colors">Privacy</Link>
                                             <a
-                                                href={`https://www.buymeacoffee.com/${FEATURE_FLAGS.BMAC_HANDLE}`}
+                                                href={`https://buymeacoffee.com/${FEATURE_FLAGS.BMAC_HANDLE}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="text-amber-500 hover:text-amber-400 transition-colors"

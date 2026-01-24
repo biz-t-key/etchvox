@@ -422,7 +422,7 @@ export default function HomePage() {
             Privacy
           </Link>
           <a
-            href={`https://www.buymeacoffee.com/${FEATURE_FLAGS.BMAC_HANDLE}`}
+            href={`https://buymeacoffee.com/${FEATURE_FLAGS.BMAC_HANDLE}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-amber-500 hover:text-amber-400 transition-colors"

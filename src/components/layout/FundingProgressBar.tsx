@@ -42,7 +42,7 @@ export default function FundingProgressBar() {
 
     return (
         <a
-            href={`https://www.buymeacoffee.com/${process.env.NEXT_PUBLIC_BMAC_HANDLE || 'etchvox'}`}
+            href={`https://buymeacoffee.com/${process.env.NEXT_PUBLIC_BMAC_HANDLE || 'etchvox'}`}
             target="_blank"
             rel="noopener noreferrer"
             className="block w-full bg-black/40 backdrop-blur-md border border-cyan-500/20 rounded-3xl py-6 px-6 md:px-10 animate-fade-in group hover:bg-cyan-500/5 transition-all duration-300 cursor-pointer"
