@@ -24,6 +24,7 @@
     "react-dom": "19.2.3",
     "react-markdown": "^10.1.0",
     "remotion": "^4.0.406",
+    "resend": "^6.8.0",
     "stripe": "^20.1.2"
   },
   "devDependencies": {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getHistory, syncHistoryByEmail, removeFromHistory, VoiceResult } from '@/lib/storage';
+import { getHistory, requestSyncOtp, verifySyncOtp, removeFromHistory, VoiceResult } from '@/lib/storage';
 import { voiceTypes } from '@/lib/types';
 import { format } from 'date-fns';
 import { FEATURE_FLAGS } from '@/config/features';
@@ -14,6 +14,8 @@ export default function HomePage() {
   const [selectedMode, setSelectedMode] = useState<Mode>(null);
   const [history, setHistory] = useState<VoiceResult[]>([]);
   const [restoreEmail, setRestoreEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [step, setStep] = useState<'email' | 'otp'>('email');
   const [isRestoring, setIsRestoring] = useState(false);
   const [restoreStatus, setRestoreStatus] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
 
@@ -26,23 +28,46 @@ export default function HomePage() {
     loadHistory();
   }, []);
 
-  const handleRestore = async (e: React.FormEvent) => {
+  const handleRequestOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!restoreEmail || !restoreEmail.includes('@')) return;
 
     setIsRestoring(true);
     setRestoreStatus(null);
     try {
-      const success = await syncHistoryByEmail(restoreEmail);
+      const success = await requestSyncOtp(restoreEmail);
+      if (success) {
+        setStep('otp');
+        setRestoreStatus({ type: 'success', msg: 'Verification code sent to your email.' });
+      } else {
+        setRestoreStatus({ type: 'error', msg: 'No records found for this email or sending failed.' });
+      }
+    } catch (err) {
+      setRestoreStatus({ type: 'error', msg: 'Request failed. Try again.' });
+    } finally {
+      setIsRestoring(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otp || otp.length < 6) return;
+
+    setIsRestoring(true);
+    setRestoreStatus(null);
+    try {
+      const success = await verifySyncOtp(restoreEmail, otp);
       if (success) {
         setRestoreStatus({ type: 'success', msg: 'Vault synchronized successfully!' });
         setRestoreEmail('');
+        setOtp('');
+        setStep('email');
         await loadHistory();
       } else {
-        setRestoreStatus({ type: 'error', msg: 'No results found for this email.' });
+        setRestoreStatus({ type: 'error', msg: 'Invalid or expired verification code.' });
       }
     } catch (err) {
-      setRestoreStatus({ type: 'error', msg: 'Restoration failed. Try again.' });
+      setRestoreStatus({ type: 'error', msg: 'Verification failed. Try again.' });
     } finally {
       setIsRestoring(false);
     }
@@ -211,24 +236,54 @@ export default function HomePage() {
 
                 {/* Restore Feature */}
                 <div className="mb-12 max-w-md mx-auto">
-                  <form onSubmit={handleRestore} className="relative group">
-                    <input
-                      type="email"
-                      placeholder="Enter purchase email to sync..."
-                      value={restoreEmail}
-                      onChange={(e) => setRestoreEmail(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-cyan-500/50 outline-none transition-all pr-32"
-                    />
-                    <button
-                      type="submit"
-                      disabled={isRestoring}
-                      className="absolute right-1 top-1 bottom-1 px-4 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all disabled:opacity-50"
-                    >
-                      {isRestoring ? 'Syncing...' : 'Sync Vault'}
-                    </button>
-                  </form>
+                  {step === 'email' ? (
+                    <form onSubmit={handleRequestOtp} className="relative group">
+                      <input
+                        type="email"
+                        placeholder="Enter purchase email to sync..."
+                        value={restoreEmail}
+                        onChange={(e) => setRestoreEmail(e.target.value)}
+                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-cyan-500/50 outline-none transition-all pr-32"
+                        required
+                      />
+                      <button
+                        type="submit"
+                        disabled={isRestoring}
+                        className="absolute right-1 top-1 bottom-1 px-4 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all disabled:opacity-50"
+                      >
+                        {isRestoring ? 'Sending...' : 'Sync Vault'}
+                      </button>
+                    </form>
+                  ) : (
+                    <form onSubmit={handleVerifyOtp} className="relative group animate-fade-in">
+                      <input
+                        type="text"
+                        placeholder="Enter 6-digit code..."
+                        value={otp}
+                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        className="w-full bg-black/40 border border-cyan-500/30 rounded-xl px-4 py-3 text-sm focus:border-cyan-500 outline-none transition-all pr-32 font-mono tracking-[0.5em] text-center"
+                        maxLength={6}
+                        required
+                        autoFocus
+                      />
+                      <button
+                        type="submit"
+                        disabled={isRestoring || otp.length < 6}
+                        className="absolute right-1 top-1 bottom-1 px-4 bg-cyan-500/40 hover:bg-cyan-500/60 text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all disabled:opacity-50"
+                      >
+                        {isRestoring ? 'Verifying...' : 'Verify'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setStep('email')}
+                        className="block w-full text-center mt-4 text-[9px] text-gray-500 uppercase tracking-widest hover:text-white transition-colors"
+                      >
+                        ← Back to email
+                      </button>
+                    </form>
+                  )}
                   {restoreStatus && (
-                    <p className={`mt-3 text-[10px] uppercase font-bold tracking-widest ${restoreStatus.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                    <p className={`mt-3 text-[10px] uppercase font-bold tracking-widest text-center ${restoreStatus.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
                       {restoreStatus.msg}
                     </p>
                   )}

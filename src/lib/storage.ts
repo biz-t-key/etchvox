@@ -256,28 +256,44 @@ export async function getHistory(): Promise<VoiceResult[]> {
     }
 }
 
-// Sync history by email (from API)
-export async function syncHistoryByEmail(email: string): Promise<boolean> {
+/**
+ * Phase 1: Request an OTP to be sent to the user's email.
+ */
+export async function requestSyncOtp(email: string): Promise<boolean> {
     try {
         const response = await fetch('/api/results/restore', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email }),
         });
+        return response.ok;
+    } catch (e) {
+        console.error('Failed to request OTP:', e);
+        return false;
+    }
+}
+
+/**
+ * Phase 2: Verify the OTP and synchronize the history.
+ */
+export async function verifySyncOtp(email: string, otp: string): Promise<boolean> {
+    try {
+        const response = await fetch('/api/results/verify-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, otp }),
+        });
 
         if (!response.ok) return false;
 
         const { results } = await response.json();
-        if (!results || results.length === 0) return false;
+        if (!results || results.length === 0) return true; // Could be success with 0 results
 
         // Update local history index
         const historyIds = JSON.parse(localStorage.getItem('etchvox_history') || '[]');
 
         results.forEach((res: VoiceResult) => {
-            // Save actual result data to local storage
             localStorage.setItem(`etchvox_result_${res.id}`, JSON.stringify(res));
-
-            // Add to index if not present
             if (!historyIds.includes(res.id)) {
                 historyIds.push(res.id);
             }
@@ -298,7 +314,7 @@ export async function syncHistoryByEmail(email: string): Promise<boolean> {
 
         return true;
     } catch (e) {
-        console.error('Failed to sync history:', e);
+        console.error('Failed to verify OTP:', e);
         return false;
     }
 }

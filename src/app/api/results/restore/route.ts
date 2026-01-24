@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, isFirebaseConfigured } from '@/lib/firebase';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, setDoc, Timestamp } from 'firebase/firestore';
+import { sendOtpEmail } from '@/lib/mail';
 
+/**
+ * Vault Restoration Request (Phase 1)
+ * Checks if user has records, generates a 6-digit OTP, and sends via email.
+ */
 export async function POST(req: NextRequest) {
     if (!isFirebaseConfigured()) {
         return NextResponse.json({ error: 'Firebase not configured' }, { status: 500 });
@@ -14,31 +19,40 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Valid email required' }, { status: 400 });
         }
 
+        const normalizedEmail = email.toLowerCase().trim();
         const db = getDb();
-        const resultsRef = collection(db, 'results');
 
-        // Find all results linked to this email
-        // Note: For this to work in Firestore, you'll need an index on 'email' and 'createdAt'
-        // If index doesn't exist, it might fail initially.
+        // 1. Verify that this email actually has purchased records
+        const resultsRef = collection(db, 'results');
         const q = query(
             resultsRef,
-            where('email', '==', email.toLowerCase().trim()),
-            orderBy('createdAt', 'desc')
+            where('email', '==', normalizedEmail)
         );
-
         const querySnapshot = await getDocs(q);
-        const results = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            // Ensure Timestamp is converted back to string for consistency
-            createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate().toISOString() : doc.data().createdAt,
-        }));
 
-        console.log(`Restored ${results.length} results for ${email}`);
+        if (querySnapshot.empty) {
+            return NextResponse.json({ error: 'No diagnostic history found for this email.' }, { status: 404 });
+        }
 
-        return NextResponse.json({ results });
+        // 2. Generate a 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+        // 3. Save OTP to Firestore (expiring in 10 minutes)
+        const otpRef = doc(db, 'otps', normalizedEmail);
+        await setDoc(otpRef, {
+            otp,
+            createdAt: Timestamp.now(),
+            expiresAt: Timestamp.fromDate(new Date(Date.now() + 10 * 60 * 1000)) // 10 mins
+        });
+
+        // 4. Send Email via Resend
+        console.log(`[AUTH] Sending OTP ${otp} to ${normalizedEmail}`);
+        await sendOtpEmail(normalizedEmail, otp);
+
+        return NextResponse.json({ success: true, message: 'Verification code sent.' });
+
     } catch (error: any) {
-        console.error('Restore history error:', error);
+        console.error('Restore request error:', error);
         return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
     }
 }
