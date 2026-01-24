@@ -46,9 +46,9 @@ export default function ResultPage() {
     const [selectedMBTI, setSelectedMBTI] = useState<MBTIType | null>(null);
     const [mbtiSkipped, setMbtiSkipped] = useState(false);
     const [features, setFeatures] = useState<FeatureState>({
-        isSoloReportUnlocked: false,
+        isSoloPurchaseUnlocked: false,
         isCoupleModeUnlocked: false,
-        isCoupleReportUnlocked: false,
+        isCouplePurchaseUnlocked: false,
         currentAmount: 0
     });
 
@@ -614,7 +614,7 @@ export default function ResultPage() {
                                                         </div>
                                                     ) : (
                                                         <>
-                                                            {/* Premium Option - $10 Vault */}
+                                                            {/* Premium Option - $10 / $15 Vault (Community Unlocked) */}
                                                             <div className={`bg-gradient-to-br ${isCouple ? 'from-pink-500/10 to-cyan-500/10 border-pink-500/30' : 'from-pink-500/10 to-violet-500/10 border-pink-500/30'} border-2 rounded-xl p-6 mb-4`}>
                                                                 <div className={`text-[10px] ${isCouple ? 'text-cyan-400' : 'text-pink-400'} font-bold uppercase tracking-[0.3em] mb-2`}>
                                                                     💎 {isCouple ? 'RESONANCE DECRYPTED' : 'LIFETIME ACCESS'}
@@ -669,13 +669,30 @@ export default function ResultPage() {
                                                                     🔒 One-Time Purchase · Permanent Access
                                                                 </div>
 
-                                                                <button
-                                                                    onClick={() => handleCheckout(isCouple ? 'couple' : 'vault')}
-                                                                    disabled={processingPayment}
-                                                                    className={`w-full bg-gradient-to-r ${isCouple ? 'from-pink-600 to-cyan-600' : 'from-pink-600 to-violet-600'} hover:opacity-90 text-white font-bold py-4 rounded-xl text-sm uppercase tracking-widest shadow-lg transform hover:scale-[1.02] transition-all`}
-                                                                >
-                                                                    {processingPayment ? 'Processing...' : isCouple ? 'Unlock Compatibility — $15.00' : 'Secure Vault Access — $10.00'}
-                                                                </button>
+                                                                {((!isCouple && features.isSoloPurchaseUnlocked) || (isCouple && features.isCouplePurchaseUnlocked)) ? (
+                                                                    <button
+                                                                        onClick={() => handleCheckout(isCouple ? 'couple' : 'vault')}
+                                                                        disabled={processingPayment}
+                                                                        className={`w-full bg-gradient-to-r ${isCouple ? 'from-pink-600 to-cyan-600' : 'from-pink-600 to-violet-600'} hover:opacity-90 text-white font-bold py-4 rounded-xl text-sm uppercase tracking-widest shadow-lg transform hover:scale-[1.02] transition-all`}
+                                                                    >
+                                                                        {processingPayment ? 'Processing...' : isCouple ? 'Unlock Compatibility — $15.00' : 'Secure Vault Access — $10.00'}
+                                                                    </button>
+                                                                ) : (
+                                                                    <div className="space-y-4">
+                                                                        <div className="bg-black/60 border border-white/5 rounded-xl p-4 text-center">
+                                                                            <div className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em] mb-1">Coming Soon</div>
+                                                                            <div className="text-xs font-bold text-gray-400 uppercase tracking-widest leading-relaxed">
+                                                                                Locked by Community Goal: {isCouple ? '$15,000' : '$1,000'}
+                                                                            </div>
+                                                                        </div>
+                                                                        <Link
+                                                                            href="/"
+                                                                            className="block w-full bg-white/10 hover:bg-white/20 text-white text-[10px] font-black py-4 rounded-xl uppercase tracking-[0.3em] transition-all border border-white/5"
+                                                                        >
+                                                                            Fuel Community Progress →
+                                                                        </Link>
+                                                                    </div>
+                                                                )}
 
                                                                 <p className="mt-4 text-[10px] text-gray-500 italic">
                                                                     *Non-vault audio data is automatically purged from our servers after 30 days for your privacy.

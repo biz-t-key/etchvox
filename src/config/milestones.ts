@@ -9,20 +9,20 @@ export const MILESTONES = {
 };
 
 export type FeatureState = {
-    isSoloReportUnlocked: boolean;
-    isCoupleModeUnlocked: boolean;
-    isCoupleReportUnlocked: boolean;
+    isSoloPurchaseUnlocked: boolean; // Can buy $10 Solo Vault
+    isCoupleModeUnlocked: boolean;   // Can access Couple Diagnosis
+    isCouplePurchaseUnlocked: boolean; // Can buy $15 Couple Vault
     currentAmount: number; // in cents
 };
 
 /**
- * Calculates which features are unlocked based on the current funding amount.
+ * Calculates which features are available for use or purchase based on funding.
  */
 export function getUnlockedFeatures(totalAmountCents: number): FeatureState {
     return {
-        isSoloReportUnlocked: totalAmountCents >= MILESTONES.SOLO_REPORT_UNLOCK,
+        isSoloPurchaseUnlocked: totalAmountCents >= MILESTONES.SOLO_REPORT_UNLOCK,
         isCoupleModeUnlocked: totalAmountCents >= MILESTONES.COUPLE_MODE_UNLOCK,
-        isCoupleReportUnlocked: totalAmountCents >= MILESTONES.COUPLE_REPORT_UNLOCK,
+        isCouplePurchaseUnlocked: totalAmountCents >= MILESTONES.COUPLE_REPORT_UNLOCK,
         currentAmount: totalAmountCents,
     };
 }

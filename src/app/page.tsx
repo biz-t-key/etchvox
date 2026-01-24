@@ -18,9 +18,9 @@ export default function HomePage() {
   const [history, setHistory] = useState<VoiceResult[]>([]);
   const [totalFunding, setTotalFunding] = useState<number>(0);
   const [features, setFeatures] = useState<FeatureState>({
-    isSoloReportUnlocked: false,
+    isSoloPurchaseUnlocked: false,
     isCoupleModeUnlocked: false,
-    isCoupleReportUnlocked: false,
+    isCouplePurchaseUnlocked: false,
     currentAmount: 0
   });
 
