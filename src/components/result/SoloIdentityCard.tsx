@@ -5,7 +5,6 @@ import html2canvas from 'html2canvas';
 
 import { MBTIType, mbtiTypes, calculateGapLevel } from '@/lib/mbti';
 import { voiceTypes, TypeCode, AnalysisMetrics } from '@/lib/types';
-import { getSoloIdentity } from '@/lib/soloIdentityMatrix';
 
 interface SoloIdentityCardProps {
     mbti: MBTIType;
@@ -21,20 +20,37 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
     const cardRef = useRef<HTMLDivElement>(null);
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [generating, setGenerating] = useState(false);
+    const [identityData, setIdentityData] = useState<{ brandName: string, roast: string } | null>(null);
 
     const mbtiInfo = mbtiTypes[mbti];
     const voiceInfo = voiceTypes[voiceTypeCode];
-
-    const rawIdentity = getSoloIdentity(mbti, voiceTypeCode);
     const gapLevel = calculateGapLevel(mbti, metrics);
 
-    const displayIdentity = rawIdentity || {
-        brandName: "THE ENIGMA",
-        roast: "Your combination is so rare, even our AI is trying to figure you out. You are the anomaly in the system.",
-    };
-
+    // ✅ STEP 1: Fetch ROAST from Server-side API (Hide from client-side bundle)
     useEffect(() => {
-        if (!mbtiInfo || !voiceInfo || !cardRef.current) return;
+        async function fetchIdentity() {
+            try {
+                const res = await fetch('/api/identity/solo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mbti, voiceTypeCode })
+                });
+                const data = await res.json();
+                setIdentityData(data);
+            } catch (err) {
+                console.error("Failed to fetch server-side roast:", err);
+                setIdentityData({
+                    brandName: "THE ENIGMA",
+                    roast: "Your combination is so rare, even our AI is trying to figure you out."
+                });
+            }
+        }
+        fetchIdentity();
+    }, [mbti, voiceTypeCode]);
+
+    // ✅ STEP 2: Update Image Capture Engine
+    useEffect(() => {
+        if (!mbtiInfo || !voiceInfo || !cardRef.current || !identityData) return;
 
         // Start generation process
         setGenerating(true);
@@ -206,10 +222,10 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                         Identity Result
                     </div>
                     <div className="text-3xl md:text-4xl font-black text-white uppercase italic tracking-tighter text-center leading-[1] mb-4">
-                        "{displayIdentity.brandName}"
+                        "{identityData?.brandName || 'PROCESSING...'}"
                     </div>
                     <p className="text-[11px] md:text-[13px] font-medium italic leading-relaxed text-center px-4" style={{ color: '#9ca3af' }}>
-                        {displayIdentity.roast}
+                        {identityData?.roast || 'Decoding vocal signature...'}
                     </p>
                     <div className="mt-6 text-[8px] uppercase tracking-[0.4em] text-center" style={{ color: 'rgba(255, 255, 255, 0.05)' }}>
                         etchvox.com fingerprint

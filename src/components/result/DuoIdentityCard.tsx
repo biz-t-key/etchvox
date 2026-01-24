@@ -4,7 +4,6 @@ import { useRef, useEffect, useState } from 'react';
 import html2canvas from 'html2canvas';
 
 import { voiceTypes, TypeCode } from '@/lib/types';
-import { getDuoIdentity } from '@/lib/duoIdentityMatrix';
 import { AnalysisMetrics } from '@/lib/types';
 
 // Inlined noise SVG to avoid CORS issues with html2canvas
@@ -20,13 +19,33 @@ export default function DuoIdentityCard({ userA, userB, resultId }: DuoIdentityC
     const cardRef = useRef<HTMLDivElement>(null);
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [generating, setGenerating] = useState(false);
+    const [identityData, setIdentityData] = useState<{ label: string, roast: string } | null>(null);
 
-    const duoIdentity = getDuoIdentity(userA.typeCode, userB.typeCode);
-    const voiceA = voiceTypes[userA.typeCode] || voiceTypes['HFCC']; // Fallback
-    const voiceB = voiceTypes[userB.typeCode] || voiceTypes['LSCD']; // Fallback
+    const voiceA = voiceTypes[userA.typeCode] || voiceTypes['HFCC'];
+    const voiceB = voiceTypes[userB.typeCode] || voiceTypes['LSCD'];
 
+    // ✅ STEP 1: Fetch Duo Roast from API
     useEffect(() => {
-        if (!cardRef.current) return;
+        async function fetchDuoIdentity() {
+            try {
+                const res = await fetch('/api/identity/duo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ typeCodeA: userA.typeCode, typeCodeB: userB.typeCode })
+                });
+                const data = await res.json();
+                setIdentityData(data);
+            } catch (err) {
+                console.error("Failed to fetch duo roast:", err);
+                setIdentityData({ label: "ASYMMETRIC SYNC", roast: "Analyzing the complex interference pattern..." });
+            }
+        }
+        fetchDuoIdentity();
+    }, [userA.typeCode, userB.typeCode]);
+
+    // ✅ STEP 2: Capture Engine
+    useEffect(() => {
+        if (!cardRef.current || !identityData) return;
 
         // Reset image on prop change
         setImageUrl(null);
@@ -224,7 +243,7 @@ export default function DuoIdentityCard({ userA, userB, resultId }: DuoIdentityC
                     <div className="text-center py-4">
                         <div className="text-[10px] md:text-[12px] font-black text-white/40 uppercase tracking-[0.5em] mb-4 font-mono">Resonance ID</div>
                         <div className="text-4xl md:text-5xl font-black text-white uppercase italic tracking-tighter leading-none mb-2">
-                            "{duoIdentity.label}"
+                            "{identityData?.label || 'SYNCING...'}"
                         </div>
                     </div>
                 </div>
@@ -232,7 +251,7 @@ export default function DuoIdentityCard({ userA, userB, resultId }: DuoIdentityC
                 {/* ROAST BOX */}
                 <div className="rounded-[1.5rem] p-6 border mt-auto" style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)', borderColor: 'rgba(255, 255, 255, 0.1)' }}>
                     <p className="text-[11px] md:text-[13px] text-gray-400 leading-relaxed text-center font-medium italic opacity-90 px-2 line-clamp-3">
-                        {duoIdentity.roast}
+                        {identityData?.roast || 'Calculating resonance dynamics...'}
                     </p>
                 </div>
 
