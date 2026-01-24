@@ -154,11 +154,21 @@ export default function ResultPage() {
     const handleCheckout = async (type: 'unlock' | 'vault' | 'couple') => {
         setProcessingPayment(true);
 
-        // BMAC LOGIC (Default/Current)
         const bmacHandle = FEATURE_FLAGS.BMAC_HANDLE;
-        const amount = type === 'couple' ? 15 : (type === 'vault' ? 10 : 5);
-        const message = encodeURIComponent(`ID: ${resultId}`);
-        const bmacUrl = `https://www.buymeacoffee.com/${bmacHandle}/?amount=${amount}&message=${message}`;
+        let bmacUrl = "";
+
+        if (type === 'vault') {
+            // Solo Vault - Use fixed product URL
+            bmacUrl = `https://www.buymeacoffee.com/${bmacHandle}/e/502513`;
+        } else if (type === 'couple') {
+            // Couple Resonance - Use fixed product URL
+            bmacUrl = `https://www.buymeacoffee.com/${bmacHandle}/e/502517`;
+        } else {
+            // Fallback for Unlock ($5) until Extras URL is provided
+            const amount = 5;
+            const message = encodeURIComponent(`ID: ${resultId}`);
+            bmacUrl = `https://www.buymeacoffee.com/${bmacHandle}/?amount=${amount}&message=${message}`;
+        }
 
         window.open(bmacUrl, '_blank');
         setVerifyingPayment(true);
