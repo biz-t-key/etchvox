@@ -702,6 +702,14 @@ export default function ResultPage() {
                                         <div className="flex justify-center gap-8 uppercase tracking-[0.2em] font-mono text-[10px] text-gray-500">
                                             <Link href="/terms" className="hover:text-cyan-400 transition-colors">Terms</Link>
                                             <Link href="/privacy" className="hover:text-cyan-400 transition-colors">Privacy</Link>
+                                            <a
+                                                href={`https://www.buymeacoffee.com/${FEATURE_FLAGS.BMAC_HANDLE}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-amber-500 hover:text-amber-400 transition-colors"
+                                            >
+                                                Support
+                                            </a>
                                         </div>
                                         <Link href="/" className="inline-block text-[11px] text-gray-600 hover:text-white transition-colors uppercase tracking-[0.3em] border-b border-transparent hover:border-gray-500 pb-1 font-black">
                                             [ START NEW ANALYSIS ]

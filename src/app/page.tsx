@@ -421,6 +421,14 @@ export default function HomePage() {
           <Link href="/privacy" className="hover:text-cyan-400 transition-colors">
             Privacy
           </Link>
+          <a
+            href={`https://www.buymeacoffee.com/${FEATURE_FLAGS.BMAC_HANDLE}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-amber-500 hover:text-amber-400 transition-colors"
+          >
+            Support
+          </a>
         </div>
         <div className="max-w-xs mx-auto text-gray-700 leading-relaxed font-mono">
           © 2026 EtchVox Archive. Built for entertainment purposes.
