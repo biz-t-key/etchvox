@@ -6,6 +6,7 @@ import { getHistory, syncHistoryByEmail, removeFromHistory, VoiceResult } from '
 import { voiceTypes } from '@/lib/types';
 import { format } from 'date-fns';
 import { FEATURE_FLAGS } from '@/config/features';
+import FundingProgressBar from '@/components/layout/FundingProgressBar';
 
 type Mode = 'solo' | 'couple' | null;
 
@@ -295,6 +296,11 @@ export default function HomePage() {
                 </div>
               </div>
             )}
+
+            {/* Funding Progress - Placed between Mode Selection and Stats with plenty of air */}
+            <div className="w-full py-32 animate-fade-in-up delay-300">
+              <FundingProgressBar />
+            </div>
 
             <div className="space-y-6 pt-10">
               <p className="text-[10px] uppercase tracking-[0.4em] text-gray-600 font-black">Mission Objectives: Our Future Scale</p>

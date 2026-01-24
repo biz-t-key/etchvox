@@ -44,8 +44,8 @@ export default function FundingProgressBar() {
     if (loading) return null;
 
     return (
-        <div className="w-full bg-black/80 backdrop-blur-md border-b border-cyan-500/30 py-3 px-4 sticky top-0 z-[100] animate-slide-down">
-            <div className="max-w-4xl mx-auto">
+        <div className="w-full bg-black/40 backdrop-blur-md border border-cyan-500/20 rounded-3xl py-6 px-6 md:px-10 animate-fade-in group">
+            <div className="max-w-3xl mx-auto">
                 <div className="flex justify-between items-end mb-1.5">
                     <div className="flex flex-col">
                         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-400">

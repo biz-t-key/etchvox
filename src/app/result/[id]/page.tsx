@@ -419,7 +419,10 @@ export default function ResultPage() {
                                                             <div key={type} className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
                                                                 <div className="flex items-center gap-3">
                                                                     <span className="text-xl opacity-80">{voiceTypes[type].icon}</span>
-                                                                    <span className="text-xs font-bold text-gray-300 tracking-wide">{voiceTypes[type].name}</span>
+                                                                    <div className="flex flex-col">
+                                                                        <span className="text-xs font-bold text-gray-300 tracking-wide">{voiceTypes[type].name}</span>
+                                                                        <span className="text-[9px] font-mono text-cyan-700 uppercase tracking-widest">{type}</span>
+                                                                    </div>
                                                                 </div>
                                                                 <span className="font-mono text-xs text-green-400">{score}%</span>
                                                             </div>
@@ -435,7 +438,10 @@ export default function ResultPage() {
                                                             <div key={type} className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
                                                                 <div className="flex items-center gap-3">
                                                                     <span className="text-xl opacity-80">{voiceTypes[type].icon}</span>
-                                                                    <span className="text-xs font-bold text-gray-300 tracking-wide">{voiceTypes[type].name}</span>
+                                                                    <div className="flex flex-col">
+                                                                        <span className="text-xs font-bold text-gray-300 tracking-wide">{voiceTypes[type].name}</span>
+                                                                        <span className="text-[9px] font-mono text-red-900/50 uppercase tracking-widest">{type}</span>
+                                                                    </div>
                                                                 </div>
                                                                 <span className="font-mono text-xs text-red-500">{score}%</span>
                                                             </div>

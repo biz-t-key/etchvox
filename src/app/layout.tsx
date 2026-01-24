@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import FundingProgressBar from "@/components/layout/FundingProgressBar";
 
 export const metadata: Metadata = {
   title: "EtchVox - What's Your Voice Type?",
@@ -44,7 +43,6 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-black text-white antialiased">
-        <FundingProgressBar />
         <main className="relative min-h-screen">
           {children}
         </main>
