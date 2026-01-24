@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { loadStripe } from '@stripe/stripe-js';
 import ReactMarkdown from 'react-markdown'; // ✅ Markdown Renderer
 import { voiceTypes, TypeCode, groupColors } from '@/lib/types';
 import { getResult, VoiceResult } from '@/lib/storage';
@@ -19,16 +18,6 @@ import { doc, onSnapshot, updateDoc, getDoc } from 'firebase/firestore';
 import { FEATURE_FLAGS } from '@/config/features';
 import { getUnlockedFeatures, FeatureState } from '@/config/milestones';
 
-// Stripe is loaded on-demand when payment is triggered, not on page load
-// This prevents console errors when NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not set
-const getStripe = () => {
-    const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-    if (!key || key.trim() === '') {
-        console.warn('Stripe publishable key not configured or empty');
-        return null;
-    }
-    return loadStripe(key);
-};
 
 type DisplayStage = 'label' | 'metrics' | 'full';
 
@@ -165,36 +154,15 @@ export default function ResultPage() {
     const handleCheckout = async (type: 'unlock' | 'vault' | 'couple') => {
         setProcessingPayment(true);
 
-        if (FEATURE_FLAGS.PAYMENT_GATEWAY === 'stripe') {
-            // STRIPE LOGIC
-            try {
-                const response = await fetch('/api/checkout', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ resultId, type }),
-                });
-                const { sessionId } = await response.json();
-                const stripe = await getStripe() as any;
-                if (stripe) {
-                    await stripe.redirectToCheckout({ sessionId });
-                }
-            } catch (err) {
-                console.error('Stripe Checkout Error:', err);
-                alert('Payment failed to initialize.');
-            } finally {
-                setProcessingPayment(false);
-            }
-        } else {
-            // BMAC LOGIC (Default/Current)
-            const bmacHandle = FEATURE_FLAGS.BMAC_HANDLE;
-            const amount = type === 'couple' ? 15 : (type === 'vault' ? 10 : 5);
-            const message = encodeURIComponent(`ID: ${resultId}`);
-            const bmacUrl = `https://www.buymeacoffee.com/${bmacHandle}/?amount=${amount}&message=${message}`;
+        // BMAC LOGIC (Default/Current)
+        const bmacHandle = FEATURE_FLAGS.BMAC_HANDLE;
+        const amount = type === 'couple' ? 15 : (type === 'vault' ? 10 : 5);
+        const message = encodeURIComponent(`ID: ${resultId}`);
+        const bmacUrl = `https://www.buymeacoffee.com/${bmacHandle}/?amount=${amount}&message=${message}`;
 
-            window.open(bmacUrl, '_blank');
-            setVerifyingPayment(true);
-            setProcessingPayment(false);
-        }
+        window.open(bmacUrl, '_blank');
+        setVerifyingPayment(true);
+        setProcessingPayment(false);
     };
 
     if (loading) {

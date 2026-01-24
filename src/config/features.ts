@@ -12,8 +12,8 @@ export const FEATURE_FLAGS = {
     // Buy Me a Coffee settings
     BMAC_HANDLE: 'etchvox',
 
-    // Payment Gateway: 'bmac' | 'stripe'
-    PAYMENT_GATEWAY: 'bmac' as 'bmac' | 'stripe',
+    // Payment Gateway: 'bmac'
+    PAYMENT_GATEWAY: 'bmac' as 'bmac',
 
     // --- GOAL MANAGEMENT ---
     // Set to true to stop taking payments (e.g. when you reach 1.28M yen)

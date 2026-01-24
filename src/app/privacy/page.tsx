@@ -43,8 +43,8 @@ export default function PrivacyPage() {
                         <div className="space-y-4">
                             <h3 className="text-lg font-semibold text-cyan-400 uppercase tracking-wide">1.3 Digital Authenticity</h3>
                             <ul className="text-gray-300 list-disc list-inside space-y-2 marker:text-cyan-500">
-                                <li>Email address (linked to Stripe for vault synchronization and account recovery).</li>
-                                <li>Transaction IDs and payment metadata processed via Stripe.</li>
+                                <li>Email address (linked to Buy Me a Coffee support for vault synchronization).</li>
+                                <li>Transaction IDs and payment metadata processed via Buy Me a Coffee.</li>
                             </ul>
                         </div>
                     </section>

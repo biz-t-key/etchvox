@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
 import { getDb, isFirebaseConfigured } from '@/lib/firebase';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { r2Client } from '@/lib/r2';
@@ -10,161 +9,110 @@ export const maxDuration = 60; // 60 seconds max timeout
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
-        apiVersion: '2025-01-27.acacia' as any,
-    });
-    const body = await req.text();
-    const sig = req.headers.get('stripe-signature');
-
-    if (!sig) {
-        return NextResponse.json({ error: 'No signature' }, { status: 400 });
-    }
-
     try {
-        const event = stripe.webhooks.constructEvent(
-            body,
-            sig,
-            process.env.STRIPE_WEBHOOK_SECRET || ''
-        );
+        const payload = await req.json();
+        console.log('BMAC Webhook Received:', JSON.stringify(payload, null, 2));
 
-        // Handle the event
-        if (event.type === 'checkout.session.completed') {
-            const session = event.data.object as Stripe.Checkout.Session;
-            const { resultId, type } = session.metadata || {};
-            const customerEmail = session.customer_details?.email;
+        // BMAC Webhook structure for a donation
+        const data = payload.data || payload;
+        const message = data.support_note || data.noted || "";
+        const amountCents = Math.round((data.support_amount || data.amount || 0) * 100);
+        const customerEmail = data.support_email || data.payer_email;
 
-            if (!resultId) {
-                console.error('No resultId in session metadata');
-                return NextResponse.json({ error: 'Invalid metadata' }, { status: 400 });
-            }
+        // Pattern: ID: {resultId}
+        const idMatch = message.match(/ID:\s*([a-zA-Z0-9_-]+)/i);
+        const resultId = idMatch ? idMatch[1] : null;
 
-            // Update Firestore (if configured)
-            if (isFirebaseConfigured()) {
-                try {
-                    const db = getDb();
-                    // Import only what's not imported at the top
-                    const { SoloIdentityEngine, CoupleResonanceEngine, normalizeMetricsForEngine } = await import('@/lib/voiceProcessor');
-                    const { generateContent } = await import('@/lib/gemini');
-                    const { SOLO_AUDIT_SYSTEM_PROMPT, COUPLE_AUDIT_SYSTEM_PROMPT } = await import('@/lib/prompts');
+        if (!resultId) {
+            console.error('No resultId found in BMAC message:', message);
+            return NextResponse.json({ error: 'No resultId in message' }, { status: 400 });
+        }
 
-                    const resultRef = doc(db, 'results', resultId);
-                    const resultSnap = await getDoc(resultRef);
+        let type: 'unlock' | 'vault' | 'couple' = 'vault';
+        if (amountCents >= 1500) type = 'couple';
+        else if (amountCents >= 1000) type = 'vault';
+        else if (amountCents >= 500) type = 'unlock';
 
-                    let aiReport = null;
+        if (isFirebaseConfigured()) {
+            try {
+                const db = getDb();
+                const { SoloIdentityEngine, CoupleResonanceEngine, normalizeMetricsForEngine } = await import('@/lib/voiceProcessor');
+                const { generateContent } = await import('@/lib/gemini');
+                const { SOLO_AUDIT_SYSTEM_PROMPT, COUPLE_AUDIT_SYSTEM_PROMPT } = await import('@/lib/prompts');
 
-                    if (resultSnap.exists()) {
-                        const data = resultSnap.data();
+                const resultRef = doc(db, 'results', resultId);
+                const resultSnap = await getDoc(resultRef);
 
-                        // --- SOLO / VAULT FLOW ---
-                        if ((type === 'solo' || type === 'vault') && data.metrics) {
-                            // ✅ Normalize raw metrics to 0-100 scale
-                            const normalized = normalizeMetricsForEngine(data.metrics);
+                let aiReport = null;
 
-                            const engine = new SoloIdentityEngine(
-                                normalized.p,
-                                normalized.s,
-                                normalized.v,
-                                normalized.t,
-                                data.mbti || 'INTJ',
-                                data.gender,
-                                data.birthYear
+                if (resultSnap.exists()) {
+                    const resultData = resultSnap.data();
+
+                    if ((type === 'vault') && resultData.metrics) {
+                        const normalized = normalizeMetricsForEngine(resultData.metrics);
+                        const engine = new SoloIdentityEngine(
+                            normalized.p, normalized.s, normalized.v, normalized.t,
+                            resultData.mbti || 'INTJ', resultData.gender, resultData.birthYear
+                        );
+                        const aiPayload = engine.generatePayload();
+                        aiReport = await generateContent(SOLO_AUDIT_SYSTEM_PROMPT, JSON.stringify(aiPayload, null, 2));
+                    }
+
+                    if (type === 'couple' && resultData.coupleData) {
+                        const { userA, userB } = resultData.coupleData;
+                        if (userA && userB) {
+                            const normalizedA = normalizeMetricsForEngine(userA.metrics);
+                            const normalizedB = normalizeMetricsForEngine(userB.metrics);
+                            const engine = new CoupleResonanceEngine(
+                                { ...normalizedA, name: userA.name, job: userA.job, accent: 'Unknown', gender: userA.gender, birthYear: userA.birthYear },
+                                { ...normalizedB, name: userB.name, job: userB.job, accent: 'Unknown', gender: userB.gender, birthYear: userB.birthYear }
                             );
-
-                            const payload = engine.generatePayload();
-                            console.log('Generating Solo Report for:', resultId);
-                            aiReport = await generateContent(SOLO_AUDIT_SYSTEM_PROMPT, JSON.stringify(payload, null, 2));
-                        }
-
-                        // --- COUPLE FLOW ---
-                        if (type === 'couple' && data.coupleData) {
-                            const { userA, userB } = data.coupleData;
-
-                            if (userA && userB) {
-                                // ✅ Normalize metrics for both users
-                                const normalizedA = normalizeMetricsForEngine(userA.metrics);
-                                const normalizedB = normalizeMetricsForEngine(userB.metrics);
-
-                                const engine = new CoupleResonanceEngine(
-                                    { ...normalizedA, name: userA.name, job: userA.job, accent: 'Unknown', gender: userA.gender, birthYear: userA.birthYear },
-                                    { ...normalizedB, name: userB.name, job: userB.job, accent: 'Unknown', gender: userB.gender, birthYear: userB.birthYear }
-                                );
-
-                                const payload = engine.generatePayload();
-                                console.log('Generating Couple Report for:', resultId);
-                                aiReport = await generateContent(COUPLE_AUDIT_SYSTEM_PROMPT, JSON.stringify(payload, null, 2));
-                            }
-                        }
-
-                        // Update Doc with Payment AND AI Result
-                        await updateDoc(resultRef, {
-                            isPremium: true,
-                            vaultEnabled: type === 'vault' || type === 'solo' || type === 'couple',
-                            purchasedAt: new Date().toISOString(),
-                            stripeSessionId: session.id,
-                            amountPaid: session.amount_total,
-                            email: customerEmail,
-                            // ✅ Save the AI Report
-                            ...(aiReport ? { aiAnalysis: aiReport } : {})
-                        });
-
-                        console.log(`Updated result ${resultId} with payment info & AI Analysis`);
-
-                        // ✅ Promote audio files to Vault
-                        const bucketName = process.env.R2_BUCKET_NAME;
-                        if (bucketName) {
-                            const filesToMove = [
-                                `${resultId}.webm`,
-                                `${resultId}_userA.webm`,
-                                `${resultId}_userB.webm`
-                            ];
-
-                            for (const file of filesToMove) {
-                                try {
-                                    // Move from temp/ to vault/
-                                    const sourceKey = `temp/${file}`;
-                                    const destKey = `vault/${file}`;
-
-                                    await r2Client.send(new CopyObjectCommand({
-                                        Bucket: bucketName,
-                                        CopySource: `${bucketName}/${sourceKey}`,
-                                        Key: destKey,
-                                    }));
-
-                                    await r2Client.send(new DeleteObjectCommand({
-                                        Bucket: bucketName,
-                                        Key: sourceKey,
-                                    }));
-                                    console.log(`Promoted ${file} to vault/`);
-                                } catch (e) {
-                                    // Ignore if file doesn't exist in temp (might already be moved or didn't upload)
-                                    console.log(`Promotion skipped for ${file} (not found in temp/)`);
-                                }
-                            }
+                            const aiPayload = engine.generatePayload();
+                            aiReport = await generateContent(COUPLE_AUDIT_SYSTEM_PROMPT, JSON.stringify(aiPayload, null, 2));
                         }
                     }
-                } catch (err: any) {
-                    console.error('Firestore update/AI generation error:', err);
-                    // ✅ Save error message to Firestore so user can see what happened
-                    try {
-                        const db = getDb();
-                        const resultRef = doc(db, 'results', resultId);
-                        await updateDoc(resultRef, {
-                            isPremium: true,
-                            aiAnalysisError: `AI generation failed: ${err.message || 'Unknown error'}. Please contact support.`
-                        });
-                    } catch (updateErr) {
-                        console.error('Failed to save error state:', updateErr);
+
+                    await updateDoc(resultRef, {
+                        isPremium: true,
+                        vaultEnabled: type === 'vault' || type === 'couple',
+                        purchasedAt: new Date().toISOString(),
+                        amountPaid: amountCents,
+                        email: customerEmail,
+                        paymentSource: 'bmac',
+                        ...(aiReport ? { aiAnalysis: aiReport } : {})
+                    });
+
+                    const bucketName = process.env.R2_BUCKET_NAME;
+                    if (bucketName) {
+                        const filesToMove = [`${resultId}.webm`, `${resultId}_userA.webm`, `${resultId}_userB.webm`];
+                        for (const file of filesToMove) {
+                            try {
+                                const sourceKey = `temp/${file}`;
+                                const destKey = `vault/${file}`;
+                                await r2Client.send(new CopyObjectCommand({
+                                    Bucket: bucketName,
+                                    CopySource: `${bucketName}/${sourceKey}`,
+                                    Key: destKey,
+                                }));
+                                await r2Client.send(new DeleteObjectCommand({
+                                    Bucket: bucketName,
+                                    Key: sourceKey,
+                                }));
+                                console.log(`Promoted ${file} to vault/`);
+                            } catch (e) {
+                                console.log(`Promotion skipped for ${file} (not found in temp/)`);
+                            }
+                        }
                     }
                 }
+            } catch (err: any) {
+                console.error('Webhook fulfillment error:', err);
             }
         }
 
         return NextResponse.json({ received: true });
     } catch (err: any) {
         console.error('Webhook error:', err.message);
-        return NextResponse.json(
-            { error: `Webhook Error: ${err.message}` },
-            { status: 400 }
-        );
+        return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
     }
 }
