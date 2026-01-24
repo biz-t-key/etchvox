@@ -72,6 +72,20 @@ export async function saveResult(
             const db = getDb();
             const resultRef = doc(db, 'results', result.id);
 
+            // 🔓 Community Unlock: Check if "Permanent Vault" goal is met ($15k)
+            try {
+                const statsSnap = await getDoc(doc(db, 'stats', 'global'));
+                if (statsSnap.exists()) {
+                    const totalCents = statsSnap.data().totalAmount || 0;
+                    // If target reached AND user consented, enable vault automatically
+                    if (totalCents >= 1500000 && result.consentAgreed) {
+                        result.vaultEnabled = true;
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to fetch community goal for vault auto-unlock', e);
+            }
+
             await setDoc(resultRef, {
                 ...result,
                 createdAt: Timestamp.fromDate(new Date(result.createdAt)),
@@ -80,7 +94,7 @@ export async function saveResult(
 
             // ✅ Upload Single Audio (Legacy/Solo)
             if (audioBlob) {
-                const uploadResult = await uploadAudio(result.id, audioBlob);
+                const uploadResult = await uploadAudio(result.id, audioBlob, result.consentAgreed);
                 if (uploadResult) {
                     await updateDoc(resultRef, {
                         audioUrl: uploadResult.url,
@@ -94,8 +108,8 @@ export async function saveResult(
 
             // ✅ Upload Couple Audio
             if (coupleAudioBlobs) {
-                const uploadA = await uploadAudio(`${result.id}_userA`, coupleAudioBlobs.userA);
-                const uploadB = await uploadAudio(`${result.id}_userB`, coupleAudioBlobs.userB);
+                const uploadA = await uploadAudio(`${result.id}_userA`, coupleAudioBlobs.userA, result.consentAgreed);
+                const uploadB = await uploadAudio(`${result.id}_userB`, coupleAudioBlobs.userB, result.consentAgreed);
 
                 if (uploadA && uploadB) {
                     await updateDoc(resultRef, {
@@ -179,12 +193,14 @@ export async function getResult(resultId: string): Promise<VoiceResult | null> {
 // Upload audio file to Cloudflare R2 (via API)
 export async function uploadAudio(
     resultId: string,
-    audioBlob: Blob
+    audioBlob: Blob,
+    consentAgreed: boolean = false
 ): Promise<{ url: string; path: string } | null> {
     try {
         const formData = new FormData();
         formData.append('file', audioBlob);
         formData.append('resultId', resultId);
+        formData.append('consentAgreed', String(consentAgreed));
 
         const response = await fetch('/api/upload-audio', {
             method: 'POST',

@@ -7,12 +7,24 @@ import { voiceTypes } from '@/lib/types';
 import { format } from 'date-fns';
 import { FEATURE_FLAGS } from '@/config/features';
 import FundingProgressBar from '@/components/layout/FundingProgressBar';
+import { getDb, isFirebaseConfigured } from '@/lib/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { getUnlockedFeatures, FeatureState } from '@/config/milestones';
 
 type Mode = 'solo' | 'couple' | null;
 
 export default function HomePage() {
   const [selectedMode, setSelectedMode] = useState<Mode>(null);
   const [history, setHistory] = useState<VoiceResult[]>([]);
+  const [totalFunding, setTotalFunding] = useState<number>(0);
+  const [features, setFeatures] = useState<FeatureState>({
+    isSoloReportUnlocked: false,
+    isCoupleModeUnlocked: false,
+    isCoupleReportUnlocked: false,
+    currentAmount: 0
+  });
+
+  // Vault Sync States
   const [restoreEmail, setRestoreEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState<'email' | 'otp'>('email');
@@ -26,6 +38,19 @@ export default function HomePage() {
 
   useEffect(() => {
     loadHistory();
+
+    // Real-time funding and feature unlock sync
+    if (isFirebaseConfigured()) {
+      const db = getDb();
+      const statsRef = doc(db, 'stats', 'global');
+      return onSnapshot(statsRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const amount = snapshot.data().totalAmount || 0;
+          setTotalFunding(amount);
+          setFeatures(getUnlockedFeatures(amount));
+        }
+      });
+    }
   }, []);
 
   const handleRequestOtp = async (e: React.FormEvent) => {
@@ -124,18 +149,21 @@ export default function HomePage() {
           <div className="space-y-16 animate-fade-in py-12">
             <p className="text-gray-400 text-lg mb-20 uppercase tracking-[0.2em] font-medium opacity-60">Choose your analysis mode:</p>
 
-            <div className={`${FEATURE_FLAGS.ENABLE_COUPLE_MODE ? 'grid md:grid-cols-2 max-w-4xl' : 'flex justify-center max-w-md'} gap-12 px-4 mx-auto w-full`}>
+            <div className={`${features.isCoupleModeUnlocked ? 'grid md:grid-cols-2 max-w-4xl' : 'flex justify-center max-w-md'} gap-12 px-4 mx-auto w-full`}>
               {/* Solo Mode */}
               <button
                 onClick={() => setSelectedMode('solo')}
-                className="group glass rounded-3xl p-8 md:p-12 border-2 border-cyan-500/30 hover:border-cyan-500/60 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_50px_rgba(0,240,255,0.4)] text-center flex flex-col items-center w-full"
+                className="group glass rounded-3xl p-8 md:p-12 border-2 border-cyan-500/30 hover:border-cyan-500/60 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_50px_rgba(0,240,255,0.4)] text-center flex flex-col items-center w-full relative"
               >
+                {features.isSoloReportUnlocked && (
+                  <span className="absolute top-4 right-4 text-[9px] bg-cyan-500/30 text-cyan-300 px-3 py-1 rounded-full font-black tracking-widest border border-cyan-500/20">UNLOCKED BY COMMUNITY</span>
+                )}
                 <div className="text-6xl mb-6 transform group-hover:scale-110 transition-transform">🎤</div>
                 <h2 className="text-3xl md:text-4xl font-black mb-4 uppercase tracking-tight">
-                  <span className="neon-text-cyan">{FEATURE_FLAGS.ENABLE_COUPLE_MODE ? 'SOLO MODE' : 'START ANALYSIS'}</span>
+                  <span className="neon-text-cyan">{features.isCoupleModeUnlocked ? 'SOLO MODE' : 'START ANALYSIS'}</span>
                 </h2>
                 <p className="text-gray-300 text-lg leading-relaxed mb-6 max-w-xs mx-auto">
-                  {FEATURE_FLAGS.ENABLE_COUPLE_MODE
+                  {features.isCoupleModeUnlocked
                     ? 'Discover your unique voice type.'
                     : 'Decode the resonance of your unique vocal signature.'}
                 </p>
@@ -146,13 +174,13 @@ export default function HomePage() {
                 </p>
               </button>
 
-              {/* Couple Mode - Controlled by Flag */}
-              {FEATURE_FLAGS.ENABLE_COUPLE_MODE && (
+              {/* Couple Mode - Controlled by Community Goal */}
+              {features.isCoupleModeUnlocked ? (
                 <button
                   onClick={() => setSelectedMode('couple')}
                   className="group glass rounded-3xl p-8 md:p-12 border-2 border-pink-500/30 hover:border-pink-500/60 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_50px_rgba(255,0,255,0.4)] text-center flex flex-col items-center relative w-full"
                 >
-                  <span className="absolute top-4 right-4 text-[10px] bg-pink-500/30 text-pink-300 px-2 py-1 rounded-full font-bold animate-pulse tracking-widest">NEW</span>
+                  <span className="absolute top-4 right-4 text-[10px] bg-pink-500/30 text-pink-300 px-2 py-1 rounded-full font-bold animate-pulse tracking-widest">UNLOCKED</span>
                   <div className="text-6xl mb-6 transform group-hover:scale-110 transition-transform">💕</div>
                   <h2 className="text-3xl md:text-4xl font-black mb-4 uppercase tracking-tight">
                     <span className="neon-text-pink">COUPLE MODE</span>
@@ -166,6 +194,19 @@ export default function HomePage() {
                     <span>AI MATCHING</span>
                   </p>
                 </button>
+              ) : (
+                <div className="hidden md:flex group glass rounded-3xl p-8 md:p-12 border-2 border-white/5 opacity-30 grayscale text-center flex-col items-center relative w-full cursor-not-allowed overflow-hidden">
+                  <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] z-10 flex items-center justify-center p-8">
+                    <div className="space-y-4">
+                      <div className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-500">COMMUNITY GOAL: $8,500</div>
+                      <div className="text-xs font-bold text-white uppercase tracking-widest">COUPLE MODE LOCKED</div>
+                    </div>
+                  </div>
+                  <div className="text-6xl mb-6 opacity-20">💕</div>
+                  <h2 className="text-3xl md:text-4xl font-black mb-4 uppercase tracking-tight opacity-10">
+                    COUPLE MODE
+                  </h2>
+                </div>
               )}
             </div>
           </div>

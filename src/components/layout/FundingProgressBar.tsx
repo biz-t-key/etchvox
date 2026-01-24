@@ -4,15 +4,12 @@ import { useEffect, useState } from 'react';
 import { getDb, isFirebaseConfigured } from '@/lib/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 
-interface Milestone {
-    label: string;
-    goal: number; // in cents
-}
+import { MILESTONES as TARGETS } from '@/config/milestones';
 
-const MILESTONES: Milestone[] = [
-    { label: 'Solo AI Analysis Unlock', goal: 100000 }, // $1000
-    { label: 'Establish Entity in Japan ($8.5k)', goal: 850000 }, // $8500
-    { label: 'Duo Report Unlock', goal: 1500000 }, // $15000
+const DISPLAY_MILESTONES = [
+    { label: 'Solo AI Analysis Unlock', goal: TARGETS.SOLO_REPORT_UNLOCK },
+    { label: 'Establish Entity in Japan ($8.5k)', goal: TARGETS.COUPLE_MODE_UNLOCK },
+    { label: 'Full Vault & Duo Reports', goal: TARGETS.COUPLE_REPORT_UNLOCK },
 ];
 
 export default function FundingProgressBar() {
@@ -38,7 +35,7 @@ export default function FundingProgressBar() {
     const currentTotalUSD = totalAmount / 100;
 
     // Find next milestone
-    const nextMilestone = MILESTONES.find(m => m.goal > totalAmount) || MILESTONES[MILESTONES.length - 1];
+    const nextMilestone = DISPLAY_MILESTONES.find(m => m.goal > totalAmount) || DISPLAY_MILESTONES[DISPLAY_MILESTONES.length - 1];
     const progress = Math.min(100, (totalAmount / nextMilestone.goal) * 100);
 
     if (loading) return null;

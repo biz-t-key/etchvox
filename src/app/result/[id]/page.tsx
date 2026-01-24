@@ -15,8 +15,9 @@ import DuoIdentityCard from '@/components/result/DuoIdentityCard';
 import { VideoPlayerSection } from '@/components/video/VideoPlayerSection';
 import { MBTIType } from '@/lib/mbti';
 import { isFirebaseConfigured, getDb } from '@/lib/firebase';
-import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, getDoc } from 'firebase/firestore';
 import { FEATURE_FLAGS } from '@/config/features';
+import { getUnlockedFeatures, FeatureState } from '@/config/milestones';
 
 // Stripe is loaded on-demand when payment is triggered, not on page load
 // This prevents console errors when NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not set
@@ -44,6 +45,12 @@ export default function ResultPage() {
     const [displayStage, setDisplayStage] = useState<DisplayStage>('label');
     const [selectedMBTI, setSelectedMBTI] = useState<MBTIType | null>(null);
     const [mbtiSkipped, setMbtiSkipped] = useState(false);
+    const [features, setFeatures] = useState<FeatureState>({
+        isSoloReportUnlocked: false,
+        isCoupleModeUnlocked: false,
+        isCoupleReportUnlocked: false,
+        currentAmount: 0
+    });
 
     const [showOTO, setShowOTO] = useState(false);
 
@@ -98,11 +105,10 @@ export default function ResultPage() {
                         isPremium: data.isPremium,
                         vaultEnabled: data.vaultEnabled,
                         mbti: data.mbti,
-                        metrics: data.metrics || prev.metrics, // Keep previous or fallback
+                        metrics: data.metrics || prev.metrics,
                     } as VoiceResult;
                 });
 
-                // If we were verifying and now we see premium, stop verifying
                 if (data.isPremium) {
                     setVerifyingPayment(false);
                 }
@@ -113,10 +119,21 @@ export default function ResultPage() {
             }
         }, (error) => {
             console.error('Firestore listener error:', error);
-            // Optionally set error state here if result is lost
         });
 
-        return () => unsubscribe();
+        // Track Community Goals
+        const statsRef = doc(db, 'stats', 'global');
+        const unsubStats = onSnapshot(statsRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const amount = snapshot.data().totalAmount || 0;
+                setFeatures(getUnlockedFeatures(amount));
+            }
+        });
+
+        return () => {
+            unsubscribe();
+            unsubStats();
+        };
     }, [resultId, selectedMBTI]);
 
     // ✅ Save MBTI to Firestore when selected
@@ -219,8 +236,13 @@ export default function ResultPage() {
     const isPremium = result.isPremium === true || result.vaultEnabled === true || searchParams.get('payment') === 'success';
 
     // Logic for specific features
-    const showVideo = isPremium; // Any payment unlocks video
-    const showAIReport = result.vaultEnabled === true || (searchParams.get('payment') === 'success' && searchParams.get('type') !== 'unlock');
+    const isSolo = !isCouple;
+    const showAIReport = result.vaultEnabled === true ||
+        (searchParams.get('payment') === 'success' && searchParams.get('type') !== 'unlock') ||
+        (isSolo && features.isSoloReportUnlocked) ||
+        (isCouple && features.isCoupleReportUnlocked);
+
+    const showVideo = isPremium || showAIReport; // Any report unlock also unlocks video for consistency
 
     return (
         <main className="min-h-screen bg-black text-white selection:bg-cyan-500/30 font-sans flex flex-col items-center overflow-x-hidden w-full relative">

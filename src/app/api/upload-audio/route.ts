@@ -1,20 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { r2Client } from '@/lib/r2';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
-import { nanoid } from 'nanoid';
+import { getDb } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 export async function POST(req: NextRequest) {
     try {
         const formData = await req.formData();
         const file = formData.get('file') as File;
         const resultId = formData.get('resultId') as string;
+        const consentAgreed = formData.get('consentAgreed') === 'true';
 
         if (!file || !resultId) {
             return NextResponse.json({ error: 'File and resultId are required' }, { status: 400 });
         }
 
+        // 🔓 Community Unlock Check: Full Vault ($15k)
+        let isVaultTargetReached = false;
+        try {
+            const db = getDb();
+            const statsSnap = await getDoc(doc(db, 'stats', 'global'));
+            if (statsSnap.exists()) {
+                const totalCents = statsSnap.data().totalAmount || 0;
+                isVaultTargetReached = totalCents >= 1500000;
+            }
+        } catch (e) {
+            console.warn('Failed to fetch stats in upload API', e);
+        }
+
         const buffer = Buffer.from(await file.arrayBuffer());
-        const fileName = `temp/${resultId}.webm`; // Store in temp by default
+
+        // Final Safety: Only vault if Goal reached AND user consented
+        const useVault = isVaultTargetReached && consentAgreed;
+        const folder = useVault ? 'vault' : 'temp';
+        const fileName = `${folder}/${resultId}.webm`;
         const bucketName = process.env.R2_BUCKET_NAME;
 
         if (!bucketName) {
