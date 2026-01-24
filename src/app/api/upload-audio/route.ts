@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
         const buffer = Buffer.from(await file.arrayBuffer());
 
         // Recordings always start in 'temp/'. 
-        // Promotion to 'vault/' only happens via Stripe Webhook for paid users.
+        // Promotion to 'vault/' only happens via BMAC Webhook for paid users.
         const fileName = `temp/${resultId}.webm`;
         const bucketName = process.env.R2_BUCKET_NAME;
 

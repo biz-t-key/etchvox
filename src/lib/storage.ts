@@ -35,7 +35,7 @@ export interface VoiceResult {
     toxicityProfile?: ToxicityProfile;
     aiAnalysis?: string; // Markdown text from Gemini
     mbti?: string; // User's self-reported MBTI
-    email?: string; // Customer email from Stripe
+    email?: string; // Customer email from payment provider (BMAC)
     coupleData?: {
         userA: { name: string; job: string; metrics: AnalysisMetrics; gender?: string; birthYear?: number; typeCode?: TypeCode };
         userB: { name: string; job: string; metrics: AnalysisMetrics; gender?: string; birthYear?: number; typeCode?: TypeCode };
@@ -43,6 +43,17 @@ export interface VoiceResult {
     consentAgreed: boolean;
     consentVersion: string;
     consentAt: string;
+    consentHash?: string; // SHA-256 hash for integrity
+}
+
+// Generate a SHA-256 hash of the consent record
+async function generateConsentHash(version: string, at: string, sessionId: string): Promise<string> {
+    const data = `${version}|${at}|${sessionId}`;
+    const msgUint8 = new TextEncoder().encode(data);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hashHex;
 }
 
 // Save result to Firestore (and localStorage as fallback)
@@ -71,6 +82,15 @@ export async function saveResult(
         try {
             const db = getDb();
             const resultRef = doc(db, 'results', result.id);
+
+            // Generate consent hash before saving
+            if (result.consentAgreed) {
+                result.consentHash = await generateConsentHash(
+                    result.consentVersion,
+                    result.consentAt,
+                    result.sessionId
+                );
+            }
 
             await setDoc(resultRef, {
                 ...result,

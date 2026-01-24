@@ -1,12 +1,31 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize Resend lazily to avoid build-time crashes if the API key is missing
+let resendInstance: Resend | null = null;
+
+function getResend() {
+  if (!resendInstance) {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      console.warn('RESEND_API_KEY is missing. Email service will not work.');
+      // Return a dummy object or handle elsewhere. 
+      // For now, we'll allow it to be null and check in sendOtpEmail.
+      return null;
+    }
+    resendInstance = new Resend(apiKey);
+  }
+  return resendInstance;
+}
 
 /**
  * Sends a One-Time Password (OTP) to the user's email for Vault restoration.
  */
 export async function sendOtpEmail(email: string, otp: string) {
   try {
+    const resend = getResend();
+    if (!resend) {
+      throw new Error('Email service is not configured (missing API key).');
+    }
     const { data, error } = await resend.emails.send({
       from: 'EtchVox <auth@etchvox.com>',
       to: [email],
