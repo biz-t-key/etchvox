@@ -6,12 +6,12 @@ const resend = new Resend(process.env.RESEND_API_KEY);
  * Sends a One-Time Password (OTP) to the user's email for Vault restoration.
  */
 export async function sendOtpEmail(email: string, otp: string) {
-    try {
-        const { data, error } = await resend.emails.send({
-            from: 'EtchVox <onboarding@resend.dev>', // Replace with custom domain later
-            to: [email],
-            subject: 'Your EtchVox Vault Access Code',
-            html: `
+  try {
+    const { data, error } = await resend.emails.send({
+      from: 'EtchVox <auth@etchvox.com>',
+      to: [email],
+      subject: 'Your EtchVox Vault Access Code',
+      html: `
         <div style="font-family: sans-serif; background-color: #000; color: #fff; padding: 40px; border-radius: 20px;">
           <h1 style="color: #00f0ff; text-align: center;">ETCHVOX</h1>
           <p style="text-align: center; color: #9ca3af;">Securing your vocal identity archives.</p>
@@ -25,16 +25,16 @@ export async function sendOtpEmail(email: string, otp: string) {
           </p>
         </div>
       `,
-        });
+    });
 
-        if (error) {
-            console.error('Resend Error:', error);
-            throw new Error(error.message);
-        }
-
-        return data;
-    } catch (err) {
-        console.error('Mail Service Error:', err);
-        throw err;
+    if (error) {
+      console.error('Resend Error:', error);
+      throw new Error(error.message);
     }
+
+    return data;
+  } catch (err) {
+    console.error('Mail Service Error:', err);
+    throw err;
+  }
 }
