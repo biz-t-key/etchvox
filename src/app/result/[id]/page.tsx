@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { loadStripe } from '@stripe/stripe-js';
@@ -135,6 +135,27 @@ export default function ResultPage() {
             unsubStats();
         };
     }, [resultId, selectedMBTI]);
+
+    // ✅ Trigger Free AI Analysis if community goal achieved
+    const hasTriggeredRef = useRef(false);
+    useEffect(() => {
+        if (!result || result.aiAnalysis || hasTriggeredRef.current) return;
+
+        const isSolo = result.typeCode !== 'COUPLE_MIX' && !result.coupleData;
+        const isCouple = !isSolo;
+
+        const isSoloUnlocked = isSolo && features.isSoloReportUnlocked;
+        const isCoupleUnlocked = isCouple && features.isCoupleReportUnlocked;
+
+        if (isSoloUnlocked || isCoupleUnlocked) {
+            hasTriggeredRef.current = true;
+            fetch('/api/results/generate-free', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ resultId })
+            }).catch(err => console.error('Failed to trigger free AI generation:', err));
+        }
+    }, [result, features, resultId]);
 
     // ✅ Save MBTI to Firestore when selected
     const handleMBTISelect = async (mbti: MBTIType | null) => {

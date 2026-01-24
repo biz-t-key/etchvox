@@ -72,20 +72,6 @@ export async function saveResult(
             const db = getDb();
             const resultRef = doc(db, 'results', result.id);
 
-            // 🔓 Community Unlock: Check if "Permanent Vault" goal is met ($15k)
-            try {
-                const statsSnap = await getDoc(doc(db, 'stats', 'global'));
-                if (statsSnap.exists()) {
-                    const totalCents = statsSnap.data().totalAmount || 0;
-                    // If target reached AND user consented, enable vault automatically
-                    if (totalCents >= 1500000 && result.consentAgreed) {
-                        result.vaultEnabled = true;
-                    }
-                }
-            } catch (e) {
-                console.warn('Failed to fetch community goal for vault auto-unlock', e);
-            }
-
             await setDoc(resultRef, {
                 ...result,
                 createdAt: Timestamp.fromDate(new Date(result.createdAt)),
