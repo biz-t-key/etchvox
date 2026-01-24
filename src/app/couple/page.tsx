@@ -426,6 +426,8 @@ export default function CouplePage() {
 function NamesForm({ onBack, onSubmit }: { onBack: () => void, onSubmit: (a: string, b: string) => void }) {
     const [nameA, setNameA] = useState('');
     const [nameB, setNameB] = useState('');
+    const [isOver13, setIsOver13] = useState(false);
+    const [consentGiven, setConsentGiven] = useState(false);
 
     return (
         <main className="min-h-screen bg-black text-white p-6 md:p-12 flex flex-col justify-center max-w-2xl mx-auto fade-in scrollbar-hide py-20 md:py-32">
@@ -457,15 +459,46 @@ function NamesForm({ onBack, onSubmit }: { onBack: () => void, onSubmit: (a: str
                     />
                 </div>
 
+                <div className="glass rounded-xl p-8 border-2 border-cyan-500/20 bg-white/5 space-y-6">
+                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-cyan-400">Security Clearance</h3>
+                    <div className="space-y-4">
+                        <label className="flex items-start gap-4 p-4 rounded-lg bg-black/40 hover:bg-black/60 transition-colors cursor-pointer group text-left">
+                            <input
+                                type="checkbox"
+                                checked={isOver13}
+                                onChange={(e) => setIsOver13(e.target.checked)}
+                                className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-cyan-500"
+                            />
+                            <span className="text-sm text-gray-300 leading-relaxed select-none block font-bold transition-colors group-hover:text-white">
+                                Both participants confirm they are at least 13 years of age.
+                            </span>
+                        </label>
+
+                        <label className="flex items-start gap-4 p-4 rounded-lg bg-black/40 hover:bg-black/60 transition-colors cursor-pointer group text-left">
+                            <input
+                                type="checkbox"
+                                checked={consentGiven}
+                                onChange={(e) => setConsentGiven(e.target.checked)}
+                                className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-cyan-500"
+                            />
+                            <span className="text-sm text-gray-300 leading-relaxed select-none block font-bold transition-colors group-hover:text-white">
+                                Both participants consent to voice analysis by EtchVox.
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
                 <div className="pt-16">
                     <button
-                        disabled={!nameA.trim() || !nameB.trim()}
+                        disabled={!nameA.trim() || !nameB.trim() || !isOver13 || !consentGiven}
                         onClick={() => onSubmit(nameA, nameB)}
                         className="w-full bg-gradient-to-r from-cyan-600 to-pink-600 text-white font-black py-5 rounded-2xl uppercase tracking-[0.3em] hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shadow-[0_10px_40px_rgba(236,72,153,0.3)] transition-all text-xl"
                     >
                         Initialize Scan
                     </button>
-                    <p className="text-center text-[10px] text-gray-600 mt-6 uppercase tracking-widest font-mono italic">Demographic calibration deferred until post-recording phase.</p>
+                    <p className="text-center text-[10px] text-gray-600 mt-6 uppercase tracking-widest font-mono italic">
+                        Read our <Link href="/privacy" className="text-cyan-500 hover:underline">Privacy Policy</Link> for details.
+                    </p>
                 </div>
             </div>
         </main>
