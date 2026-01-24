@@ -51,9 +51,14 @@ export default function FundingProgressBar() {
                         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-400">
                             Seed Round: Japan Entity Launch
                         </span>
-                        <span className="text-xs font-bold text-white uppercase tracking-tighter">
-                            Next Milestone: {nextMilestone.label}
-                        </span>
+                        <div className="flex flex-col md:flex-row md:items-baseline gap-1 md:gap-3">
+                            <span className="text-xs font-bold text-white uppercase tracking-tighter">
+                                Next Milestone: {nextMilestone.label}
+                            </span>
+                            <span className="hidden md:inline text-[9px] text-gray-500 italic font-medium opacity-80">
+                                "Official seals move slow, but the expiry of love is swift."
+                            </span>
+                        </div>
                     </div>
                     <div className="text-right">
                         <span className="text-lg font-black text-cyan-400 font-mono tracking-tighter">
