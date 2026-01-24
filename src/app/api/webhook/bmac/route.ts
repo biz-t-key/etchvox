@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
                 const resultSnap = await getDoc(resultRef);
 
                 if (resultSnap.exists()) {
-                    // 1. Update Firestore
+                    // 1. Update individual result
                     await updateDoc(resultRef, {
                         isPremium: true,
                         vaultEnabled: type === 'vault' || type === 'couple',
@@ -67,7 +67,34 @@ export async function POST(req: NextRequest) {
                         paymentProvider: 'bmac'
                     });
 
-                    // 2. Promote to Vault in R2
+                    // 2. ✅ Update GLOBAL Funding Total
+                    try {
+                        const statsRef = doc(db, 'stats', 'global');
+                        const statsSnap = await getDoc(statsRef);
+
+                        const amountCents = Math.round(amount * 100);
+
+                        if (statsSnap.exists()) {
+                            // Increment existing total
+                            const currentTotal = statsSnap.data().totalAmount || 0;
+                            await updateDoc(statsRef, {
+                                totalAmount: currentTotal + amountCents,
+                                lastUpdated: new Date().toISOString()
+                            });
+                        } else {
+                            // Create first record
+                            const { setDoc } = await import('firebase/firestore');
+                            await setDoc(statsRef, {
+                                totalAmount: amountCents,
+                                lastUpdated: new Date().toISOString()
+                            });
+                        }
+                        console.log(`[GLOBAL] Updated total funding by +${amountCents} cents`);
+                    } catch (statsErr) {
+                        console.error('Failed to update global stats:', statsErr);
+                    }
+
+                    // 3. Promote to Vault in R2
                     const bucketName = process.env.R2_BUCKET_NAME;
                     if (bucketName) {
                         const filesToMove = [

@@ -1,0 +1,86 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { getDb, isFirebaseConfigured } from '@/lib/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
+
+interface Milestone {
+    label: string;
+    goal: number; // in cents
+}
+
+const MILESTONES: Milestone[] = [
+    { label: 'Solo AI Analysis Unlock', goal: 100000 }, // $1000
+    { label: 'Establish Entity in Japan ($8.5k)', goal: 850000 }, // $8500
+    { label: 'Duo Report Unlock', goal: 1500000 }, // $15000
+];
+
+export default function FundingProgressBar() {
+    const [totalAmount, setTotalAmount] = useState<number>(0);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (!isFirebaseConfigured()) return;
+
+        const db = getDb();
+        const statsRef = doc(db, 'stats', 'global');
+
+        const unsubscribe = onSnapshot(statsRef, (snapshot) => {
+            if (snapshot.exists()) {
+                setTotalAmount(snapshot.data().totalAmount || 0);
+            }
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, []);
+
+    const currentTotalUSD = totalAmount / 100;
+
+    // Find next milestone
+    const nextMilestone = MILESTONES.find(m => m.goal > totalAmount) || MILESTONES[MILESTONES.length - 1];
+    const progress = Math.min(100, (totalAmount / nextMilestone.goal) * 100);
+
+    if (loading) return null;
+
+    return (
+        <div className="w-full bg-black/80 backdrop-blur-md border-b border-cyan-500/30 py-3 px-4 sticky top-0 z-[100] animate-slide-down">
+            <div className="max-w-4xl mx-auto">
+                <div className="flex justify-between items-end mb-1.5">
+                    <div className="flex flex-col">
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-400">
+                            Seed Round: Japan Entity Launch
+                        </span>
+                        <span className="text-xs font-bold text-white uppercase tracking-tighter">
+                            Next Milestone: {nextMilestone.label}
+                        </span>
+                    </div>
+                    <div className="text-right">
+                        <span className="text-lg font-black text-cyan-400 font-mono tracking-tighter">
+                            ${currentTotalUSD.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </span>
+                        <span className="text-[10px] text-gray-400 font-bold ml-1 uppercase">Raised</span>
+                    </div>
+                </div>
+
+                {/* The Bar */}
+                <div className="relative h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                    <div
+                        className="absolute inset-y-0 left-0 bg-gradient-to-r from-cyan-600 to-white shadow-[0_0_15px_rgba(6,182,212,0.5)] transition-all duration-1000 ease-out"
+                        style={{ width: `${progress}%` }}
+                    />
+
+                    {/* Tick Mark for 128万円/ $8500 Target if current milestone is before it */}
+                    {nextMilestone.goal === 850000 && (
+                        <div className="absolute left-[85%] top-0 h-full w-[2px] bg-white/20" />
+                    )}
+                </div>
+
+                <div className="flex justify-between mt-1 opacity-40">
+                    <span className="text-[8px] font-black tracking-widest uppercase">Bootstrapping</span>
+                    <span className="text-[8px] font-black tracking-widest uppercase">Target: ${(nextMilestone.goal / 100).toLocaleString()}</span>
+                </div>
+            </div>
+        </div>
+    );
+}
