@@ -223,6 +223,9 @@ export default function RecordPage() {
                 userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
                 vaultEnabled: false, // Will be updated after Vault purchase
                 toxicityProfile: toxicity || undefined,
+                consentAgreed: true,
+                consentVersion: '1.0.0', // Current Terms version
+                consentAt: new Date().toISOString(),
             };
 
             // ✅ Save result with audio blob (will only save audio if vaultEnabled: true)

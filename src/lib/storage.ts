@@ -40,6 +40,9 @@ export interface VoiceResult {
         userA: { name: string; job: string; metrics: AnalysisMetrics; gender?: string; birthYear?: number; typeCode?: TypeCode };
         userB: { name: string; job: string; metrics: AnalysisMetrics; gender?: string; birthYear?: number; typeCode?: TypeCode };
     };
+    consentAgreed: boolean;
+    consentVersion: string;
+    consentAt: string;
 }
 
 // Save result to Firestore (and localStorage as fallback)
@@ -155,6 +158,9 @@ export async function getResult(resultId: string): Promise<VoiceResult | null> {
                     aiAnalysis: data.aiAnalysis,
                     mbti: data.mbti,
                     coupleData: data.coupleData,
+                    consentAgreed: data.consentAgreed || false,
+                    consentVersion: data.consentVersion || '0.0.0',
+                    consentAt: data.consentAt || '',
                 };
 
                 // Cache in localStorage

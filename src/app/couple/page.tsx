@@ -250,7 +250,10 @@ export default function CouplePage() {
             coupleData: {
                 userA: { name: names.A, job: jobA, metrics: mainMetrics, typeCode: unionTypeCode, gender: pA?.gender || profiles.A.gender, birthYear: pA?.birthYear || profiles.A.birthYear },
                 userB: { name: names.B, job: jobB, metrics: mainMetrics, typeCode: unionTypeCode, gender: pB?.gender || profiles.B.gender, birthYear: pB?.birthYear || profiles.B.birthYear }
-            }
+            },
+            consentAgreed: true,
+            consentVersion: '1.0.0',
+            consentAt: new Date().toISOString(),
         } as any;
 
         // Save with blobs
