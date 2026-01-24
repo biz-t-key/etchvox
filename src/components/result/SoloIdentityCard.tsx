@@ -137,7 +137,7 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
             <div
                 ref={cardRef}
                 data-capture-target="solo-card"
-                className="relative w-full aspect-[4/5] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col p-8 md:p-12 border border-white/10 font-sans select-none"
+                className="relative w-full aspect-[4/5] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col p-10 md:p-14 border border-white/10 font-sans select-none"
                 style={{
                     width: '100%',
                     backgroundColor: '#050505',
@@ -161,8 +161,8 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                 />
 
                 {/* HEADER */}
-                <div className="relative z-10 flex items-center justify-between mb-4 md:mb-8 px-4 pt-4">
-                    <div className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.4em]" style={{ color: '#ffffff66' }}>
+                <div className="relative z-10 flex items-center justify-between mb-2 md:mb-4 px-2">
+                    <div className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.4em]" style={{ color: '#ffffff99' }}>
                         Truth Card
                     </div>
                     <div className="text-[10px] md:text-[12px] font-mono tracking-widest uppercase" style={{ color: '#ffffff33' }}>
@@ -227,15 +227,15 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                     <p className="text-[11px] md:text-[13px] font-medium italic leading-relaxed text-center px-4" style={{ color: '#9ca3af' }}>
                         {identityData?.roast || 'Decoding vocal signature...'}
                     </p>
-                    <div className="mt-6 text-[8px] uppercase tracking-[0.4em] text-center" style={{ color: 'rgba(255, 255, 255, 0.05)' }}>
+                    <div className="mt-8 text-[8px] uppercase tracking-[0.4em] text-center" style={{ color: 'rgba(255, 255, 255, 0.4)' }}>
                         etchvox.com fingerprint
                     </div>
                 </div>
 
                 {/* FOOTER */}
-                <div className="relative z-10 mt-8 flex justify-between items-center px-8 pb-4" style={{ opacity: 0.2 }}>
+                <div className="relative z-10 mt-8 flex justify-between items-center px-4 pb-0" style={{ opacity: 0.5 }}>
                     <div className="text-[8px] font-black tracking-[0.2em] uppercase" style={{ color: '#ffffff' }}>Auth: Bio-Metric</div>
-                    <div className="text-[8px] font-mono text-white">v1.0.4.SOLO</div>
+                    <div className="text-[8px] font-mono text-white">v1.1.0.SOLO</div>
                 </div>
             </div>
 

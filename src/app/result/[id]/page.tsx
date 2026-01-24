@@ -408,11 +408,11 @@ export default function ResultPage() {
                                                                 <div className="flex items-center gap-3">
                                                                     <span className="text-xl opacity-80">{voiceTypes[type].icon}</span>
                                                                     <div className="flex flex-col">
-                                                                        <span className="text-xs font-bold text-gray-300 tracking-wide">{voiceTypes[type].name}</span>
-                                                                        <span className="text-[9px] font-mono text-cyan-700 uppercase tracking-widest">{type}</span>
+                                                                        <span className="text-sm font-bold text-white tracking-wide">{voiceTypes[type].name}</span>
+                                                                        <span className="text-[9px] font-mono text-cyan-600 uppercase tracking-widest">{type}</span>
                                                                     </div>
                                                                 </div>
-                                                                <span className="font-mono text-xs text-green-400">{score}%</span>
+                                                                <span className="font-mono text-sm text-green-400">{score}%</span>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -427,11 +427,11 @@ export default function ResultPage() {
                                                                 <div className="flex items-center gap-3">
                                                                     <span className="text-xl opacity-80">{voiceTypes[type].icon}</span>
                                                                     <div className="flex flex-col">
-                                                                        <span className="text-xs font-bold text-gray-300 tracking-wide">{voiceTypes[type].name}</span>
-                                                                        <span className="text-[9px] font-mono text-red-900/50 uppercase tracking-widest">{type}</span>
+                                                                        <span className="text-sm font-bold text-white tracking-wide">{voiceTypes[type].name}</span>
+                                                                        <span className="text-[9px] font-mono text-red-700 uppercase tracking-widest">{type}</span>
                                                                     </div>
                                                                 </div>
-                                                                <span className="font-mono text-xs text-red-500">{score}%</span>
+                                                                <span className="font-mono text-sm text-red-500">{score}%</span>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -453,13 +453,16 @@ export default function ResultPage() {
                                                 <div className="flex items-center gap-4 mb-4">
                                                     <span className="text-2xl filter grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all">{voiceType.icon}</span>
                                                     <div>
-                                                        <div className="text-white font-bold uppercase text-xs tracking-wide">{voiceType.name}</div>
+                                                        <div className="text-white font-bold uppercase text-sm tracking-wide">{voiceType.name}</div>
                                                         <div className="text-cyan-600 font-mono text-[9px] tracking-widest uppercase">TYPE: {result.typeCode}</div>
                                                     </div>
                                                 </div>
-                                                <p className="text-gray-400 text-xs leading-relaxed italic border-l-2 border-white/5 pl-4 mb-2">
+                                                <p className="text-gray-300 text-sm leading-relaxed italic border-l-2 border-cyan-500/50 pl-4 mb-4">
                                                     "{voiceType.catchphrase}"
                                                 </p>
+                                                <div className="text-[10px] text-gray-500 font-medium">
+                                                    ✨ Perfect for your Bio or Slack status.
+                                                </div>
                                                 <div className="absolute top-4 right-4 text-[8px] text-gray-600 font-bold uppercase tracking-widest group-hover:text-cyan-500">COPY</div>
                                             </div>
                                         </div>
@@ -637,30 +640,13 @@ export default function ResultPage() {
                                                                     🔒 One-Time Purchase · Permanent Access
                                                                 </div>
 
-                                                                {((!isCouple && features.isSoloPurchaseUnlocked) || (isCouple && features.isCouplePurchaseUnlocked)) ? (
-                                                                    <button
-                                                                        onClick={() => handleCheckout(isCouple ? 'couple' : 'vault')}
-                                                                        disabled={processingPayment}
-                                                                        className={`w-full bg-gradient-to-r ${isCouple ? 'from-pink-600 to-cyan-600' : 'from-pink-600 to-violet-600'} hover:opacity-90 text-white font-bold py-4 rounded-xl text-sm uppercase tracking-widest shadow-lg transform hover:scale-[1.02] transition-all`}
-                                                                    >
-                                                                        {processingPayment ? 'Processing...' : isCouple ? 'Unlock Compatibility — $15.00' : 'Secure Vault Access — $10.00'}
-                                                                    </button>
-                                                                ) : (
-                                                                    <div className="space-y-4">
-                                                                        <div className="bg-black/60 border border-white/5 rounded-xl p-4 text-center">
-                                                                            <div className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em] mb-1">Coming Soon</div>
-                                                                            <div className="text-xs font-bold text-gray-400 uppercase tracking-widest leading-relaxed">
-                                                                                Locked by Community Goal: {isCouple ? '$15,000' : '$1,000'}
-                                                                            </div>
-                                                                        </div>
-                                                                        <Link
-                                                                            href="/"
-                                                                            className="block w-full bg-white/10 hover:bg-white/20 text-white text-[10px] font-black py-4 rounded-xl uppercase tracking-[0.3em] transition-all border border-white/5"
-                                                                        >
-                                                                            Fuel Community Progress →
-                                                                        </Link>
-                                                                    </div>
-                                                                )}
+                                                                <button
+                                                                    onClick={() => handleCheckout(isCouple ? 'couple' : 'vault')}
+                                                                    disabled={processingPayment}
+                                                                    className={`w-full bg-gradient-to-r ${isCouple ? 'from-pink-600 to-cyan-600' : 'from-pink-600 to-violet-600'} hover:opacity-90 text-white font-bold py-4 rounded-xl text-sm uppercase tracking-widest shadow-lg transform hover:scale-[1.02] transition-all`}
+                                                                >
+                                                                    {processingPayment ? 'Processing...' : isCouple ? 'Unlock Compatibility — $15.00' : 'Secure Vault Access — $10.00'}
+                                                                </button>
 
                                                                 <p className="mt-4 text-[10px] text-gray-500 italic">
                                                                     *Non-vault audio data is automatically purged from our servers after 30 days for your privacy.
