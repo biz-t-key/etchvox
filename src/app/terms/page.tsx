@@ -61,9 +61,10 @@ export default function TermsPage() {
 
                     <h2 className="text-xl font-bold text-cyan-400 mt-8 mb-4">5. Intellectual Property & Data Rights</h2>
                     <p className="text-gray-300">
-                        You retain ownership of your original voice recordings. However, by using the service, you grant
-                        EtchVox a worldwide, non-exclusive, royalty-free license to use, process, and analyze your audio
-                        to generate the report, improve our algorithms, and create anonymized, aggregated insights for commercial and research purposes.
+                        You retain ownership of your original voice recordings. By using the service, you grant
+                        EtchVox a worldwide, non-exclusive license to process your audio for report generation.
+                        <strong>AI Research and algorithm improvement</strong> are performed only upon receiving your explicit
+                        opt-in consent during the recording sequence.
                     </p>
 
                     <h2 className="text-xl font-bold text-cyan-400 mt-8 mb-4">6. Data Deletion & Sovereignty</h2>

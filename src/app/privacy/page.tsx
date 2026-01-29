@@ -9,7 +9,7 @@ export default function PrivacyPage() {
                 </Link>
 
                 <h1 className="text-4xl font-black neon-text-cyan mb-2 uppercase tracking-tighter">Privacy Policy</h1>
-                <p className="text-gray-500 font-mono text-xs mb-12 uppercase tracking-[0.3em]">Last Protocol Update: January 18, 2026</p>
+                <p className="text-gray-500 font-mono text-xs mb-12 uppercase tracking-[0.3em]">Last Protocol Update: January 29, 2026 (Compliance 2026 Edition)</p>
 
                 <div className="prose prose-invert max-w-none space-y-12">
                     <section>
@@ -52,9 +52,13 @@ export default function PrivacyPage() {
                     <section className="space-y-6">
                         <h2 className="text-2xl font-bold text-white uppercase tracking-wider border-b border-white/10 pb-2">2. Data Usage & Research</h2>
                         <div className="bg-cyan-500/5 border border-cyan-500/20 rounded-2xl p-6">
-                            <h4 className="text-cyan-400 font-bold uppercase tracking-widest text-xs mb-3">🔬 AI Optimization & Commercial Research</h4>
+                            <h4 className="text-cyan-400 font-bold uppercase tracking-widest text-xs mb-3">🔬 AI Optimization & Differential Privacy</h4>
+                            <p className="text-gray-400 text-sm leading-relaxed mb-4">
+                                We utilize processed vocal metrics to improve our algorithms and create anonymized, aggregated insights.
+                                To ensure the highest level of privacy, we apply **Differential Privacy** techniques, including the addition of mathematical noise to biometric vectors, to ensure that individual re-identification is technically infeasible.
+                            </p>
                             <p className="text-gray-400 text-sm leading-relaxed">
-                                We utilize processed vocal metrics to improve our algorithms and create anonymized, aggregated insights for commercial and research purposes. All data used for these purposes is stripped of Personally Identifiable Information (PII) and cannot be traced back to an individual.
+                                All data used for research is stripped of Personally Identifiable Information (PII) and stored separately from primary account archives.
                             </p>
                         </div>
                     </section>
@@ -78,14 +82,26 @@ export default function PrivacyPage() {
                     </section>
 
                     <section className="space-y-6">
-                        <h2 className="text-2xl font-bold text-white uppercase tracking-wider border-b border-white/10 pb-2">4. Your Sovereignty (Archive & Deletion)</h2>
+                        <h2 className="text-2xl font-bold text-white uppercase tracking-wider border-b border-white/10 pb-2">4. International Data Transfers & Compliance</h2>
+                        <p className="text-gray-300 leading-relaxed text-sm">
+                            EtchVox utilizes global infrastructure to process and store data. By using the service, you acknowledge and agree that your information may be transferred to and maintained on computers located outside of your state, province, or country.
+                        </p>
+                        <ul className="text-gray-400 space-y-2 text-sm list-inside list-disc marker:text-cyan-500">
+                            <li><strong>Cloud Infrastructure:</strong> Data is stored on secure US-based servers (Vercel, Cloudflare, and AWS).</li>
+                            <li><strong>Payment Providers:</strong> Financial metadata is handled by Buy Me a Coffee (USA).</li>
+                            <li><strong>Compliance Protocols:</strong> We implement Standard Contractual Clauses (SCCs) and comply with the 2026 amendments of the APPI (Japan) and GDPR (EU) regarding biometric data protection.</li>
+                        </ul>
+                    </section>
+
+                    <section className="space-y-6">
+                        <h2 className="text-2xl font-bold text-white uppercase tracking-wider border-b border-white/10 pb-2">5. Your Sovereignty (Archive & Deletion)</h2>
                         <p className="text-gray-300 leading-relaxed text-sm">
                             EtchVox is restricted to users 13 years of age or older. By using the service, you confirm you meet this requirement.
                         </p>
                         <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-                            <p className="text-sm text-gray-300 underline underline-offset-4 decoration-cyan-500/50 mb-3">Archival Protocol:</p>
+                            <p className="text-sm text-gray-300 underline underline-offset-4 decoration-cyan-500/50 mb-3">Archival & Irreversible Deletion:</p>
                             <p className="text-[11px] text-gray-500 leading-relaxed uppercase tracking-wider">
-                                Users can archive diagnostic records from their "Vault" to hide them from view. For permanent account or record deletion requests compliant with GDPR/CCPA, please contact support at info@etchvox.com. Anonymized acoustic vectors may be retained for system optimization.
+                                Users can archive diagnostics at any time. For permanent deletion requests, please contact us. Note that while PII is deleted, de-identified mathematical vectors protected by Differential Privacy may be retained in an irreversible format for system integrity.
                             </p>
                         </div>
                     </section>

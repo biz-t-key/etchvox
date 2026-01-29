@@ -34,6 +34,7 @@ export default function CouplePage() {
 
     // Consent
     const [consentGiven, setConsentGiven] = useState(false);
+    const [researchConsentAgreed, setResearchConsentAgreed] = useState(false);
     const [isOver13, setIsOver13] = useState(false);
 
     // Data Store
@@ -252,7 +253,8 @@ export default function CouplePage() {
                 userB: { name: names.B, job: jobB, metrics: mainMetrics, typeCode: unionTypeCode, gender: pB?.gender || profiles.B.gender, birthYear: pB?.birthYear || profiles.B.birthYear }
             },
             consentAgreed: true,
-            consentVersion: '1.0.0',
+            researchConsentAgreed: researchConsentAgreed,
+            consentVersion: '2.0.0',
             consentAt: new Date().toISOString(),
         } as any;
 
@@ -306,8 +308,23 @@ export default function CouplePage() {
                             className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-pink-500"
                         />
                         <span className="text-sm text-gray-400 leading-relaxed select-none block text-left font-bold transition-colors group-hover:text-white">
-                            We consent to our voices being recorded and analyzed by EtchVox.
+                            We consent to our voices being recorded and analyzed for our diagnostic report.
                         </span>
+                    </label>
+
+                    <label className="flex items-start gap-4 p-4 rounded-lg bg-black/40 hover:bg-black/60 transition-colors cursor-pointer group text-left">
+                        <input
+                            type="checkbox"
+                            checked={researchConsentAgreed}
+                            onChange={(e) => setResearchConsentAgreed(e.target.checked)}
+                            className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-pink-500"
+                        />
+                        <div className="space-y-1">
+                            <span className="text-sm text-gray-400 leading-relaxed select-none block text-left font-bold transition-colors group-hover:text-white">
+                                (Optional) We consent to anonymized research/AI improvement.
+                            </span>
+                            <span className="text-[10px] text-gray-500 block">Uses Differential Privacy for biometric vectors.</span>
+                        </div>
                     </label>
                 </div>
                 <div className="text-[10px] text-gray-500 uppercase tracking-widest font-mono text-center">

@@ -43,6 +43,7 @@ export default function RecordPage() {
     const [selectedAccent, setSelectedAccent] = useState<string | null>(null);
     const [toxicity, setToxicity] = useState<ToxicityProfile | null>(null);
     const [consentGiven, setConsentGiven] = useState(false);
+    const [researchConsentAgreed, setResearchConsentAgreed] = useState(false);
     const [isOver13, setIsOver13] = useState(false);
     const [gender, setGender] = useState<string>('non-binary');
     const [birthYear, setBirthYear] = useState<number>(new Date().getFullYear() - 25);
@@ -224,7 +225,8 @@ export default function RecordPage() {
                 vaultEnabled: false, // Will be updated after Vault purchase
                 toxicityProfile: toxicity || undefined,
                 consentAgreed: true,
-                consentVersion: '1.0.0', // Current Terms version
+                researchConsentAgreed: researchConsentAgreed,
+                consentVersion: '2.0.0', // Updated for Compliance 2026 Edition
                 consentAt: new Date().toISOString(),
             };
 
@@ -303,8 +305,23 @@ export default function RecordPage() {
                                         className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-cyan-500"
                                     />
                                     <span className="text-sm text-gray-300 leading-relaxed select-none block font-bold transition-colors group-hover:text-white">
-                                        I consent to my voice being recorded and analyzed by EtchVox.
+                                        I consent to my voice being recorded and analyzed for my diagnostic report.
                                     </span>
+                                </label>
+
+                                <label className="flex items-start gap-4 p-4 rounded-lg bg-black/40 hover:bg-black/60 transition-colors cursor-pointer group text-left">
+                                    <input
+                                        type="checkbox"
+                                        checked={researchConsentAgreed}
+                                        onChange={(e) => setResearchConsentAgreed(e.target.checked)}
+                                        className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-cyan-500"
+                                    />
+                                    <div className="space-y-1">
+                                        <span className="text-sm text-gray-300 leading-relaxed select-none block font-bold transition-colors group-hover:text-white">
+                                            (Optional) I consent to anonymized research/AI improvement.
+                                        </span>
+                                        <span className="text-[10px] text-gray-500 block">Uses Differential Privacy to protect your identity.</span>
+                                    </div>
                                 </label>
                             </div>
                             <div className="text-[10px] text-gray-500 uppercase tracking-widest font-mono">

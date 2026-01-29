@@ -41,14 +41,16 @@ export interface VoiceResult {
         userB: { name: string; job: string; metrics: AnalysisMetrics; gender?: string; birthYear?: number; typeCode?: TypeCode };
     };
     consentAgreed: boolean;
+    researchConsentAgreed: boolean;
     consentVersion: string;
     consentAt: string;
+    consentStatement?: string; // Full text of the consent given
     consentHash?: string; // SHA-256 hash for integrity
 }
 
-// Generate a SHA-256 hash of the consent record
-async function generateConsentHash(version: string, at: string, sessionId: string): Promise<string> {
-    const data = `${version}|${at}|${sessionId}`;
+// Generate a SHA-256 hash of the consent record for audit traceability
+async function generateConsentHash(result: VoiceResult): Promise<string> {
+    const data = `${result.consentVersion}|${result.consentAt}|${result.sessionId}|${result.consentAgreed}|${result.researchConsentAgreed}|${result.consentStatement || ''}`;
     const msgUint8 = new TextEncoder().encode(data);
     const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
@@ -85,11 +87,9 @@ export async function saveResult(
 
             // Generate consent hash before saving
             if (result.consentAgreed) {
-                result.consentHash = await generateConsentHash(
-                    result.consentVersion,
-                    result.consentAt,
-                    result.sessionId
-                );
+                // Add explicit statement to the log
+                result.consentStatement = `I consent to recording: ${result.consentAgreed}. I consent to AI research: ${result.researchConsentAgreed}.`;
+                result.consentHash = await generateConsentHash(result);
             }
 
             await setDoc(resultRef, {
@@ -179,6 +179,7 @@ export async function getResult(resultId: string): Promise<VoiceResult | null> {
                     mbti: data.mbti,
                     coupleData: data.coupleData,
                     consentAgreed: data.consentAgreed || false,
+                    researchConsentAgreed: data.researchConsentAgreed || false,
                     consentVersion: data.consentVersion || '0.0.0',
                     consentAt: data.consentAt || '',
                 };
