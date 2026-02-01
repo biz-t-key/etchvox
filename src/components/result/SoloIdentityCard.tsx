@@ -160,8 +160,8 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                     style={{ backgroundImage: `url("${NOISE_DATA_URL}")`, backgroundRepeat: 'repeat' }}
                 />
 
-                {/* HEADER */}
-                <div className="relative z-10 flex items-center justify-between mb-2 md:mb-4 px-2">
+                {/* HEADER - Increased padding to clear rounded corners */}
+                <div className="relative z-10 flex items-center justify-between mb-4 md:mb-6 px-4 md:px-6">
                     <div className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.4em]" style={{ color: '#ffffff99' }}>
                         Truth Card
                     </div>
@@ -234,10 +234,10 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                     </div>
                 </div>
 
-                {/* FOOTER */}
-                <div className="relative z-10 mt-8 flex justify-between items-center px-4 pb-0" style={{ opacity: 0.5 }}>
+                {/* FOOTER - Increased padding and added margin from bottom edge */}
+                <div className="relative z-10 mt-auto flex justify-between items-center px-6 pb-2" style={{ opacity: 0.5 }}>
                     <div className="text-[8px] font-black tracking-[0.2em] uppercase" style={{ color: '#ffffff' }}>Auth: Bio-Metric</div>
-                    <div className="text-[8px] font-mono text-white">v1.1.0.SOLO</div>
+                    <div className="text-[8px] font-mono text-white">v1.1.1.SOLO</div>
                 </div>
             </div>
 

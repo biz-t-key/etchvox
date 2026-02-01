@@ -141,8 +141,8 @@ export default function DuoIdentityCard({ userA, userB, resultId }: DuoIdentityC
                     style={{ backgroundImage: `url("${NOISE_DATA_URL}")`, backgroundRepeat: 'repeat' }}
                 />
 
-                {/* HEADER - Safe margin added */}
-                <div className="relative z-10 flex items-center justify-between px-2 pt-4">
+                {/* HEADER - Increased horizontal padding for safe zone */}
+                <div className="relative z-10 flex items-center justify-between px-6 pt-6">
                     <div className="text-[10px] md:text-[12px] font-black text-white/40 uppercase tracking-[0.4em]">
                         Duo Matrix Analysis
                     </div>
@@ -255,8 +255,8 @@ export default function DuoIdentityCard({ userA, userB, resultId }: DuoIdentityC
                     </p>
                 </div>
 
-                {/* FOOTER */}
-                <div className="relative z-10 flex justify-between items-center opacity-30 mt-6 px-2 pb-4">
+                {/* FOOTER - Increased padding and bottom margin */}
+                <div className="relative z-10 flex justify-between items-center opacity-30 mt-auto px-6 pb-6">
                     <div className="text-[9px] font-black tracking-widest uppercase">Bio-Auth Matrix</div>
                     <div className="text-[9px] font-mono text-white">etchvox.com</div>
                 </div>
