@@ -150,19 +150,34 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
 
                 {/* BACKGROUND DECORATION - Use absolute positioning and explicit colors */}
                 <div className="absolute top-[-20%] right-[-20%] w-[80%] h-[80%] rounded-full pointer-events-none z-0"
-                    style={{ background: 'radial-gradient(circle, #06b6d433 0%, rgba(6, 182, 212, 0) 70%)' }} />
+                    style={{
+                        background: voiceTypeCode === 'ELON'
+                            ? 'radial-gradient(circle, rgba(248, 113, 113, 0.2) 0%, rgba(248, 113, 113, 0) 70%)'
+                            : 'radial-gradient(circle, #06b6d433 0%, rgba(6, 182, 212, 0) 70%)'
+                    }} />
                 <div className="absolute bottom-[-20%] left-[-20%] w-[80%] h-[80%] rounded-full pointer-events-none z-0"
-                    style={{ background: `radial-gradient(circle, ${mbtiInfo.color}33 0%, rgba(0, 0, 0, 0) 70%)` }} />
+                    style={{
+                        background: voiceTypeCode === 'ELON'
+                            ? 'radial-gradient(circle, rgba(124, 45, 18, 0.3) 0%, rgba(0, 0, 0, 0) 70%)'
+                            : `radial-gradient(circle, ${mbtiInfo.color}33 0%, rgba(0, 0, 0, 0) 70%)`
+                    }} />
 
-                {/* SILHOUETTE ASSET - Using provided images */}
-                <div className="absolute inset-0 flex items-center justify-center opacity-[0.07] pointer-events-none z-0">
-                    <img
-                        src={voiceInfo.group === 'special' ? '/assets/silhouettes/silhouette_robot.png' :
-                            mbti.startsWith('I') ? '/assets/silhouettes/silhouette_hat_man.png' : '/assets/silhouettes/silhouette_elegant_woman.png'}
-                        alt=""
-                        className="w-full h-full object-contain p-20"
-                    />
-                </div>
+                {/* SILHOUETTE ASSET - Using provided images (Hidden for ELON) */}
+                {voiceTypeCode !== 'ELON' && (
+                    <div className="absolute inset-0 flex items-center justify-center opacity-[0.07] pointer-events-none z-0">
+                        <img
+                            src={voiceInfo.group === 'special' ? '/assets/silhouettes/silhouette_robot.png' :
+                                mbti.startsWith('I') ? '/assets/silhouettes/silhouette_hat_man.png' : '/assets/silhouettes/silhouette_elegant_woman.png'}
+                            alt=""
+                            className="w-full h-full object-contain p-20"
+                        />
+                    </div>
+                )}
+
+                {/* SAND TEXTURE (ELON Mode Only) */}
+                {voiceTypeCode === 'ELON' && (
+                    <div className="absolute inset-0 opacity-[0.15] pointer-events-none mix-blend-overlay z-0 bg-[url('https://www.transparenttextures.com/patterns/sandpaper.png')]" />
+                )}
 
                 {/* NOISE OVERLAY */}
                 <div
