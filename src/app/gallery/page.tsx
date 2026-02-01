@@ -5,6 +5,7 @@ import { voiceTypes, TypeCode, AnalysisMetrics } from '@/lib/types';
 import { mbtiTypes, MBTIType } from '@/lib/mbti';
 import SoloIdentityCard from '@/components/result/SoloIdentityCard';
 import DuoIdentityCard from '@/components/result/DuoIdentityCard';
+import SpyReportCard from '@/components/result/SpyReportCard';
 
 // Mock Data Generators
 const generateMockMetrics = (typeCode: TypeCode): AnalysisMetrics => {
@@ -103,12 +104,24 @@ export default function GalleryPage() {
                     <div key={code} className="space-y-4">
                         <h3 className="text-xl font-bold text-gray-500">{code}</h3>
                         <div className="transform scale-90 origin-top">
-                            <SoloIdentityCard
-                                mbti={SAMPLE_MBTIS[Math.floor(Math.random() * SAMPLE_MBTIS.length)]}
-                                voiceTypeCode={code}
-                                metrics={generateMockMetrics(code)}
-                                userName="Debug User"
-                            />
+                            {category === 'SPY' ? (
+                                <SpyReportCard
+                                    typeCode={code}
+                                    spyMetadata={{
+                                        origin: "Global_Agency_HQ",
+                                        target: "Mars_Project_Sector_X"
+                                    }}
+                                    reportMessage={voiceTypes[code]?.roast || "Classified report message."}
+                                    score={Math.floor(Math.random() * 30) + 70}
+                                />
+                            ) : (
+                                <SoloIdentityCard
+                                    mbti={SAMPLE_MBTIS[Math.floor(Math.random() * SAMPLE_MBTIS.length)]}
+                                    voiceTypeCode={code}
+                                    metrics={generateMockMetrics(code)}
+                                    userName="Debug User"
+                                />
+                            )}
                         </div>
                     </div>
                 ))}

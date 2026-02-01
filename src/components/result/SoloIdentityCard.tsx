@@ -154,6 +154,16 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                 <div className="absolute bottom-[-20%] left-[-20%] w-[80%] h-[80%] rounded-full pointer-events-none z-0"
                     style={{ background: `radial-gradient(circle, ${mbtiInfo.color}33 0%, rgba(0, 0, 0, 0) 70%)` }} />
 
+                {/* SILHOUETTE ASSET - Using provided images */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-[0.07] pointer-events-none z-0">
+                    <img
+                        src={voiceInfo.group === 'special' ? '/assets/silhouettes/silhouette_robot.png' :
+                            mbti.startsWith('I') ? '/assets/silhouettes/silhouette_hat_man.png' : '/assets/silhouettes/silhouette_elegant_woman.png'}
+                        alt=""
+                        className="w-full h-full object-contain p-20"
+                    />
+                </div>
+
                 {/* NOISE OVERLAY */}
                 <div
                     className="absolute inset-0 opacity-[0.05] pointer-events-none mix-blend-overlay z-0"

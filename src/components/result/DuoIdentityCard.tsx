@@ -135,6 +135,12 @@ export default function DuoIdentityCard({ userA, userB, resultId }: DuoIdentityC
                 <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full pointer-events-none z-0"
                     style={{ background: 'radial-gradient(circle, rgba(6, 182, 212, 0.15) 0%, rgba(6, 182, 212, 0) 70%)' }} />
 
+                {/* SILHOUETTE ASSETS - Pair silhouettes for Duo mode */}
+                <div className="absolute inset-0 flex items-center justify-around opacity-[0.07] pointer-events-none z-0">
+                    <img src="/assets/silhouettes/silhouette_hat_man.png" alt="" className="w-1/2 h-full object-contain p-10 transform -scale-x-100" />
+                    <img src="/assets/silhouettes/silhouette_elegant_woman.png" alt="" className="w-1/2 h-full object-contain p-10" />
+                </div>
+
                 {/* NOISE OVERLAY */}
                 <div
                     className="absolute inset-0 opacity-[0.05] pointer-events-none mix-blend-overlay z-0"

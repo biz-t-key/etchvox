@@ -92,6 +92,11 @@ const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, re
             {/* Paper Texture Overlay */}
             <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/cardboard-flat.png')]" />
 
+            {/* SILHOUETTE - Dossier Style */}
+            <div className="absolute right-0 bottom-0 w-64 h-64 opacity-[0.05] pointer-events-none z-0 transform translate-x-10 translate-y-10">
+                <img src="/assets/silhouettes/silhouette_hat_man.png" alt="" className="w-full h-full object-contain" />
+            </div>
+
             <div className="header flex justify-between text-[10px] text-zinc-500 mb-6 border-b border-zinc-200 pb-2 relative z-10">
                 <span>INTEL_AGENCY // TOP_SECRET</span>
                 <span className="header-alert text-red-700 animate-pulse font-black">DO_NOT_DISTRIBUTE</span>
