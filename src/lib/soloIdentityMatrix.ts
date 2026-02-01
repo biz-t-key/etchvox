@@ -1,4 +1,4 @@
-import { TypeCode } from './types';
+import { TypeCode, voiceTypes } from './types';
 import { MBTIType } from './mbti';
 
 export interface SoloIdentity {
@@ -406,6 +406,17 @@ const mbtiThemes: Record<MBTIType, { flaw: string }> = {
 
 export function getSoloIdentity(mbti: MBTIType, voiceType: TypeCode): SoloIdentity {
     const key = `${mbti}_${voiceType}`;
+
+    // 0. Check for Special Voice Types (ELON, etc.) that override MBTI logic
+    const vInfo = voiceTypes[voiceType];
+    if (vInfo && vInfo.group === 'special') {
+        return {
+            mbti,
+            voiceType,
+            brandName: vInfo.name, // Use the name from types.ts (e.g., "The Mars Emperor")
+            roast: vInfo.roast     // Use the roast from types.ts
+        };
+    }
 
     // 1. Check for Fully Specific Identity (Legacy or User Provided)
     if (specificIdentities[key]) {
