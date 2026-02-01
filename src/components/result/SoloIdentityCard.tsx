@@ -173,19 +173,21 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                 {/* MAIN PROFILE AREA */}
                 <div className="relative flex-grow flex flex-col justify-center space-y-6 md:space-y-10 z-10 px-4">
 
-                    {/* PSYCHOLOGICAL BLUEPRINT */}
-                    <div className="text-center relative">
-                        <div className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.6em] opacity-40 mb-1" style={{ color: mbtiInfo.color || '#ffffff' }}>
-                            Personality Code
+                    {/* PSYCHOLOGICAL BLUEPRINT - Skip for special modes like ELON */}
+                    {voiceInfo.group !== 'special' && (
+                        <div className="text-center relative">
+                            <div className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.6em] opacity-40 mb-1" style={{ color: mbtiInfo.color || '#ffffff' }}>
+                                Personality Code
+                            </div>
+                            <div className="text-7xl md:text-8xl font-black uppercase tracking-tighter leading-none"
+                                style={{ color: mbtiInfo.color || '#ffffff' }}>
+                                {mbti}
+                            </div>
+                            <div className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.4em] mt-2 opacity-90" style={{ color: mbtiInfo.color || '#ffffff' }}>
+                                {mbtiInfo.nickname}
+                            </div>
                         </div>
-                        <div className="text-7xl md:text-8xl font-black uppercase tracking-tighter leading-none"
-                            style={{ color: mbtiInfo.color || '#ffffff' }}>
-                            {mbti}
-                        </div>
-                        <div className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.4em] mt-2 opacity-90" style={{ color: mbtiInfo.color || '#ffffff' }}>
-                            {mbtiInfo.nickname}
-                        </div>
-                    </div>
+                    )}
 
                     {/* GAP INDICATOR */}
                     <div className="relative py-2 px-6 md:px-12">

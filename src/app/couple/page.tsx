@@ -32,10 +32,17 @@ export default function CouplePage() {
     const [timeLeft, setTimeLeft] = useState(10);
     const [isRecording, setIsRecording] = useState(false);
 
-    // Consent
-    const [consentGiven, setConsentGiven] = useState(false);
-    const [researchConsentAgreed, setResearchConsentAgreed] = useState(false);
-    const [isOver13, setIsOver13] = useState(false);
+    // Consent Partner A (Alpha)
+    const [isOver13A, setIsOver13A] = useState(false);
+    const [termsA, setTermsA] = useState(false);
+    const [privacyA, setPrivacyA] = useState(false);
+    const [researchA, setResearchA] = useState(false);
+
+    // Consent Partner B (Beta)
+    const [isOver13B, setIsOver13B] = useState(false);
+    const [termsB, setTermsB] = useState(false);
+    const [privacyB, setPrivacyB] = useState(false);
+    const [researchB, setResearchB] = useState(false);
 
     // Data Store
     const [names, setNames] = useState({ A: '', B: '' });
@@ -47,6 +54,7 @@ export default function CouplePage() {
     // In a future update, we could merge all 3 blobs
     const [mainAudioBlob, setMainAudioBlob] = useState<Blob | null>(null);
     const [mainMetrics, setMainMetrics] = useState<any>(null);
+    const [stepVectors, setStepVectors] = useState<Record<string, number[]>>({});
 
     // Hardware Refs
     const analyzerRef = useRef<VoiceAnalyzer | null>(null);
@@ -176,7 +184,19 @@ export default function CouplePage() {
             // Visualizer Loop
             const collectLoop = () => {
                 if (analyzerRef.current && isRecording) {
-                    analyzerRef.current.collectSample();
+                    // Logic to switch tags during recording for resonance
+                    let tag = 'default';
+                    if (currentStep === 'step1') {
+                        tag = 'Both';
+                    } else if (currentStep === 'step2') {
+                        // Split Step 2 into A then B (50/50) for conflict analysis
+                        tag = timeLeft > (STEPS['step2'].duration / 2) ? 'A' : 'B';
+                    } else if (currentStep === 'step3') {
+                        // Neural flow is fast, tag as both/mixed or alternate rapidly
+                        tag = 'Both';
+                    }
+
+                    analyzerRef.current.collectSample(tag);
                 }
                 animationFrameRef.current = requestAnimationFrame(collectLoop);
             };
@@ -203,20 +223,25 @@ export default function CouplePage() {
         if (timerRef.current) clearInterval(timerRef.current);
         if (mediaRecorderRef.current) mediaRecorderRef.current.stop();
 
-        // Get Analysis
-        const analysis = analyzerRef.current?.analyze();
+        // Get Analysis & Vector
+        if (analyzerRef.current) {
+            const vector = analyzerRef.current.get30DVector();
+            setStepVectors(prev => ({ ...prev, [currentStep]: vector }));
+            // We don't reset here anymore because we need all samples for Resonance at the end
+            // analyzerRef.current.reset(); 
+        }
+
         const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
 
-        // Logic:
-        // - Save Step 1 as "Main Blob" for persistent storage/analysis (it's the clean union)
-        // - Steps 2 & 3 are currently for "Experience" (or we could merge them later)
         if (currentStep === 'step1') {
             setMainAudioBlob(audioBlob);
+            const analysis = analyzerRef.current?.analyze('couple');
             setMainMetrics(analysis?.metrics);
             setTimeout(() => setPhase('step2'), 1500);
         } else if (currentStep === 'step2') {
             setTimeout(() => setPhase('step3'), 1500);
         } else {
+            // Final Step
             setTimeout(() => setPhase('details'), 1500);
         }
 
@@ -239,6 +264,9 @@ export default function CouplePage() {
 
         const unionTypeCode = classifyTypeCode(mainMetrics);
 
+        // Calculate Resonance (Stream B)
+        const resonance = analyzerRef.current?.calculateCoupleResonance();
+
         const coupleData: VoiceResult = {
             id: coupleResultId,
             sessionId: getSessionId(),
@@ -249,14 +277,39 @@ export default function CouplePage() {
             locale: 'en-US',
             isPremium: false,
             coupleData: {
-                userA: { name: names.A, job: jobA, metrics: mainMetrics, typeCode: unionTypeCode, gender: pA?.gender || profiles.A.gender, birthYear: pA?.birthYear || profiles.A.birthYear },
-                userB: { name: names.B, job: jobB, metrics: mainMetrics, typeCode: unionTypeCode, gender: pB?.gender || profiles.B.gender, birthYear: pB?.birthYear || profiles.B.birthYear }
+                userA: { name: names.A, job: jobA, metrics: mainMetrics, typeCode: unionTypeCode, gender: pA?.gender || profiles.A.gender, birthYear: pA?.birthYear || profiles.A.birthYear, consentAgreed: termsA && privacyA, researchConsentAgreed: researchA },
+                userB: { name: names.B, job: jobB, metrics: mainMetrics, typeCode: unionTypeCode, gender: pB?.gender || profiles.B.gender, birthYear: pB?.birthYear || profiles.B.birthYear, consentAgreed: termsB && privacyB, researchConsentAgreed: researchB }
             },
-            consentAgreed: true,
-            researchConsentAgreed: researchConsentAgreed,
-            consentVersion: '2.0.0',
+            logV2: analyzerRef.current?.getV2Log(mainMetrics, {
+                record_id: coupleResultId,
+                script_id: 'couple_sync_v1',
+                mbti: 'Unknown',
+                gender: 'non-binary',
+                isMobile: false
+            }),
+            logV3: analyzerRef.current?.getV3Log(mainMetrics, {
+                record_id: coupleResultId,
+                script_id: 'couple_sync_v1',
+                mbti: 'Unknown',
+                gender: 'non-binary',
+                isMobile: false,
+                consent: {
+                    terms: termsA && termsB, // Both must agree for the joint log
+                    privacy: privacyA && privacyB,
+                    research: researchA && researchB
+                },
+                resonance
+            }),
+            consentAgreed: (termsA && privacyA) && (termsB && privacyB),
+            researchConsentAgreed: researchA && researchB,
+            consentVersion: '2.0.0_DUAL',
             consentAt: new Date().toISOString(),
         } as any;
+
+        // Add resonance to logV2
+        if (coupleData.logV2) {
+            coupleData.logV2.resonance = resonance;
+        }
 
         // Save with blobs
         if (mainAudioBlob) {
@@ -264,6 +317,24 @@ export default function CouplePage() {
                 userA: mainAudioBlob,
                 userB: mainAudioBlob
             });
+        }
+
+        // Vault Session (Only if both agree to research)
+        if (researchA && researchB) {
+            const { secureVault } = await import('@/lib/vault');
+            const vaultVectors = {
+                step1: stepVectors['step1'] || [],
+                step2: stepVectors['step2'] || [],
+                step3: stepVectors['step3'] || []
+            };
+            const vaultMetrics = { latency: 0, pitchVar: mainMetrics.pitchVar || 0, hnr: mainMetrics.hnr || 20, noiseFloor: 0.001 };
+            const vaultContext = {
+                mode: 'couple',
+                result: 'PAIRING_AUDIT',
+                metadata: { partnerA: names.A, partnerB: names.B },
+                aiScore: mainMetrics.humanityScore ? (100 - mainMetrics.humanityScore) / 100 : 0.0
+            };
+            await secureVault(vaultVectors, vaultMetrics, vaultContext, true);
         }
 
         setTimeout(() => {
@@ -285,57 +356,68 @@ export default function CouplePage() {
                 Step 3: Neural Flow (Speed)
             </p>
 
-            <div className="glass rounded-2xl p-8 md:p-12 border-2 border-pink-500/20 bg-white/5 w-full mb-16 text-left space-y-10 shadow-2xl">
-                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-pink-500">Security Clearance</h3>
-                <div className="space-y-4">
-                    <label className="flex items-start gap-4 p-4 rounded-lg bg-black/40 hover:bg-black/60 transition-colors cursor-pointer group text-left">
-                        <input
-                            type="checkbox"
-                            checked={isOver13}
-                            onChange={(e) => setIsOver13(e.target.checked)}
-                            className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-pink-500"
-                        />
-                        <span className="text-sm text-gray-400 leading-relaxed select-none block text-left font-bold transition-colors group-hover:text-white">
-                            Both participants confirm they are at least 13 years of age.
-                        </span>
-                    </label>
-
-                    <label className="flex items-start gap-4 p-4 rounded-lg bg-black/40 hover:bg-black/60 transition-colors cursor-pointer group text-left">
-                        <input
-                            type="checkbox"
-                            checked={consentGiven}
-                            onChange={(e) => setConsentGiven(e.target.checked)}
-                            className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-pink-500"
-                        />
-                        <span className="text-sm text-gray-400 leading-relaxed select-none block text-left font-bold transition-colors group-hover:text-white">
-                            We consent to our voices being recorded and analyzed for our diagnostic report.
-                        </span>
-                    </label>
-
-                    <label className="flex items-start gap-4 p-4 rounded-lg bg-black/40 hover:bg-black/60 transition-colors cursor-pointer group text-left">
-                        <input
-                            type="checkbox"
-                            checked={researchConsentAgreed}
-                            onChange={(e) => setResearchConsentAgreed(e.target.checked)}
-                            className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-pink-500"
-                        />
-                        <div className="space-y-1">
-                            <span className="text-sm text-gray-400 leading-relaxed select-none block text-left font-bold transition-colors group-hover:text-white">
-                                (Optional) We consent to anonymized research/AI improvement.
-                            </span>
-                            <span className="text-[10px] text-gray-500 block">Uses Differential Privacy for biometric vectors.</span>
-                        </div>
-                    </label>
+            <div className="glass rounded-2xl p-8 md:p-12 border-2 border-pink-500/20 bg-white/5 w-full mb-16 text-left space-y-12 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-10">
+                    <span className="text-4xl">🔐</span>
                 </div>
-                <div className="text-[10px] text-gray-500 uppercase tracking-widest font-mono text-center">
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                    {/* Partner A Consent */}
+                    <div className="space-y-6">
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-400 border-b border-cyan-500/20 pb-2">Partner Alpha Consent</h3>
+                        <div className="space-y-4">
+                            <label className="flex items-start gap-4 p-4 rounded-xl bg-black/40 hover:bg-black/60 transition-colors cursor-pointer group">
+                                <input type="checkbox" checked={isOver13A} onChange={e => setIsOver13A(e.target.checked)} className="mt-1 w-5 h-5 accent-cyan-500" />
+                                <span className="text-xs text-gray-400 group-hover:text-white transition-colors">Confirm 13+ years (Alpha)</span>
+                            </label>
+                            <label className="flex items-start gap-4 p-4 rounded-xl bg-black/40 hover:bg-black/60 transition-colors cursor-pointer group">
+                                <input type="checkbox" checked={termsA} onChange={e => setTermsA(e.target.checked)} className="mt-1 w-5 h-5 accent-cyan-500" />
+                                <span className="text-xs text-gray-400 group-hover:text-white transition-colors">I agree to the Terms of Service.</span>
+                            </label>
+                            <label className="flex items-start gap-4 p-4 rounded-xl bg-black/40 hover:bg-black/60 transition-colors cursor-pointer group">
+                                <input type="checkbox" checked={privacyA} onChange={e => setPrivacyA(e.target.checked)} className="mt-1 w-5 h-5 accent-cyan-500" />
+                                <span className="text-xs text-gray-400 group-hover:text-white transition-colors">I agree to the Privacy Policy.</span>
+                            </label>
+                            <label className="flex items-start gap-4 p-4 rounded-xl bg-cyan-500/5 border border-cyan-500/10 hover:bg-cyan-500/10 transition-colors cursor-pointer group">
+                                <input type="checkbox" checked={researchA} onChange={e => setResearchA(e.target.checked)} className="mt-1 w-5 h-5 accent-cyan-500" />
+                                <span className="text-[10px] text-cyan-500 font-bold group-hover:text-cyan-400 transition-colors">[OPTIONAL] Biological Research Consent</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* Partner B Consent */}
+                    <div className="space-y-6">
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-pink-500 border-b border-pink-500/20 pb-2">Partner Beta Consent</h3>
+                        <div className="space-y-4">
+                            <label className="flex items-start gap-4 p-4 rounded-xl bg-black/40 hover:bg-black/60 transition-colors cursor-pointer group">
+                                <input type="checkbox" checked={isOver13B} onChange={e => setIsOver13B(e.target.checked)} className="mt-1 w-5 h-5 accent-pink-500" />
+                                <span className="text-xs text-gray-400 group-hover:text-white transition-colors">Confirm 13+ years (Beta)</span>
+                            </label>
+                            <label className="flex items-start gap-4 p-4 rounded-xl bg-black/40 hover:bg-black/60 transition-colors cursor-pointer group">
+                                <input type="checkbox" checked={termsB} onChange={e => setTermsB(e.target.checked)} className="mt-1 w-5 h-5 accent-pink-500" />
+                                <span className="text-xs text-gray-400 group-hover:text-white transition-colors">I agree to the Terms of Service.</span>
+                            </label>
+                            <label className="flex items-start gap-4 p-4 rounded-xl bg-black/40 hover:bg-black/60 transition-colors cursor-pointer group">
+                                <input type="checkbox" checked={privacyB} onChange={e => setPrivacyB(e.target.checked)} className="mt-1 w-5 h-5 accent-pink-500" />
+                                <span className="text-xs text-gray-400 group-hover:text-white transition-colors">I agree to the Privacy Policy.</span>
+                            </label>
+                            <label className="flex items-start gap-4 p-4 rounded-xl bg-pink-500/5 border border-pink-500/10 hover:bg-pink-500/10 transition-colors cursor-pointer group">
+                                <input type="checkbox" checked={researchB} onChange={e => setResearchB(e.target.checked)} className="mt-1 w-5 h-5 accent-pink-500" />
+                                <span className="text-[10px] text-pink-500 font-bold group-hover:text-pink-400 transition-colors">[OPTIONAL] Biological Research Consent</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="text-[10px] text-gray-600 uppercase tracking-widest font-mono text-center pt-8 border-t border-white/5">
                     Read our <Link href="/privacy" className="text-pink-500 hover:underline">Privacy Policy</Link> for details.
                 </div>
             </div>
 
             <button
                 onClick={() => setPhase('names')}
-                disabled={!consentGiven || !isOver13}
-                className="w-full bg-white text-black font-black py-4 rounded-full uppercase tracking-[0.2em] hover:bg-pink-500 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+                disabled={!termsA || !privacyA || !termsB || !privacyB || !isOver13A || !isOver13B}
+                className="w-full bg-white text-black font-black py-5 rounded-full uppercase tracking-[0.2em] hover:bg-pink-500 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(255,255,255,0.2)] text-lg"
             >
                 Start Sequence
             </button>
@@ -443,8 +525,6 @@ export default function CouplePage() {
 function NamesForm({ onBack, onSubmit }: { onBack: () => void, onSubmit: (a: string, b: string) => void }) {
     const [nameA, setNameA] = useState('');
     const [nameB, setNameB] = useState('');
-    const [isOver13, setIsOver13] = useState(false);
-    const [consentGiven, setConsentGiven] = useState(false);
 
     return (
         <main className="min-h-screen bg-black text-white p-6 md:p-12 flex flex-col justify-center max-w-2xl mx-auto fade-in scrollbar-hide py-20 md:py-32">
@@ -476,38 +556,14 @@ function NamesForm({ onBack, onSubmit }: { onBack: () => void, onSubmit: (a: str
                     />
                 </div>
 
-                <div className="glass rounded-xl p-8 border-2 border-cyan-500/20 bg-white/5 space-y-6">
-                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-cyan-400">Security Clearance</h3>
-                    <div className="space-y-4">
-                        <label className="flex items-start gap-4 p-4 rounded-lg bg-black/40 hover:bg-black/60 transition-colors cursor-pointer group text-left">
-                            <input
-                                type="checkbox"
-                                checked={isOver13}
-                                onChange={(e) => setIsOver13(e.target.checked)}
-                                className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-cyan-500"
-                            />
-                            <span className="text-sm text-gray-300 leading-relaxed select-none block font-bold transition-colors group-hover:text-white">
-                                Both participants confirm they are at least 13 years of age.
-                            </span>
-                        </label>
-
-                        <label className="flex items-start gap-4 p-4 rounded-lg bg-black/40 hover:bg-black/60 transition-colors cursor-pointer group text-left">
-                            <input
-                                type="checkbox"
-                                checked={consentGiven}
-                                onChange={(e) => setConsentGiven(e.target.checked)}
-                                className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-cyan-500"
-                            />
-                            <span className="text-sm text-gray-300 leading-relaxed select-none block font-bold transition-colors group-hover:text-white">
-                                Both participants consent to voice analysis by EtchVox.
-                            </span>
-                        </label>
-                    </div>
+                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-6 text-center">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 mb-2">Security Clearance Active</p>
+                    <p className="text-xs text-gray-500">Biometric consent verified for both participants.</p>
                 </div>
 
                 <div className="pt-16">
                     <button
-                        disabled={!nameA.trim() || !nameB.trim() || !isOver13 || !consentGiven}
+                        disabled={!nameA.trim() || !nameB.trim()}
                         onClick={() => onSubmit(nameA, nameB)}
                         className="w-full bg-gradient-to-r from-cyan-600 to-pink-600 text-white font-black py-5 rounded-2xl uppercase tracking-[0.3em] hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shadow-[0_10px_40px_rgba(236,72,153,0.3)] transition-all text-xl"
                     >

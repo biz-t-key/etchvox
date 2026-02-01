@@ -37,8 +37,8 @@ export interface VoiceResult {
     mbti?: string; // User's self-reported MBTI
     email?: string; // Customer email from payment provider (BMAC)
     coupleData?: {
-        userA: { name: string; job: string; metrics: AnalysisMetrics; gender?: string; birthYear?: number; typeCode?: TypeCode };
-        userB: { name: string; job: string; metrics: AnalysisMetrics; gender?: string; birthYear?: number; typeCode?: TypeCode };
+        userA: { name: string; job: string; metrics: AnalysisMetrics; gender?: string; birthYear?: number; typeCode?: TypeCode; consentAgreed: boolean; researchConsentAgreed: boolean };
+        userB: { name: string; job: string; metrics: AnalysisMetrics; gender?: string; birthYear?: number; typeCode?: TypeCode; consentAgreed: boolean; researchConsentAgreed: boolean };
     };
     consentAgreed: boolean;
     researchConsentAgreed: boolean;
@@ -46,11 +46,22 @@ export interface VoiceResult {
     consentAt: string;
     consentStatement?: string; // Full text of the consent given
     consentHash?: string; // SHA-256 hash for integrity
+    logV2?: import('./types').VoiceLogV2; // Optional enriched Version 2.0 log
+    logV3?: import('./types').VoiceLogV3; // New Schema 2.0.0
+    spyMetadata?: { origin: string; target: string };
+    spyAnalysis?: { score: number; reason: string; isGhost: boolean; stamp?: string };
 }
 
 // Generate a SHA-256 hash of the consent record for audit traceability
 async function generateConsentHash(result: VoiceResult): Promise<string> {
-    const data = `${result.consentVersion}|${result.consentAt}|${result.sessionId}|${result.consentAgreed}|${result.researchConsentAgreed}|${result.consentStatement || ''}`;
+    const consent = result.logV3?.meta.consent || {
+        termsAccepted: result.consentAgreed,
+        privacyPolicyAccepted: result.consentAgreed,
+        dataDonationAllowed: result.researchConsentAgreed,
+        marketingAllowed: false
+    };
+
+    const data = `${result.consentVersion}|${result.consentAt}|${result.sessionId}|${consent.termsAccepted}|${consent.privacyPolicyAccepted}|${consent.dataDonationAllowed}|${result.consentStatement || ''}`;
     const msgUint8 = new TextEncoder().encode(data);
     const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
@@ -87,9 +98,34 @@ export async function saveResult(
 
             // Generate consent hash before saving
             if (result.consentAgreed) {
-                // Add explicit statement to the log
-                result.consentStatement = `I consent to recording: ${result.consentAgreed}. I consent to AI research: ${result.researchConsentAgreed}.`;
+                let statement = `I consent to recording: ${result.consentAgreed}. I consent to AI research: ${result.researchConsentAgreed}.`;
+                if (result.logV3) {
+                    const c = result.logV3.meta.consent;
+                    statement = `V2_CONSENT - Terms:${c.termsAccepted}, Privacy:${c.privacyPolicyAccepted}, Research:${c.dataDonationAllowed}`;
+                }
+                if (result.coupleData) {
+                    statement = `DUAL CONSENT - Alpha[rec:${result.coupleData.userA.consentAgreed}, res:${result.coupleData.userA.researchConsentAgreed}] Beta[rec:${result.coupleData.userB.consentAgreed}, res:${result.coupleData.userB.researchConsentAgreed}]`;
+                }
+                result.consentStatement = statement;
                 result.consentHash = await generateConsentHash(result);
+            }
+
+            if (result.logV2) {
+                // Generate Data Hash for integrity Schema 1.0.0 (Stream B)
+                const logData = JSON.stringify(result.logV2.features);
+                const msgUint8 = new TextEncoder().encode(logData);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+                result.logV2.meta = {
+                    dataHash: Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('')
+                };
+            }
+
+            if (result.logV3) {
+                // Generate Data Hash for integrity Schema 2.0.0 (Stream B)
+                const logData = JSON.stringify(result.logV3.metrics);
+                const msgUint8 = new TextEncoder().encode(logData);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+                result.logV3.meta.dataHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
             }
 
             await setDoc(resultRef, {
@@ -98,40 +134,16 @@ export async function saveResult(
                 updatedAt: Timestamp.now(),
             });
 
-            // ✅ Upload Single Audio (Legacy/Solo)
-            if (audioBlob) {
-                const uploadResult = await uploadAudio(result.id, audioBlob, result.consentAgreed);
-                if (uploadResult) {
-                    await updateDoc(resultRef, {
-                        audioUrl: uploadResult.url,
-                        audioPath: uploadResult.path,
-                    });
-                    // Update local object
-                    result.audioUrl = uploadResult.url;
-                    result.audioPath = uploadResult.path;
-                }
-            }
-
-            // ✅ Upload Couple Audio
-            if (coupleAudioBlobs) {
-                const uploadA = await uploadAudio(`${result.id}_userA`, coupleAudioBlobs.userA, result.consentAgreed);
-                const uploadB = await uploadAudio(`${result.id}_userB`, coupleAudioBlobs.userB, result.consentAgreed);
-
-                if (uploadA && uploadB) {
-                    await updateDoc(resultRef, {
-                        'coupleData.userA.audioUrl': uploadA.url,
-                        'coupleData.userB.audioUrl': uploadB.url
-                    });
-                }
-            }
+            // DUAL-STREAM PRIVACY COMPLIANCE: Raw audio is NEVER saved to persistent storage.
+            // Feature extraction happens in memory, then audio is purged immediately.
+            // (Audio upload code removed for extreme privacy)
 
             // Update global stats
             await updateGlobalStats();
 
-            console.log('Result saved to Firestore:', result.id);
+            console.log('Result saved to Firestore (Features only):', result.id);
         } catch (error) {
             console.error('Failed to save to Firestore:', error);
-            // localStorage fallback already saved
         }
     }
 }
@@ -182,6 +194,7 @@ export async function getResult(resultId: string): Promise<VoiceResult | null> {
                     researchConsentAgreed: data.researchConsentAgreed || false,
                     consentVersion: data.consentVersion || '0.0.0',
                     consentAt: data.consentAt || '',
+                    logV2: data.logV2,
                 };
 
                 // Cache in localStorage

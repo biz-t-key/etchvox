@@ -338,9 +338,11 @@ export class AdvancedAnalyzer {
 
             const features = Meyda.extract(['spectralCentroid', 'spectralRolloff', 'mfcc'], frame);
 
-            if (features.spectralCentroid) centroids.push(features.spectralCentroid);
-            if (features.spectralRolloff) rolloffs.push(features.spectralRolloff);
-            if (features.mfcc) mfccFrames.push(features.mfcc);
+            if (features) {
+                if (features.spectralCentroid) centroids.push(features.spectralCentroid);
+                if (features.spectralRolloff) rolloffs.push(features.spectralRolloff);
+                if (features.mfcc) mfccFrames.push(features.mfcc);
+            }
         }
 
         // S01: Mean spectral centroid

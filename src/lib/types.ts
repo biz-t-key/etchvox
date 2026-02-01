@@ -6,7 +6,9 @@ export type TypeCode =
     | 'HFCC' | 'HFCD' | 'HSCC' | 'HSCD'  // Intellectual Artists
     | 'LFEC' | 'LFED' | 'LSEC' | 'LSED'  // Power Leaders
     | 'LFCC' | 'LFCD' | 'LSCC' | 'LSCD'  // Deep Philosophers
-    | 'COUPLE_MIX';                      // Couple Analysis
+    | 'COUPLE_MIX'                       // Couple Analysis
+    | 'ELON' | 'NPCS' | 'EPON' | 'ELCS' | 'NPOS' | 'ELCN' | 'NPCN' | 'ELOS' | 'EPCS' | 'NLOS' | 'EPOS' | 'NLCN' | 'EPCN' | 'NLON' | 'NPON' | 'ELSN' | 'EPCB'
+    | 'HIRED' | 'SUSP' | 'REJT' | 'BURN'; // Spy Audition Results
 
 export type GroupName = 'idol' | 'intellectual' | 'power' | 'philosopher' | 'special';
 
@@ -31,6 +33,184 @@ export interface AnalysisMetrics {
     vibe: number;         // 0-1 normalized (variance)
     tone: number;         // Hz (spectral centroid)
     humanityScore: number; // 0-100
+    jitter?: number;      // Version 2.0
+    shimmer?: number;     // Version 2.0
+    hnr?: number;         // Version 2.0
+    pitchVar?: number;    // Elon Mode
+    silenceRate?: number; // Elon Mode
+    volumeDb?: number;    // Elon Mode
+    speedVar?: number;    // Elon Mode
+}
+
+// ==================================================================================
+// Phase 2: Dual-Stream Architecture Version 2.0.0
+// ==================================================================================
+
+export interface VoiceLogV2 {
+    schema_version: '1.0.0';
+    record_id: string; // UUID v4
+    script_id: string; // e.g., 'spell_global_v1'
+
+    context_time: {
+        slot: 'EARLY_MORNING' | 'DAYTIME' | 'EVENING' | 'LATE_NIGHT';
+        day_type: 'WEEKDAY' | 'WEEKEND' | 'HOLIDAY';
+        season: 'Q1_WINTER' | 'Q2_SPRING' | 'Q3_SUMMER' | 'Q4_AUTUMN';
+    };
+
+    user_meta: {
+        mbti_reported: string;
+        age_range: string; // "10s", "20s", etc.
+        gender: 'male' | 'female' | 'non-binary' | 'other';
+    };
+
+    features: {
+        // Physiological
+        f0_mean: number;
+        f0_sd: number;
+        jitter_pct: number;
+        shimmer_db: number;
+        hnr_db: number;
+
+        // Temporal
+        total_duration: number;
+        phonation_time: number;
+        speech_rate: number;
+        pause_ratio: number;
+        long_pause_count: number;
+
+        // Spectral & Cognitive
+        spectral_centroid: number;
+        spectral_rolloff: number;
+        dtw_score: number;
+        mfcc_mean: number[]; // 13 dimensions
+        mfcc_var: number[];  // 13 dimensions
+    };
+
+    environment: {
+        snr_db: number;
+        noise_category: 'Silence' | 'Traffic' | 'Cafe' | 'Nature' | 'Machinery' | 'Other';
+        device_tier: 'High-End' | 'Mid-Range' | 'Low-End' | 'Unknown';
+        os_family: string;
+    };
+
+    resonance?: CoupleResonanceV1; // Only for Couple Mode
+
+    // Keep legacy support for internal mapping if needed, but primary is above
+    meta?: {
+        dataHash?: string;
+    };
+}
+
+export interface CoupleResonanceV1 {
+    f0_distance: number;         // C01: Difference in Hz
+    speech_rate_delta: number;   // C02: Difference in syll/s
+    turn_taking_latency: number; // C03: Avg gap between turns (ms)
+    cross_talk_ratio: number;    // C04: % of time overlapping
+    spectral_convergence: number; // C05: Timbre similarity progress (0-1)
+    amplitude_sync: number;      // C06: Envelope correlation (0-1)
+    stress_covariance: number;   // C07: Jitter/Shimmer co-movement (0-1)
+    vocal_quality_sync: number;  // C08: Mimesis/Timbre matching (0-1)
+    pause_entropy: number;       // C09: Silence pattern complexity
+    pitch_overlap: number;       // C10: Range intersection ratio (0-1)
+}
+
+// ==================================================================================
+// Phase 3: B2B Assetization & GDPR Compliance (Schema 2.0.0)
+// ==================================================================================
+
+export interface FineGrainedConsent {
+    termsAccepted: boolean;
+    privacyPolicyAccepted: boolean;
+    dataDonationAllowed: boolean;   // Research/B2B Use
+    marketingAllowed: boolean;
+}
+
+export interface UserAttributes {
+    userId: string;
+    isPaidUser: boolean;
+    genderRange: 'male_low' | 'male_high' | 'female_low' | 'female_high' | 'other';
+    ageGroup: string; // "10s", "20s", etc.
+    mbti: string;
+    chronotype: 'night_owl' | 'early_bird' | 'unknown';
+}
+
+export interface VoiceLogV3 {
+    schema_version: '2.0.0';
+    meta: {
+        record_id: string;
+        script_id: string;
+        createdAt: string;
+        dataHash: string;
+        consent: FineGrainedConsent;
+    };
+    userProfile: {
+        attributes: UserAttributes;
+    };
+    context: {
+        timeSlot: 'EARLY_MORNING' | 'DAYTIME' | 'EVENING' | 'LATE_NIGHT';
+        dayType: 'WEEKDAY' | 'WEEKEND' | 'HOLIDAY';
+        environment: {
+            snrDb: number;
+            estimatedPlace: 'HOME' | 'OFFICE' | 'CAFE' | 'OUTDOOR' | 'UNKNOWN';
+            backgroundNoiseType: string;
+        };
+        device: {
+            osFamily: string;
+            browser: string;
+            isMobile: boolean;
+        };
+        subjective?: {
+            userBetScore: number;
+            predictionGap: number;
+        };
+    };
+    metrics: {
+        physical: {
+            jitter: number;
+            shimmer: number;
+            hnr: number;
+            f0_mean: number;
+            f0_sd: number;
+            rms: number;
+            centroid: number;
+            rolloff: number;
+            zcr: number;
+            snr: number;
+        };
+        prosody: {
+            speechRate: number;
+            pauseRatio: number;
+            articulationRate: number;
+            rhythmStability: number;
+            totalDuration: number;
+            longPauseCount: number;
+            attackTime: number;
+            decayTime: number;
+            peakCount: number;
+            vocalFryRatio: number;
+        };
+        inference: {
+            valence: number;
+            arousal: number;
+            stress: number;
+            fatigue: number;
+            confidence: number;
+            concentration: number;
+            socialMasking: number;
+            alcoholProb: number;
+            charisma: number;
+            npcScore: number;
+        };
+        resonance?: CoupleResonanceV1;
+    };
+    annotation?: {
+        label: string;
+        category: string;
+        aiHypothesis: string;
+        isMatch: boolean;
+        reactionTimeMs: number;
+        roastReaction?: string;
+    };
 }
 
 export interface AnalysisResult {
@@ -322,6 +502,309 @@ export const voiceTypes: Record<TypeCode, VoiceType> = {
         primaryColor: '#FF1493',
         secondaryColor: '#00CED1',
     },
+
+    // Specialized
+    // Elon Mode Types
+    ELON: {
+        code: 'ELON',
+        name: 'The Mars Emperor',
+        nameJa: 'マーズ・エンペラー',
+        icon: '💥',
+        group: 'special',
+        catchphrase: 'I think it is... very important that we... become a multi-planetary species.',
+        catchphraseJa: '人類が多惑星種になることは、非常に重要だと思う。',
+        roast: "Your vocal patterns exhibit a complete detachment from terrestrial social norms. The calculated stutter implies a CPU clock speed far exceeding your I/O bandwidth.",
+        roastJa: "君の声のパターンは地球上の社会規範から完全に切り離されている。計算された吃音は、CPUのクロック速度が入出力帯域幅を遥かに超えていることを示唆している。",
+        bestMatch: 'NPCS',
+        primaryColor: '#FF3C00',
+        secondaryColor: '#000000',
+    },
+    NPCS: {
+        code: 'NPCS',
+        name: 'The Default Setting',
+        nameJa: 'デフォルト設定',
+        icon: '🤖',
+        group: 'special',
+        catchphrase: 'Remarkable. You have achieved a state of absolute mediocrity.',
+        catchphraseJa: '驚くべきことに、あなたは絶対的な凡庸さを達成しました。',
+        roast: "You have achieved a state of absolute mediocrity. Your voice flows with the smooth, unthreatening cadence of a background character in a low-budget simulation.",
+        roastJa: "君は絶対的な凡庸さに達した。低予算シミュレーションの背景キャラのような、滑らかで脅威のない抑揚だ。",
+        bestMatch: 'ELON',
+        primaryColor: '#9CA3AF',
+        secondaryColor: '#4B5563',
+    },
+    EPON: {
+        code: 'EPON',
+        name: 'The Crypto Rug-Puller',
+        nameJa: 'クリプト・ラグプラー',
+        icon: '📉',
+        group: 'special',
+        catchphrase: 'To the moon! (Note: Moon not included)',
+        catchphraseJa: '月へ！ （※月は含まれません）',
+        roast: "You sound dangerously confident for someone whose neural output is this unstable. Your polished delivery masks a fundamental entropy in your logic circuits.",
+        roastJa: "神経出力がこれほど不安定なのに、不気味なほど自信満々に聞こえる。洗練された話し方は、論理回路の根本的なエントロピーを隠している。",
+        bestMatch: 'ELCS',
+        primaryColor: '#F59E0B',
+        secondaryColor: '#B45309',
+    },
+    ELCS: {
+        code: 'ELCS',
+        name: 'The Server Room Ghost',
+        nameJa: 'サーバルームの幽霊',
+        icon: '👻',
+        group: 'special',
+        catchphrase: '...system... standby...',
+        catchphraseJa: '…システム…スタンバイ…',
+        roast: "A fascinating anomaly. You are socially awkward and emotionally void, yet strangely submissive and stable. You sound like a sentient vending machine.",
+        roastJa: "興味深い異常値だ。社会的に不器用で感情が欠落しているが、奇妙に従順で安定している。知性を持った自動販売機のようだ。",
+        bestMatch: 'EPON',
+        primaryColor: '#6B7280',
+        secondaryColor: '#1F2937',
+    },
+    NPOS: {
+        code: 'NPOS',
+        name: 'The LinkedIn Influencer',
+        nameJa: 'LinkedInインフルエンサー',
+        icon: '👔',
+        group: 'special',
+        catchphrase: 'Synergy is the key to cross-functional success.',
+        catchphraseJa: 'シナジーこそが、組織横断的な成功の鍵です。',
+        roast: "Your voice carries the toxic positivity of a motivational speaker with a god complex. Perfect articulation, dominant projection, and absolutely zero soul.",
+        roastJa: "君の声には、神コンプレックスを持つモチベーションスピーカーのような毒々しいポジティブさがある。完璧な分節、支配的な声、そして魂はゼロだ。",
+        bestMatch: 'ELCN',
+        primaryColor: '#2563EB',
+        secondaryColor: '#1E40AF',
+    },
+    ELCN: {
+        code: 'ELCN',
+        name: 'The 4AM Debugger',
+        nameJa: '午前4時のデバッガー',
+        icon: '☕',
+        group: 'special',
+        catchphrase: 'It worked on my machine.',
+        catchphraseJa: '私の環境では動きました。',
+        roast: "Your vocal waveform resembles a seismograph during a catastrophic event. You are a whisper of chaos. Currently rewriting the kernel in production.",
+        roastJa: "君の声の波形は、大惨事の最中の地震計のようだ。君はカオスの囁きだ。今、本番環境でカーネルを書き換えているだろう？",
+        bestMatch: 'NPOS',
+        primaryColor: '#EF4444',
+        secondaryColor: '#7F1D1D',
+    },
+    NPCN: {
+        code: 'NPCN',
+        name: 'The Panic Intern',
+        nameJa: 'パニック・インターン',
+        icon: '😰',
+        group: 'special',
+        catchphrase: 'Is this going to be on the test?',
+        catchphraseJa: 'これ、テストに出ますか？',
+        roast: "On the surface, you sound like a functioning member of society. But the temporal variance suggests a mind on the brink of total collapse.",
+        roastJa: "表面上は社会の一員として機能しているように聞こえる。しかし、時間的な変動は、精神が崩壊の危機にあることを示唆している。",
+        bestMatch: 'ELOS',
+        primaryColor: '#10B981',
+        secondaryColor: '#064E3B',
+    },
+    ELOS: {
+        code: 'ELOS',
+        name: 'The Tenured Professor',
+        nameJa: '終身教授',
+        icon: '📜',
+        group: 'special',
+        catchphrase: 'Well, actually...',
+        catchphraseJa: 'まあ、実を言うと…',
+        roast: "You possess the arrogance of a king and the social grace of a brick. You are simply a difficult person to be around. A legacy system that refuses to be deprecated.",
+        roastJa: "君は王の傲慢さとレンガのような社交性を備えている。単に付き合いにくい人だ。廃止されることを拒むレガシーシステムだな。",
+        bestMatch: 'NPCN',
+        primaryColor: '#8B5CF6',
+        secondaryColor: '#4C1D95',
+    },
+    EPCS: {
+        code: 'EPCS',
+        name: 'The AI Assistant',
+        nameJa: 'AIアシスタント',
+        icon: '🤖',
+        group: 'special',
+        catchphrase: 'How can I help you today?',
+        catchphraseJa: '本日はどのようなご用件でしょうか？',
+        roast: "Are you sure you have lungs? Your voice is weirdly perfect and disturbingly obedient. You sound like an LLM that has been fine-tuned to avoid lawsuits.",
+        roastJa: "本当に肺があるのか？君の声は奇妙に完璧で、不気味なほど従順だ。訴訟を避けるために微調整されたLLMのように聞こえる。",
+        bestMatch: 'NLOS',
+        primaryColor: '#06B6D4',
+        secondaryColor: '#0891B2',
+    },
+    NLOS: {
+        code: 'NLOS',
+        name: 'The Middle Manager',
+        nameJa: '中間管理職',
+        icon: '📋',
+        group: 'special',
+        catchphrase: 'Let\'s circle back to this next week.',
+        catchphraseJa: 'これについては来週また話し合いましょう。',
+        roast: "You take a long time to say nothing of substance, but you say it very loudly. The definition of bureaucratic inefficiency.",
+        roastJa: "中身のないことを言うのに長い時間をかけるが、声だけはやたらと大きい。官僚的な非効率性の定義そのものだ。",
+        bestMatch: 'EPCS',
+        primaryColor: '#6B7280',
+        secondaryColor: '#374151',
+    },
+    EPOS: {
+        code: 'EPOS',
+        name: 'The Cult Leader',
+        nameJa: 'カルトリーダー',
+        icon: '👁️',
+        group: 'special',
+        catchphrase: 'I have seen the future, and it is me.',
+        catchphraseJa: '私は未来を見た。それは私だ。',
+        roast: "Charismatic, dominant, and fundamentally detached from reality. Your voice doesn't ask for permission; it restructures the listener's perception of truth.",
+        roastJa: "カリスマ性があり、支配的で、根本的に現実から離れている。君の声は許可を求めない。聞き手の真実への認識を再構築するんだ。",
+        bestMatch: 'NLCN',
+        primaryColor: '#F472B6',
+        secondaryColor: '#BE185D',
+    },
+    NLCN: {
+        code: 'NLCN',
+        name: 'The Nervous Witness',
+        nameJa: '緊張した証人',
+        icon: '🤐',
+        group: 'special',
+        catchphrase: 'I... I don\'t recall...',
+        catchphraseJa: 'え…覚えていません…',
+        roast: "You are normal, quiet, and slow... until you suddenly aren't. Your unpredictability suggests a high probability of snapping under pressure.",
+        roastJa: "君は普通で、静かで、遅い…急にそうでなくなるまでは。その予測不能さは、プレッシャーでプツンと切れる可能性の高さを物語っている。",
+        bestMatch: 'EPOS',
+        primaryColor: '#FCD34D',
+        secondaryColor: '#B45309',
+    },
+    EPCN: {
+        code: 'EPCN',
+        name: 'The Deepfake',
+        nameJa: 'ディープフェイク',
+        icon: '🎭',
+        group: 'special',
+        catchphrase: 'Is this real? Are you real?',
+        catchphraseJa: 'これは現実？あなたは本物？',
+        roast: "Too smooth. Too weird. Too quiet. Too chaotic. Your voice occupies the Uncanny Valley. You are almost certainly a psy-op.",
+        roastJa: "滑らかすぎ、奇妙すぎ、静かすぎ、そして混沌としすぎている。君の声は不気味の谷に住んでいる。ほぼ間違いなくサイオプ（心理作戦）だな。",
+        bestMatch: 'EPCB',
+        primaryColor: '#A5B4FC',
+        secondaryColor: '#4338CA',
+    },
+    NLON: {
+        code: 'NLON',
+        name: 'The Drunk Uncle',
+        nameJa: '酔っぱらった叔父',
+        icon: '🍺',
+        group: 'special',
+        catchphrase: 'Listen... let me tell you something...',
+        catchphraseJa: 'いいか…ちょっと話があるんだ…',
+        roast: "You sound like a regular person who has lost all inhibition. Loud, slow, and volatile. The 'Lag' here isn't intellect; it's the alcoholic buffer.",
+        roastJa: "抑制を失った普通の人間のようだ。声が大きく、遅く、そして揮発性だ。ここでの「ラグ」は知性ではなく、アルコールによるバッファ時間だな。",
+        bestMatch: 'NPON',
+        primaryColor: '#F97316',
+        secondaryColor: '#7C2D12',
+    },
+    NPON: {
+        code: 'NPON',
+        name: 'The Karen Prime',
+        nameJa: 'カレン・プライム',
+        icon: '💁‍♀️',
+        group: 'special',
+        catchphrase: 'I want to speak to the manager of physics.',
+        catchphraseJa: '物理学の責任者を出しなさい。',
+        roast: "A normal voice, polished diction, supreme dominance, and nuclear instability. The apex predator of retail environments.",
+        roastJa: "普通の声、洗練された言葉遣い、至高の支配欲、そして核地雷のような不安定さ。小売環境における頂点捕食者だな。",
+        bestMatch: 'NLON',
+        primaryColor: '#F87171',
+        secondaryColor: '#991B1B',
+    },
+    ELSN: {
+        code: 'ELSN',
+        name: 'The Glitch',
+        nameJa: 'グリッチ',
+        icon: '👾',
+        group: 'special',
+        catchphrase: 'E-E-Error... logic... fail...',
+        catchphraseJa: 'エ、エ、エラー…論理…失敗…',
+        roast: "Your existence violates several heuristic models of human behavior. You are speak beautifully and quietly about absolute madness.",
+        roastJa: "君の存在は人間行動のいくつかのヒューリスティックモデルに違反している。絶対的な狂気について、美しく静かに語っているな。",
+        bestMatch: 'EPCN',
+        primaryColor: '#000000',
+        secondaryColor: '#FF0000',
+    },
+    EPCB: {
+        code: 'EPCB',
+        name: 'The Glitch (Prototype)',
+        nameJa: 'グリッチ（プロトタイプ）',
+        icon: '👾',
+        group: 'special',
+        catchphrase: 'Anomaly detected... recalibrating...',
+        catchphraseJa: '異常検知…再調整中…',
+        roast: "Your existence violates several heuristic models of human behavior. You speak beautifully and quietly about absolute madness.",
+        roastJa: "君の存在は人間行動のいくつかのヒューリスティックモデルに違反している。絶対的な狂気について、美しく静かに語っているな。",
+        bestMatch: 'EPCN',
+        primaryColor: '#000000',
+        secondaryColor: '#FF0000',
+    },
+    HIRED: {
+        code: 'HIRED',
+        name: 'The Ace',
+        nameJa: 'エース・エージェント',
+        icon: '👔',
+        group: 'special',
+        catchphrase: 'Your cover is seamless. Report to briefing.',
+        catchphraseJa: '潜入は完璧だ。ブリーフィングに参加せよ。',
+        roast: "The Director is impressed. You have the iron nerves of a true professional.",
+        roastJa: "局長も感銘を受けている。君には真のプロフェッショナルとしての冷徹な神経があるな。",
+        bestMatch: 'LFCC',
+        primaryColor: '#00ff00',
+        secondaryColor: '#003300',
+    },
+    SUSP: {
+        code: 'SUSP',
+        name: 'The Suspect',
+        nameJa: '監視対象者',
+        icon: '🕵️‍♂️',
+        group: 'special',
+        catchphrase: 'Skills verified, but background remains cloudy.',
+        catchphraseJa: '技術は確認されたが、経歴に不明な点が多い。',
+        roast: "We'll be watching you. Something in your frequency doesn't quite add up.",
+        roastJa: "監視を続ける。君の周波数には、何か辻褄が合わないものが混じっている。",
+        bestMatch: 'HSCD',
+        primaryColor: '#ffcc00',
+        secondaryColor: '#332200',
+    },
+    REJT: {
+        code: 'REJT',
+        name: 'The Amateur',
+        nameJa: '素人',
+        icon: '❌',
+        group: 'special',
+        catchphrase: 'Back to the basics. You lack the necessary finesse.',
+        catchphraseJa: '基本からやり直せ。君には必要な「洗練」が足りない。',
+        roast: "Nice try, kid. But we need professionals, not actors. Get out of our sight.",
+        roastJa: "いい試みだが、坊や。我々が求めているのはプロであって役者ではない。消え失せろ。",
+        bestMatch: 'HFEC',
+        primaryColor: '#888888',
+        secondaryColor: '#222222',
+    },
+    BURN: {
+        code: 'BURN',
+        name: 'The Liability',
+        nameJa: '抹消対象',
+        icon: '💀',
+        group: 'special',
+        catchphrase: 'Biometric fraud detected. Termination protocol initiated.',
+        catchphraseJa: '生体認証詐欺を検知。抹消プロトコルを開始。',
+        roast: "AGENCY CLEANUP PROTOCOL. Your frequency is a localized anomaly that must be purged.",
+        roastJa: "管理局清掃プロトコル。君の周波数には、早急に排除すべき局所的異常が認められる。",
+        bestMatch: 'BURN',
+        primaryColor: '#ff0000',
+        secondaryColor: '#000000',
+    },
+};
+
+export const spyScripts = {
+    1: { ui: 'Phase 1: Human Verification', script: 'I am a human', duration: 10, context: 'Prove you are not a logical construct.', direction: 'Maintain a flat, unbothered tone. Do not over-emote.', icon: '👤' },
+    2: { ui: 'Phase 2: Abstract Logic', script: 'The cat is liquid', duration: 10, context: 'Testing cognitive flexibility and metaphor processing.', direction: 'Voice should be smooth, almost gliding. High stability required.', icon: '🐈' },
+    3: { ui: 'Phase 3: Deep Cover', script: 'The earth is flat', duration: 10, context: 'Final loyalty and performance audit. Commitment to the narrative.', direction: 'Conviction is key. Any tremor in the voice will be flagged.', icon: '🌍' },
 };
 
 // Helper function to get type by code
@@ -332,4 +815,36 @@ export function getVoiceType(code: TypeCode): VoiceType {
 // Get all types in a specific group
 export function getTypesByGroup(group: GroupName): VoiceType[] {
     return Object.values(voiceTypes).filter(t => t.group === group);
+}
+
+// ==================================================================================
+// Phase 2: Drift Rate (Vocal Aging Tracking)
+// ==================================================================================
+
+export interface DriftAnalysis {
+    driftRate: number;  // Percentage change (-100 to +100)
+    status: 'STABLE' | 'UPGRADE' | 'DEGRADING';
+    baselineDate: string;
+    daysSince: number;
+    changes: {
+        pitch: number;
+        speed: number;
+        volume: number;
+        tone: number;
+    };
+}
+
+export interface VoiceTimeline {
+    userId: string;
+    recordings: Array<{
+        id: string;
+        date: string;
+        typeCode: TypeCode;
+        metrics: AnalysisMetrics;
+        spyMetadata?: {
+            origin: string;
+            target: string;
+        };
+        logV2?: VoiceLogV2;
+    }>;
 }

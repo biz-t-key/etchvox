@@ -8,7 +8,8 @@ import { voiceTypes, TypeCode, groupColors } from '@/lib/types';
 import { getResult, VoiceResult } from '@/lib/storage';
 import { getBestMatches, getWorstMatches, getCompatibilityTier } from '@/lib/compatibilityMatrix';
 import ShareButtons from '@/components/result/ShareButtons';
-import MBTISelector from '@/components/result/MBTISelector';
+import HighFidelityMetrics from '@/components/result/HighFidelityMetrics';
+import ToxicitySelector from '@/components/recording/ToxicitySelector';
 import SoloIdentityCard from '@/components/result/SoloIdentityCard';
 import DuoIdentityCard from '@/components/result/DuoIdentityCard';
 import { VideoPlayerSection } from '@/components/video/VideoPlayerSection';
@@ -17,6 +18,11 @@ import { isFirebaseConfigured, getDb } from '@/lib/firebase';
 import { doc, onSnapshot, updateDoc, getDoc } from 'firebase/firestore';
 import { FEATURE_FLAGS } from '@/config/features';
 import { getUnlockedFeatures, FeatureState } from '@/config/milestones';
+import { calculateDrift, getDriftNarrative } from '@/lib/drift';
+import { DriftAnalysis } from '@/lib/types';
+import VoiceTimelineGraph from '@/components/result/VoiceTimelineGraph';
+import SpyReportCard from '@/components/result/SpyReportCard';
+import { generateFinalReport } from '@/lib/analyzer';
 
 
 type DisplayStage = 'label' | 'metrics' | 'full';
@@ -28,6 +34,8 @@ export default function ResultPage() {
 
     const [result, setResult] = useState<VoiceResult | null>(null);
     const [loading, setLoading] = useState(true);
+    const [drift, setDrift] = useState<DriftAnalysis | null>(null);
+    const [fullHistory, setFullHistory] = useState<VoiceResult[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [processingPayment, setProcessingPayment] = useState(false);
     const [verifyingPayment, setVerifyingPayment] = useState(false); // New state for post-redirect
@@ -43,6 +51,34 @@ export default function ResultPage() {
 
     const [showOTO, setShowOTO] = useState(false);
 
+    const isSpyMode = result?.typeCode === 'HIRED' || result?.typeCode === 'SUSP' || result?.typeCode === 'REJT' || result?.typeCode === 'BURN' || !!result?.spyMetadata;
+
+    function executeHardPurge() {
+        if (typeof window === 'undefined') return;
+        console.warn("INITIATING HARD PURGE PROTOCOL...");
+
+        // 1. Clear memory (explicit direction to GC)
+        (window as any).analysisResult = null;
+        (window as any).vocalVector = null;
+        (window as any).recordedBlob = null;
+
+        // 2. Clear persistence
+        localStorage.clear();
+        sessionStorage.clear();
+
+        // 3. Prevent going back
+        window.history.replaceState(null, '', window.location.origin);
+
+        // 4. Delete IndexedDB caches
+        const DB_NAME = 'EtchVoxCache';
+        indexedDB.deleteDatabase(DB_NAME);
+
+        // 5. Hard redirect
+        setTimeout(() => {
+            window.location.replace(window.location.origin + '?status=purged');
+        }, 500);
+    }
+
     // Initial Load
     useEffect(() => {
         async function loadResult() {
@@ -56,6 +92,30 @@ export default function ResultPage() {
                     // Start staged display sequence
                     setTimeout(() => setDisplayStage('metrics'), 2500);
                     setTimeout(() => setDisplayStage('full'), 4500);
+
+                    // Calculate Drift if multiple records exist
+                    const historyIds = JSON.parse(localStorage.getItem('etchvox_history') || '[]');
+                    if (historyIds.length > 1) {
+                        // Find baseline (the oldest in tracked history)
+                        // historyIds are stored with newest first, so the last element is the oldest.
+                        const baselineId = historyIds[historyIds.length - 1];
+                        if (baselineId !== data.id) { // Ensure we're not comparing to itself
+                            const baselineData = localStorage.getItem(`etchvox_result_${baselineId}`);
+                            if (baselineData) {
+                                const baseline = JSON.parse(baselineData) as VoiceResult;
+                                const driftResult = calculateDrift(baseline.metrics, data.metrics, baseline.createdAt);
+                                setDrift(driftResult);
+                            }
+                        }
+
+                        // Fetch Full History context for Timeline
+                        const loadedHistory: VoiceResult[] = [];
+                        for (const id of historyIds) {
+                            const stored = localStorage.getItem(`etchvox_result_${id}`);
+                            if (stored) loadedHistory.push(JSON.parse(stored));
+                        }
+                        setFullHistory(loadedHistory);
+                    }
                 } else {
                     setError('Result not found');
                 }
@@ -260,7 +320,7 @@ export default function ResultPage() {
                                 handleCheckout('vault');
                             }}
                             disabled={processingPayment}
-                            className="w-full bg-gradient-to-r from-pink-600 to-violet-600 hover:from-pink-500 hover:to-violet-500 text-white font-black py-4 rounded-xl text-lg uppercase tracking-widest shadow-lg transform hover:scale-[1.02] transition-all mb-4"
+                            className="w-full btn-amber py-6 mb-4 text-xl"
                         >
                             Yes, Upgrade Me ($10.00)
                         </button>
@@ -320,51 +380,73 @@ export default function ResultPage() {
                 {/* STAGE 2 & 3 CONTENT */}
                 {(displayStage === 'metrics' || displayStage === 'full') && (
                     <div className="animate-fade-in w-full space-y-24 md:space-y-40 pt-12 flex flex-col items-center">
-                        {/* Metrics Card - Balanced & Cinematic */}
-                        <div
-                            className="glass rounded-3xl p-8 md:p-12 relative overflow-hidden border border-white/10 w-full max-w-4xl mx-auto"
-                            style={{ boxShadow: `0 0 60px ${colors.primary}10` }}
-                        >
-                            <div className="flex flex-col items-center border-b border-white/5 pb-8 mb-8 text-center">
-                                <span className="text-6xl mb-6 filter drop-shadow-[0_0_25px_rgba(255,255,255,0.15)]">
-                                    {voiceType.icon}
-                                </span>
-                                <div className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-white">
-                                    {result.typeCode}
-                                </div>
-                                <h1 className="text-2xl md:text-4xl font-bold uppercase tracking-tight mb-8 text-white/90">
-                                    {voiceType.name}
-                                </h1>
-                                <div className="max-w-2xl">
-                                    <p className="text-gray-400 leading-relaxed text-base md:text-lg font-medium italic">
-                                        "{voiceType.roast}"
-                                    </p>
+                        {isSpyMode ? (
+                            <div className="w-full max-w-lg mx-auto">
+                                <SpyReportCard
+                                    typeCode={result.typeCode}
+                                    spyMetadata={result.spyMetadata!}
+                                    score={result.spyAnalysis?.score || 0}
+                                    reportMessage={generateFinalReport(
+                                        result.spyAnalysis ? { stamp: result.typeCode, ...result.spyAnalysis } : { stamp: result.typeCode },
+                                        result.spyMetadata!
+                                    )}
+                                />
+                                <div className="mt-12 flex justify-center">
+                                    <button
+                                        onClick={executeHardPurge}
+                                        className="text-[10px] font-black uppercase tracking-[0.4em] text-red-600/60 hover:text-red-500 transition-colors border border-red-500/20 px-6 py-2 rounded hover:bg-red-500/5"
+                                    >
+                                        [ Execute Hard Purge ]
+                                    </button>
                                 </div>
                             </div>
-
-                            {/* Meters - Responsive Grid */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
-                                {[
-                                    { label: 'Pitch', val: `${Math.round(safeMetrics.pitch)} Hz`, color: 'text-cyan-400' },
-                                    { label: 'Speed', val: `${Math.round(safeMetrics.speed * 100)}%`, color: 'text-white' },
-                                    { label: 'Vibe', val: `${Math.round(safeMetrics.vibe * 100)}%`, color: 'text-yellow-400' },
-                                    { label: 'Sync', val: `${safeMetrics.humanityScore}%`, color: colors.primary === '#00FF66' ? 'text-green-400' : 'text-green-500' },
-                                ].map((m) => (
-                                    <div key={m.label} className="bg-black/40 rounded-2xl p-6 border border-white/5 flex flex-col items-center justify-center transition-all hover:border-white/10 hover:bg-black/60 group/meter">
-                                        <div className="text-[10px] text-gray-500 uppercase tracking-[0.2em] mb-2 group-hover/meter:text-gray-400 transition-colors">{m.label}</div>
-                                        <div className={`text-2xl font-bold ${m.color} font-mono`}>{m.val}</div>
+                        ) : (
+                            /* Metrics Card - Balanced & Cinematic */
+                            <div
+                                className="glass rounded-3xl p-8 md:p-12 relative overflow-hidden border border-white/10 w-full max-w-4xl mx-auto"
+                                style={{ boxShadow: `0 0 60px ${colors.primary}10` }}
+                            >
+                                <div className="flex flex-col items-center border-b border-white/5 pb-8 mb-8 text-center">
+                                    <span className="text-6xl mb-6 filter drop-shadow-[0_0_25px_rgba(255,255,255,0.15)]">
+                                        {voiceType.icon}
+                                    </span>
+                                    <div className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-white">
+                                        {result.typeCode}
                                     </div>
-                                ))}
-                            </div>
-
-                            {displayStage === 'metrics' && (
-                                <div className="mt-12 text-center animate-pulse">
-                                    <div className="text-gray-500 text-[10px] uppercase tracking-[0.3em] font-black">Decrypting Neural Signal...</div>
+                                    <h1 className="text-2xl md:text-4xl font-bold uppercase tracking-tight mb-8 text-white/90">
+                                        {voiceType.name}
+                                    </h1>
+                                    <div className="max-w-2xl">
+                                        <p className="text-gray-400 leading-relaxed text-base md:text-lg font-medium italic">
+                                            "{voiceType.roast}"
+                                        </p>
+                                    </div>
                                 </div>
-                            )}
-                        </div>
 
-                        {displayStage === 'full' && (
+                                {/* Meters - Responsive Grid */}
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
+                                    {[
+                                        { label: 'Pitch', val: `${Math.round(safeMetrics.pitch)} Hz`, color: 'text-cyan-400' },
+                                        { label: 'Speed', val: `${Math.round(safeMetrics.speed * 100)}%`, color: 'text-white' },
+                                        { label: 'Vibe', val: `${Math.round(safeMetrics.vibe * 100)}%`, color: 'text-yellow-400' },
+                                        { label: 'Sync', val: `${safeMetrics.humanityScore}%`, color: colors.primary === '#00FF66' ? 'text-green-400' : 'text-green-500' },
+                                    ].map((m) => (
+                                        <div key={m.label} className="bg-black/40 rounded-2xl p-6 border border-white/5 flex flex-col items-center justify-center transition-all hover:border-white/10 hover:bg-black/60 group/meter">
+                                            <div className="text-[10px] text-gray-500 uppercase tracking-[0.2em] mb-2 group-hover/meter:text-gray-400 transition-colors">{m.label}</div>
+                                            <div className={`text-2xl font-bold ${m.color} font-mono`}>{m.val}</div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {displayStage === 'metrics' && (
+                                    <div className="mt-12 text-center animate-pulse">
+                                        <div className="text-gray-500 text-[10px] uppercase tracking-[0.3em] font-black">Decrypting Neural Signal...</div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {displayStage === 'full' && !isSpyMode && (
                             <div className="animate-slide-up space-y-32 md:space-y-48 w-full flex flex-col items-center">
 
                                 {/* Main Layout Grid for PC */}
@@ -457,7 +539,7 @@ export default function ResultPage() {
                                                     Social Bio
                                                 </h2>
                                             </div>
-                                            <div className="bg-black/40 border border-white/10 p-6 rounded-2xl relative group hover:border-cyan-500/50 transition-all cursor-pointer" onClick={() => {
+                                            <div className="bg-black/40 border border-white/10 p-6 rounded-2xl relative group hover:border-cyan-500/50 transition-all cursor-pointer glass" onClick={() => {
                                                 navigator.clipboard.writeText(`${voiceType.icon} ${voiceType.name} | ${result.typeCode}\n${voiceType.catchphrase}`);
                                             }}>
                                                 <div className="flex items-center gap-4 mb-4">
@@ -533,6 +615,62 @@ export default function ResultPage() {
                                                 </div>
                                             </div>
                                         )}
+
+                                        {/* Phase 2: High Fidelity Audit log */}
+                                        {isPremium && result.logV2 && (
+                                            <div className="space-y-20">
+                                                <section className="mt-20">
+                                                    <HighFidelityMetrics log={result.logV2} />
+                                                </section>
+
+                                                {fullHistory.length >= 2 && (
+                                                    <section className="mt-20">
+                                                        <VoiceTimelineGraph history={fullHistory} />
+                                                    </section>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Phase 2: Voice Drift Analysis */}
+                                        {drift && (
+                                            <section className="mt-20 glass rounded-3xl p-8 border border-magenta-500/30 relative overflow-hidden group">
+                                                <div className="absolute top-0 right-0 p-4 opacity-20">
+                                                    <span className="text-4xl">📊</span>
+                                                </div>
+
+                                                <div className="relative z-10 space-y-6 text-center md:text-left">
+                                                    <div>
+                                                        <h3 className="text-2xl font-black text-white uppercase tracking-tighter mb-2 italic">
+                                                            Voice Drift Detected
+                                                        </h3>
+                                                        <p className="text-gray-400 text-sm font-mono uppercase tracking-[0.2em]">
+                                                            Status: <span className={
+                                                                drift.status === 'STABLE' ? 'text-green-400' :
+                                                                    drift.status === 'UPGRADE' ? 'text-cyan-400' :
+                                                                        'text-red-400'
+                                                            }>{drift.status}</span>
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                                                        <DriftStat label="Drift Rate" value={`${drift.driftRate > 0 ? '+' : ''}${drift.driftRate}%`} color={drift.driftRate > 0 ? 'text-cyan-400' : 'text-red-400'} />
+                                                        <DriftStat label="Pitch Shift" value={`${drift.changes.pitch > 0 ? '+' : ''}${drift.changes.pitch}%`} />
+                                                        <DriftStat label="Tone Shift" value={`${drift.changes.tone > 0 ? '+' : ''}${drift.changes.tone}%`} />
+                                                        <DriftStat label="Days Elapsed" value={drift.daysSince} />
+                                                    </div>
+
+                                                    <div className="bg-black/40 border border-white/5 p-4 rounded-xl">
+                                                        <p className="text-gray-300 text-sm leading-relaxed italic">
+                                                            "{getDriftNarrative(drift)}"
+                                                        </p>
+                                                    </div>
+
+                                                    <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest pt-4">
+                                                        Baseline: {new Date(drift.baselineDate).toLocaleDateString()} · Comparison: Latest vs Original
+                                                    </p>
+                                                </div>
+                                            </section>
+                                        )}
                                     </div>
                                 )}
 
@@ -567,7 +705,7 @@ export default function ResultPage() {
                                         </div>
                                     ) : (
                                         <div className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900 border border-white/10 rounded-2xl overflow-hidden">
-                                            {/* Blurred Preview */}
+                                            {/* Video Preview */}
                                             <div className="blur-md opacity-30 pointer-events-none">
                                                 <VideoPlayerSection voiceType={voiceType} metrics={safeMetrics} />
                                             </div>
@@ -672,11 +810,11 @@ export default function ResultPage() {
                                                                         $5.00
                                                                     </div>
                                                                     <button
-                                                                        onClick={() => handleCheckout('unlock')}
+                                                                        onClick={() => handleCheckout('vault')}
                                                                         disabled={processingPayment}
-                                                                        className="w-full bg-white/10 hover:bg-white/20 border border-white/20 text-white py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
+                                                                        className="w-full btn-metallic py-8 rounded-sm mb-4 text-lg"
                                                                     >
-                                                                        {processingPayment ? 'Processing...' : 'Unlock HD Video — $5.00'}
+                                                                        {processingPayment ? 'SECURE_TUNNEL_ESTABLISHED...' : '🔓 SECURE MY LEGACY'}
                                                                     </button>
                                                                 </div>
                                                             )}
@@ -722,5 +860,14 @@ export default function ResultPage() {
                 )}
             </div>
         </main>
+    );
+}
+
+function DriftStat({ label, value, color = "text-white" }: { label: string, value: string | number, color?: string }) {
+    return (
+        <div className="space-y-1">
+            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">{label}</p>
+            <p className={`text-xl font-mono font-black ${color}`}>{value}</p>
+        </div>
     );
 }

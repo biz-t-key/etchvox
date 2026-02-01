@@ -11,7 +11,7 @@ export type SilhouetteKey =
     | 'whale';
 
 // Map voice types to silhouettes
-export const silhouetteMap: Record<TypeCode, SilhouetteKey> = {
+export const silhouetteMap: Partial<Record<TypeCode, SilhouetteKey>> = {
     // High-Energy Idols
     'HFEC': 'neutral',
     'HFED': 'neutral',

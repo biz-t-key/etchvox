@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. 【生体資産ボルト】完全なブラインド・ボルト
+    match /voice_assets/{document} {
+      allow create: if true;
+      allow read, update, delete: if false; 
+    }
+    
+    // 2. 【診断結果】IDを知っている者のみが閲覧可能
+    match /results/{id} {
+      allow create: if true;
+      allow read: if true; 
+      allow update, delete: if false; 
+    }
+
+    // デフォルトはすべて禁止
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

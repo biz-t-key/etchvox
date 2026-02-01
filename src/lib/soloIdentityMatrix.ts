@@ -9,8 +9,8 @@ export interface SoloIdentity {
 }
 
 // 1. Fully Specific Data (Legacy/High Quality Roasts)
-// Used when available.
-const specificIdentities: Record<string, SoloIdentity> = {
+// Map voice types to silhouettes
+const specificIdentities: Partial<Record<string, SoloIdentity>> = {
     // I. Analysts (NT) Group - INTJ
     INTJ_HFEC: { mbti: 'INTJ', voiceType: 'HFEC', brandName: 'The Rave Scholar', roast: "You’re attempting to explain the Heat Death of the Universe in a mosh pit, but your voice is so neon that everyone just thinks you’re asking where the MDMA is." },
     INTJ_HFED: { mbti: 'INTJ', voiceType: 'HFED', brandName: 'The Cynical Cheerleader', roast: "You’re shouting for the team, but your subtext is a 45-minute lecture on why sports are a bread-and-circus distraction for the masses." },
@@ -377,7 +377,7 @@ const brandNameMatrix: Record<string, string> = {
 };
 
 // 3. Dynamic Roast Traits (Fallback when specific roast is missing)
-const voiceTraits: Record<TypeCode, { roastFragment: string }> = {
+const voiceTraits: Partial<Record<TypeCode, { roastFragment: string }>> = {
     HFEC: { roastFragment: "you sound like a chaotic anime protagonist" },
     HFED: { roastFragment: "your voice demands a spotlight even in a dark room" },
     HSEC: { roastFragment: "you could sell ice to a polar bear" },
@@ -417,7 +417,7 @@ export function getSoloIdentity(mbti: MBTIType, voiceType: TypeCode): SoloIdenti
     const brandName = brandNameMatrix[key] || "The Enigma";
 
     // Dynamic Roast Generation
-    const vTrait = voiceTraits[voiceType];
+    const vTrait = voiceTraits[voiceType] || { roastFragment: "you have a rather unique vocal signature" };
     const mTheme = mbtiThemes[mbti];
 
     let prefix = "";

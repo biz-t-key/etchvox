@@ -5,7 +5,7 @@
 import { TypeCode } from './types';
 
 // Compatibility scores (0-100)
-export const compatibilityMatrix: Record<TypeCode, Record<TypeCode, number>> = {
+export const compatibilityMatrix: Partial<Record<TypeCode, Partial<Record<TypeCode, number>>>> = {
     'HFEC': { 'HFEC': 100, 'HFED': 44, 'HSEC': 90, 'HSED': 50, 'HFCC': 53, 'HFCD': 32, 'HSCC': 51, 'HSCD': 82, 'LFEC': 31, 'LFED': 59, 'LSEC': 67, 'LSED': 31, 'LFCC': 93, 'LFCD': 89, 'LSCC': 50, 'LSCD': 62, 'COUPLE_MIX': 50 },
     'HFED': { 'HFEC': 87, 'HFED': 100, 'HSEC': 78, 'HSED': 88, 'HFCC': 71, 'HFCD': 89, 'HSCC': 44, 'HSCD': 91, 'LFEC': 91, 'LFED': 76, 'LSEC': 91, 'LSED': 80, 'LFCC': 84, 'LFCD': 93, 'LSCC': 32, 'LSCD': 80, 'COUPLE_MIX': 50 },
     'HSEC': { 'HFEC': 36, 'HFED': 50, 'HSEC': 100, 'HSED': 47, 'HFCC': 33, 'HFCD': 89, 'HSCC': 43, 'HSCD': 38, 'LFEC': 82, 'LFED': 31, 'LSEC': 89, 'LSED': 73, 'LFCC': 37, 'LFCD': 76, 'LSCC': 64, 'LSCD': 65, 'COUPLE_MIX': 50 },
