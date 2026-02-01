@@ -152,13 +152,13 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                 <div className="absolute top-[-20%] right-[-20%] w-[80%] h-[80%] rounded-full pointer-events-none z-0"
                     style={{
                         background: voiceTypeCode === 'ELON'
-                            ? 'radial-gradient(circle, rgba(248, 113, 113, 0.2) 0%, rgba(248, 113, 113, 0) 70%)'
+                            ? 'radial-gradient(circle, rgba(124, 19, 29, 0.4) 0%, rgba(124, 19, 29, 0) 70%)'
                             : 'radial-gradient(circle, #06b6d433 0%, rgba(6, 182, 212, 0) 70%)'
                     }} />
                 <div className="absolute bottom-[-20%] left-[-20%] w-[80%] h-[80%] rounded-full pointer-events-none z-0"
                     style={{
                         background: voiceTypeCode === 'ELON'
-                            ? 'radial-gradient(circle, rgba(124, 45, 18, 0.3) 0%, rgba(0, 0, 0, 0) 70%)'
+                            ? 'radial-gradient(circle, rgba(76, 5, 10, 0.6) 0%, rgba(0, 0, 0, 0) 70%)'
                             : `radial-gradient(circle, ${mbtiInfo.color}33 0%, rgba(0, 0, 0, 0) 70%)`
                     }} />
 
@@ -187,10 +187,12 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
 
                 {/* HEADER - Increased padding to clear rounded corners */}
                 <div className="relative z-10 flex items-center justify-between mb-4 md:mb-6 px-4 md:px-6">
-                    <div className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.4em]" style={{ color: '#ffffff99' }}>
+                    <div className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.4em]"
+                        style={{ color: voiceTypeCode === 'ELON' ? '#cbd5e1' : '#ffffff99' }}>
                         Truth Card
                     </div>
-                    <div className="text-[10px] md:text-[12px] font-mono tracking-widest uppercase" style={{ color: '#ffffff33' }}>
+                    <div className="text-[10px] md:text-[12px] font-mono tracking-widest uppercase"
+                        style={{ color: voiceTypeCode === 'ELON' ? 'rgba(203, 213, 225, 0.3)' : '#ffffff33' }}>
                         #{userName?.substring(0, 8).toUpperCase() || 'GUEST-VOX'}
                     </div>
                 </div>
@@ -201,14 +203,16 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                     {/* PSYCHOLOGICAL BLUEPRINT - Skip for special modes like ELON */}
                     {voiceInfo.group !== 'special' && (
                         <div className="text-center relative">
-                            <div className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.6em] opacity-40 mb-1" style={{ color: mbtiInfo.color || '#ffffff' }}>
+                            <div className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.6em] opacity-40 mb-1"
+                                style={{ color: voiceTypeCode === 'ELON' ? '#94a3b8' : mbtiInfo.color || '#ffffff' }}>
                                 Personality Code
                             </div>
                             <div className="text-7xl md:text-8xl font-black uppercase tracking-tighter leading-none"
-                                style={{ color: mbtiInfo.color || '#ffffff' }}>
+                                style={{ color: voiceTypeCode === 'ELON' ? '#e2e8f0' : mbtiInfo.color || '#ffffff' }}>
                                 {mbti}
                             </div>
-                            <div className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.4em] mt-2 opacity-90" style={{ color: mbtiInfo.color || '#ffffff' }}>
+                            <div className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.4em] mt-2 opacity-90"
+                                style={{ color: voiceTypeCode === 'ELON' ? '#cbd5e1' : mbtiInfo.color || '#ffffff' }}>
                                 {mbtiInfo.nickname}
                             </div>
                         </div>
@@ -217,26 +221,36 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                     {/* GAP INDICATOR */}
                     <div className="relative py-2 px-6 md:px-12">
                         <div className="flex justify-between items-center mb-2">
-                            <span className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.3em]" style={{ color: 'rgba(255, 255, 255, 0.3)' }}>Identity Gap</span>
-                            <span className="text-[10px] md:text-[12px] font-mono font-bold" style={{ color: '#22d3ee' }}>{gapLevel}%</span>
+                            <span className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.3em]"
+                                style={{ color: voiceTypeCode === 'ELON' ? 'rgba(148, 163, 184, 0.5)' : 'rgba(255, 255, 255, 0.3)' }}>Identity Gap</span>
+                            <span className="text-[10px] md:text-[12px] font-mono font-bold"
+                                style={{ color: voiceTypeCode === 'ELON' ? '#e2e8f0' : '#22d3ee' }}>{gapLevel}%</span>
                         </div>
                         <div className="h-[2px] md:h-[4px] w-full rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}>
                             <div
                                 className="h-full transition-all duration-1000"
-                                style={{ width: `${gapLevel}%`, background: 'linear-gradient(to right, #0891b2, #ffffff)' }}
+                                style={{
+                                    width: `${gapLevel}%`,
+                                    background: voiceTypeCode === 'ELON'
+                                        ? 'linear-gradient(to right, #475569, #e2e8f0)'
+                                        : 'linear-gradient(to right, #0891b2, #ffffff)'
+                                }}
                             />
                         </div>
                     </div>
 
                     {/* ACOUSTIC DATA */}
                     <div className="text-center">
-                        <div className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.6em] mb-1" style={{ color: 'rgba(34, 211, 238, 0.4)' }}>
+                        <div className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.6em] mb-1"
+                            style={{ color: voiceTypeCode === 'ELON' ? 'rgba(148, 163, 184, 0.5)' : 'rgba(34, 211, 238, 0.4)' }}>
                             Acoustic Signal
                         </div>
-                        <div className="text-7xl md:text-8xl font-black uppercase tracking-tighter leading-none" style={{ color: '#22d3ee' }}>
+                        <div className="text-7xl md:text-8xl font-black uppercase tracking-tighter leading-none"
+                            style={{ color: voiceTypeCode === 'ELON' ? '#e2e8f0' : '#22d3ee' }}>
                             {voiceTypeCode}
                         </div>
-                        <div className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.4em] mt-2" style={{ color: 'rgba(34, 211, 238, 0.6)' }}>
+                        <div className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.4em] mt-2"
+                            style={{ color: voiceTypeCode === 'ELON' ? 'rgba(203, 213, 225, 0.6)' : 'rgba(34, 211, 238, 0.6)' }}>
                             {voiceInfo.name}
                         </div>
                     </div>
@@ -244,25 +258,35 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
 
                 {/* IDENTITY ARCHETYPE BOX */}
                 <div className="relative z-10 rounded-[1.5rem] p-6 md:p-8 border shadow-2xl mt-6 mx-2 md:mx-4"
-                    style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)', borderColor: 'rgba(255, 255, 255, 0.1)' }}>
-                    <div className="text-[9px] md:text-[11px] font-black uppercase tracking-[0.3em] mb-3 text-center" style={{ color: '#22d3ee' }}>
+                    style={{
+                        backgroundColor: voiceTypeCode === 'ELON' ? 'rgba(76, 5, 10, 0.8)' : 'rgba(0, 0, 0, 0.6)',
+                        borderColor: voiceTypeCode === 'ELON' ? 'rgba(226, 232, 240, 0.2)' : 'rgba(255, 255, 255, 0.1)'
+                    }}>
+                    <div className="text-[9px] md:text-[11px] font-black uppercase tracking-[0.3em] mb-3 text-center"
+                        style={{ color: voiceTypeCode === 'ELON' ? '#cbd5e1' : '#22d3ee' }}>
                         Identity Result
                     </div>
-                    <div className="text-3xl md:text-4xl font-black text-white uppercase italic tracking-tighter text-center leading-[1] mb-4">
+                    <div className="text-3xl md:text-4xl font-black text-white uppercase italic tracking-tighter text-center leading-[1] mb-4"
+                        style={{ color: voiceTypeCode === 'ELON' ? '#f8fafc' : '#ffffff' }}>
                         "{identityData?.brandName || 'PROCESSING...'}"
                     </div>
-                    <p className="text-[11px] md:text-[13px] font-medium italic leading-relaxed text-center px-4" style={{ color: '#9ca3af' }}>
+                    <p className="text-[11px] md:text-[13px] font-medium italic leading-relaxed text-center px-4"
+                        style={{ color: voiceTypeCode === 'ELON' ? '#94a3b8' : '#9ca3af' }}>
                         {identityData?.roast || 'Decoding vocal signature...'}
                     </p>
-                    <div className="mt-8 text-[8px] uppercase tracking-[0.4em] text-center" style={{ color: 'rgba(255, 255, 255, 0.4)' }}>
+                    <div className="mt-8 text-[8px] uppercase tracking-[0.4em] text-center"
+                        style={{ color: voiceTypeCode === 'ELON' ? 'rgba(226, 232, 240, 0.3)' : 'rgba(255, 255, 255, 0.4)' }}>
                         etchvox.com fingerprint
                     </div>
                 </div>
 
                 {/* FOOTER - Increased padding and added margin from bottom edge */}
-                <div className="relative z-10 mt-auto flex justify-between items-center px-6 pb-2" style={{ opacity: 0.5 }}>
-                    <div className="text-[8px] font-black tracking-[0.2em] uppercase" style={{ color: '#ffffff' }}>Auth: Bio-Metric</div>
-                    <div className="text-[8px] font-mono text-white">v1.1.1.SOLO</div>
+                <div className="relative z-10 mt-auto flex justify-between items-center px-6 pb-2"
+                    style={{ opacity: voiceTypeCode === 'ELON' ? 0.7 : 0.5 }}>
+                    <div className="text-[8px] font-black tracking-[0.2em] uppercase"
+                        style={{ color: voiceTypeCode === 'ELON' ? '#cbd5e1' : '#ffffff' }}>Auth: Bio-Metric</div>
+                    <div className="text-[8px] font-mono"
+                        style={{ color: voiceTypeCode === 'ELON' ? '#94a3b8' : '#ffffff' }}>v1.1.1.SOLO</div>
                 </div>
             </div>
 
