@@ -148,17 +148,17 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                 {/* SAFE BACKGROUND FOR CAPTURE */}
                 <div className="absolute inset-0 z-0" style={{ backgroundColor: '#050505' }} />
 
-                {/* BACKGROUND DECORATION - Use absolute positioning and explicit colors */}
+                {/* BACKGROUND DECORATION - Deep Crimson Base */}
                 <div className="absolute top-[-20%] right-[-20%] w-[80%] h-[80%] rounded-full pointer-events-none z-0"
                     style={{
                         background: voiceTypeCode === 'ELON'
-                            ? 'radial-gradient(circle, rgba(124, 19, 29, 0.4) 0%, rgba(124, 19, 29, 0) 70%)'
+                            ? 'radial-gradient(circle, rgba(153, 27, 27, 0.4) 0%, rgba(153, 27, 27, 0) 70%)'
                             : 'radial-gradient(circle, #06b6d433 0%, rgba(6, 182, 212, 0) 70%)'
                     }} />
                 <div className="absolute bottom-[-20%] left-[-20%] w-[80%] h-[80%] rounded-full pointer-events-none z-0"
                     style={{
                         background: voiceTypeCode === 'ELON'
-                            ? 'radial-gradient(circle, rgba(76, 5, 10, 0.6) 0%, rgba(0, 0, 0, 0) 70%)'
+                            ? 'radial-gradient(circle, rgba(76, 5, 10, 0.7) 0%, rgba(0, 0, 0, 0) 70%)'
                             : `radial-gradient(circle, ${mbtiInfo.color}33 0%, rgba(0, 0, 0, 0) 70%)`
                     }} />
 
@@ -242,15 +242,30 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                     {/* ACOUSTIC DATA */}
                     <div className="text-center">
                         <div className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.6em] mb-1"
-                            style={{ color: voiceTypeCode === 'ELON' ? 'rgba(148, 163, 184, 0.5)' : 'rgba(34, 211, 238, 0.4)' }}>
+                            style={{
+                                color: voiceTypeCode === 'ELON' ? '#94a3b8' : 'rgba(34, 211, 238, 0.4)',
+                                textShadow: voiceTypeCode === 'ELON' ? '0 2px 4px rgba(0,0,0,0.5)' : 'none'
+                            }}>
                             Acoustic Signal
                         </div>
-                        <div className="text-7xl md:text-8xl font-black uppercase tracking-tighter leading-none"
-                            style={{ color: voiceTypeCode === 'ELON' ? '#e2e8f0' : '#22d3ee' }}>
+                        <div className="text-7xl md:text-8xl font-black uppercase tracking-tighter leading-none relative"
+                            style={{
+                                color: voiceTypeCode === 'ELON' ? '#e2e8f0' : '#22d3ee',
+                                // Metallic Gradient for ELON
+                                background: voiceTypeCode === 'ELON'
+                                    ? 'linear-gradient(to bottom, #ffffff 0%, #cbd5e1 45%, #94a3b8 50%, #cbd5e1 55%, #ffffff 100%)'
+                                    : 'none',
+                                WebkitBackgroundClip: voiceTypeCode === 'ELON' ? 'text' : 'border-box',
+                                WebkitTextFillColor: voiceTypeCode === 'ELON' ? 'transparent' : 'currentColor',
+                                filter: voiceTypeCode === 'ELON' ? 'drop-shadow(0 4px 8px rgba(0,0,0,0.8))' : 'none'
+                            }}>
                             {voiceTypeCode}
                         </div>
                         <div className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.4em] mt-2"
-                            style={{ color: voiceTypeCode === 'ELON' ? 'rgba(203, 213, 225, 0.6)' : 'rgba(34, 211, 238, 0.6)' }}>
+                            style={{
+                                color: voiceTypeCode === 'ELON' ? '#cbd5e1' : 'rgba(34, 211, 238, 0.6)',
+                                textShadow: voiceTypeCode === 'ELON' ? '0 2px 4px rgba(0,0,0,0.5)' : 'none'
+                            }}>
                             {voiceInfo.name}
                         </div>
                     </div>
@@ -259,23 +274,32 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                 {/* IDENTITY ARCHETYPE BOX */}
                 <div className="relative z-10 rounded-[1.5rem] p-6 md:p-8 border shadow-2xl mt-6 mx-2 md:mx-4"
                     style={{
-                        backgroundColor: voiceTypeCode === 'ELON' ? 'rgba(76, 5, 10, 0.8)' : 'rgba(0, 0, 0, 0.6)',
-                        borderColor: voiceTypeCode === 'ELON' ? 'rgba(226, 232, 240, 0.2)' : 'rgba(255, 255, 255, 0.1)'
+                        backgroundColor: voiceTypeCode === 'ELON' ? 'rgba(127, 29, 29, 0.4)' : 'rgba(0, 0, 0, 0.6)',
+                        borderColor: voiceTypeCode === 'ELON' ? 'rgba(226, 232, 240, 0.3)' : 'rgba(255, 255, 255, 0.1)',
+                        boxShadow: voiceTypeCode === 'ELON' ? '0 10px 30px rgba(0,0,0,0.5)' : 'none'
                     }}>
                     <div className="text-[9px] md:text-[11px] font-black uppercase tracking-[0.3em] mb-3 text-center"
                         style={{ color: voiceTypeCode === 'ELON' ? '#cbd5e1' : '#22d3ee' }}>
                         Identity Result
                     </div>
-                    <div className="text-3xl md:text-4xl font-black text-white uppercase italic tracking-tighter text-center leading-[1] mb-4"
-                        style={{ color: voiceTypeCode === 'ELON' ? '#f8fafc' : '#ffffff' }}>
+                    <div className="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-center leading-[1] mb-4"
+                        style={{
+                            color: voiceTypeCode === 'ELON' ? '#f8fafc' : '#ffffff',
+                            background: voiceTypeCode === 'ELON'
+                                ? 'linear-gradient(to bottom, #ffffff 0%, #cbd5e1 45%, #94a3b8 50%, #cbd5e1 55%, #ffffff 100%)'
+                                : 'none',
+                            WebkitBackgroundClip: voiceTypeCode === 'ELON' ? 'text' : 'border-box',
+                            WebkitTextFillColor: voiceTypeCode === 'ELON' ? 'transparent' : 'currentColor',
+                            filter: voiceTypeCode === 'ELON' ? 'drop-shadow(0 2px 4px rgba(0,0,0,0.6))' : 'none'
+                        }}>
                         "{identityData?.brandName || 'PROCESSING...'}"
                     </div>
                     <p className="text-[11px] md:text-[13px] font-medium italic leading-relaxed text-center px-4"
-                        style={{ color: voiceTypeCode === 'ELON' ? '#94a3b8' : '#9ca3af' }}>
+                        style={{ color: voiceTypeCode === 'ELON' ? '#cbd5e1' : '#9ca3af' }}>
                         {identityData?.roast || 'Decoding vocal signature...'}
                     </p>
                     <div className="mt-8 text-[8px] uppercase tracking-[0.4em] text-center"
-                        style={{ color: voiceTypeCode === 'ELON' ? 'rgba(226, 232, 240, 0.3)' : 'rgba(255, 255, 255, 0.4)' }}>
+                        style={{ color: voiceTypeCode === 'ELON' ? 'rgba(226, 232, 240, 0.4)' : 'rgba(255, 255, 255, 0.4)' }}>
                         etchvox.com fingerprint
                     </div>
                 </div>
