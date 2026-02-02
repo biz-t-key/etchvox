@@ -362,3 +362,54 @@ export class CoupleResonanceEngine {
         };
     }
 }
+// ==========================================
+// 6. SPY ENGINE: Intelligence Audit
+// ==========================================
+export class SpyIntelligenceEngine {
+    private stats: { p: number; s: number; v: number; t: number };
+
+    constructor(
+        private metrics: AnalysisMetrics,
+        private spyMetadata: {
+            origin: string;
+            target: string;
+            codename: string;
+            requestedDivision?: string;
+        }
+    ) {
+        this.stats = normalizeMetricsForEngine(metrics);
+    }
+
+    public generatePayload() {
+        // AI Audit Heuristics (Mapping raw metrics to Intelligence terms)
+
+        // Coldness / Ice Factor: Low pitch variance = More robotic/controlled
+        const pitchVar = this.metrics.pitchVar ?? 0.15;
+        const iceFactor = Math.max(0, Math.min(100, 100 - (pitchVar * 400)));
+
+        // Stress Leakage: Based on Jitter (micro-tremors)
+        const jitter = this.metrics.jitter ?? 0.02;
+        const stressLeakage = Math.min(100, jitter * 2000);
+
+        // Cognitive Load: Based on Silence Rate (latency between segments)
+        const silenceRate = this.metrics.silenceRate ?? 0.3;
+        const cognitiveLoad = Math.min(100, silenceRate * 100);
+
+        return {
+            codename: this.spyMetadata.codename,
+            requested_division: this.spyMetadata.requestedDivision || "SKIP",
+            audit_data: {
+                metrics: {
+                    ice_factor: Math.round(iceFactor),
+                    stress_leakage: Math.round(stressLeakage),
+                    cognitive_load: Math.round(cognitiveLoad)
+                },
+                audit_log: {
+                    pitch_stability: `${(100 - pitchVar * 100).toFixed(1)}%`,
+                    micro_tremor_detected: jitter > 0.02,
+                    latency_profile: silenceRate > 0.3 ? "DEFERRED_PROCESSING" : "REAL_TIME"
+                }
+            }
+        };
+    }
+}

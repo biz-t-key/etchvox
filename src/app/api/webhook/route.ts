@@ -36,10 +36,6 @@ export async function POST(req: NextRequest) {
         if (isFirebaseConfigured()) {
             try {
                 const db = getDb();
-                const { SoloIdentityEngine, CoupleResonanceEngine, normalizeMetricsForEngine } = await import('@/lib/voiceProcessor');
-                const { generateContent } = await import('@/lib/gemini');
-                const { SOLO_AUDIT_SYSTEM_PROMPT, COUPLE_AUDIT_SYSTEM_PROMPT } = await import('@/lib/prompts');
-
                 const resultRef = doc(db, 'results', resultId);
                 const resultSnap = await getDoc(resultRef);
 
@@ -47,28 +43,45 @@ export async function POST(req: NextRequest) {
 
                 if (resultSnap.exists()) {
                     const resultData = resultSnap.data();
+                    const isSpy = !!resultData.spyMetadata || ['HIRED', 'SUSP', 'REJT', 'BURN'].includes(resultData.typeCode);
 
-                    if ((type === 'vault') && resultData.metrics) {
-                        const normalized = normalizeMetricsForEngine(resultData.metrics);
-                        const engine = new SoloIdentityEngine(
-                            normalized.p, normalized.s, normalized.v, normalized.t,
-                            resultData.mbti || 'INTJ', resultData.gender, resultData.birthYear
-                        );
-                        const aiPayload = engine.generatePayload();
-                        aiReport = await generateContent(SOLO_AUDIT_SYSTEM_PROMPT, JSON.stringify(aiPayload, null, 2));
-                    }
+                    // 🧬 AI Report Generation
+                    if (resultData.metrics) {
+                        const { SoloIdentityEngine, CoupleResonanceEngine, SpyIntelligenceEngine, normalizeMetricsForEngine } = await import('@/lib/voiceProcessor');
+                        const { generateContent } = await import('@/lib/gemini');
+                        const { SOLO_AUDIT_SYSTEM_PROMPT, COUPLE_AUDIT_SYSTEM_PROMPT, SPY_AUDIT_SYSTEM_PROMPT } = await import('@/lib/prompts');
 
-                    if (type === 'couple' && resultData.coupleData) {
-                        const { userA, userB } = resultData.coupleData;
-                        if (userA && userB) {
-                            const normalizedA = normalizeMetricsForEngine(userA.metrics);
-                            const normalizedB = normalizeMetricsForEngine(userB.metrics);
-                            const engine = new CoupleResonanceEngine(
-                                { ...normalizedA, name: userA.name, job: userA.job, accent: 'Unknown', gender: userA.gender, birthYear: userA.birthYear },
-                                { ...normalizedB, name: userB.name, job: userB.job, accent: 'Unknown', gender: userB.gender, birthYear: userB.birthYear }
+                        if (isSpy && (type === 'unlock' || type === 'vault')) {
+                            // 🕵️ SPY Premium Audit
+                            const engine = new SpyIntelligenceEngine(resultData.metrics, {
+                                ...resultData.spyMetadata,
+                                codename: resultData.spyMetadata?.codename || resultId,
+                                requestedDivision: resultData.spyMetadata?.requestedDivision
+                            });
+                            const aiPayload = engine.generatePayload();
+                            aiReport = await generateContent(SPY_AUDIT_SYSTEM_PROMPT, JSON.stringify(aiPayload, null, 2));
+                        } else if (type === 'couple' && resultData.coupleData) {
+                            // 💑 Couple Resonance
+                            const { userA, userB } = resultData.coupleData;
+                            if (userA && userB) {
+                                const normalizedA = normalizeMetricsForEngine(userA.metrics);
+                                const normalizedB = normalizeMetricsForEngine(userB.metrics);
+                                const engine = new CoupleResonanceEngine(
+                                    { ...normalizedA, name: userA.name, job: userA.job, accent: 'Unknown', gender: userA.gender, birthYear: userA.birthYear },
+                                    { ...normalizedB, name: userB.name, job: userB.job, accent: 'Unknown', gender: userB.gender, birthYear: userB.birthYear }
+                                );
+                                const aiPayload = engine.generatePayload();
+                                aiReport = await generateContent(COUPLE_AUDIT_SYSTEM_PROMPT, JSON.stringify(aiPayload, null, 2));
+                            }
+                        } else if (type === 'vault' || type === 'unlock') {
+                            // 👤 Standard Solo Identity Audit (Now also for $5 unlock)
+                            const normalized = normalizeMetricsForEngine(resultData.metrics);
+                            const engine = new SoloIdentityEngine(
+                                normalized.p, normalized.s, normalized.v, normalized.t,
+                                resultData.mbti || 'INTJ', resultData.gender, resultData.birthYear
                             );
                             const aiPayload = engine.generatePayload();
-                            aiReport = await generateContent(COUPLE_AUDIT_SYSTEM_PROMPT, JSON.stringify(aiPayload, null, 2));
+                            aiReport = await generateContent(SOLO_AUDIT_SYSTEM_PROMPT, JSON.stringify(aiPayload, null, 2));
                         }
                     }
 

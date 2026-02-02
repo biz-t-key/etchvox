@@ -49,8 +49,9 @@ export default function ResultPage() {
         currentAmount: 0
     });
 
-    const [showOTO, setShowOTO] = useState(false);
+    const [showOTO, setShowOTO] = useState(false);    // Self-Destruct
     const [isPurged, setIsPurged] = useState(false);
+    const [isHoldingPurge, setIsHoldingPurge] = useState(false);
 
     const isSpyMode = result?.typeCode === 'HIRED' || result?.typeCode === 'SUSP' || result?.typeCode === 'REJT' || result?.typeCode === 'BURN' || !!result?.spyMetadata;
 
@@ -427,13 +428,27 @@ export default function ResultPage() {
                                     )}
                                     onBurn={handleSpyBurn}
                                     autoBurn={!result.researchConsentAgreed}
+                                    isHoldingPurge={isHoldingPurge}
                                 />
                                 <div className="mt-12 flex justify-center">
                                     <button
-                                        onClick={executeHardPurge}
-                                        className="text-[10px] font-black uppercase tracking-[0.4em] text-red-600/60 hover:text-red-500 transition-colors border border-red-500/20 px-6 py-2 rounded hover:bg-red-500/5"
+                                        onClick={() => {
+                                            if (isSpyMode) setIsHoldingPurge(true);
+                                            handleCheckout('unlock');
+                                        }}
+                                        disabled={processingPayment}
+                                        className="btn-cyan group relative overflow-hidden px-8 py-4 rounded-xl flex items-center gap-3 transition-all hover:scale-105"
                                     >
-                                        [ Execute Hard Purge ]
+                                        <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                                        <span className="text-xl">🕵️</span>
+                                        <div className="text-left">
+                                            <div className="text-[10px] uppercase tracking-widest opacity-70">
+                                                {isSpyMode ? 'Intelligence Audit' : 'Full Analysis'}
+                                            </div>
+                                            <div className="font-black text-lg">
+                                                {isSpyMode ? 'UNLOCK DOSSIER' : 'UNLOCK $5.00'}
+                                            </div>
+                                        </div>
                                     </button>
                                 </div>
                             </div>

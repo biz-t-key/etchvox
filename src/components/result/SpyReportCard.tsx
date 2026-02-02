@@ -13,6 +13,7 @@ interface SpyReportCardProps {
     score: number;
     onBurn?: () => void;
     autoBurn?: boolean;
+    isHoldingPurge?: boolean;
 }
 
 const RESULT_CONFIG: Record<string, { color: string, count: number }> = {
@@ -31,7 +32,7 @@ interface InkDrop {
     delay: number;
 }
 
-const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, reportMessage, score, onBurn, autoBurn }) => {
+const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, reportMessage, score, onBurn, autoBurn, isHoldingPurge }) => {
     const [displayedMessage, setDisplayedMessage] = useState('');
     const [isTyping, setIsTyping] = useState(true);
     const [shouldSlam, setShouldSlam] = useState(false);
@@ -63,7 +64,7 @@ const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, re
 
     // Handle Countdown and Glitch logic
     useEffect(() => {
-        if (!isBurning) return;
+        if (!isBurning || isHoldingPurge) return;
 
         const interval = setInterval(() => {
             setCountdown(prev => {
@@ -83,7 +84,7 @@ const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, re
         }, 50);
 
         return () => clearInterval(interval);
-    }, [isBurning, isGlitching, isScrambling]);
+    }, [isBurning, isGlitching, isScrambling, isHoldingPurge]);
 
     const triggerSlam = () => {
         const drops: InkDrop[] = [];
@@ -109,7 +110,7 @@ const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, re
             // AUTO-BURN Logic: Trigger destruction after slam completes
             if (autoBurn) {
                 setTimeout(() => {
-                    startDestruction();
+                    if (!isHoldingPurge) startDestruction();
                 }, 1000);
             }
         }, 150);
@@ -225,8 +226,12 @@ const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, re
                     </button>
                 </div>
             ) : (
-                <div className="mt-8 text-right text-red-700 font-black text-xs animate-pulse tracking-widest z-20 relative">
-                    AUTO-PURGE IN: {countdown.toFixed(2)}s
+                <div className={`mt-8 text-right font-black text-xs tracking-widest z-20 relative ${isHoldingPurge ? 'text-cyan-600' : 'text-red-700 animate-pulse'}`}>
+                    {isHoldingPurge ? (
+                        <>PURGE SUSPENDED: INITIATING AUDIT...</>
+                    ) : (
+                        <>AUTO-PURGE IN: {countdown.toFixed(2)}s</>
+                    )}
                 </div>
             )}
 
