@@ -12,6 +12,7 @@ interface SpyReportCardProps {
     reportMessage: string;
     score: number;
     onBurn?: () => void;
+    autoBurn?: boolean;
 }
 
 const RESULT_CONFIG: Record<string, { color: string, count: number }> = {
@@ -30,7 +31,7 @@ interface InkDrop {
     delay: number;
 }
 
-const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, reportMessage, score, onBurn }) => {
+const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, reportMessage, score, onBurn, autoBurn }) => {
     const [displayedMessage, setDisplayedMessage] = useState('');
     const [isTyping, setIsTyping] = useState(true);
     const [shouldSlam, setShouldSlam] = useState(false);
@@ -104,6 +105,13 @@ const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, re
             setShouldSlam(true);
             setIsShaking(true);
             setTimeout(() => setIsShaking(false), 200);
+
+            // AUTO-BURN Logic: Trigger destruction after slam completes
+            if (autoBurn) {
+                setTimeout(() => {
+                    startDestruction();
+                }, 1000);
+            }
         }, 150);
     };
 

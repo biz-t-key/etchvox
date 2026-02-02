@@ -426,6 +426,7 @@ export default function ResultPage() {
                                         result.spyMetadata!
                                     )}
                                     onBurn={handleSpyBurn}
+                                    autoBurn={!result.researchConsentAgreed}
                                 />
                                 <div className="mt-12 flex justify-center">
                                     <button
