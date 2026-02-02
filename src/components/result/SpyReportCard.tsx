@@ -11,6 +11,7 @@ interface SpyReportCardProps {
     };
     reportMessage: string;
     score: number;
+    onBurn?: () => void;
 }
 
 const RESULT_CONFIG: Record<string, { color: string, count: number }> = {
@@ -29,12 +30,19 @@ interface InkDrop {
     delay: number;
 }
 
-const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, reportMessage, score }) => {
+const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, reportMessage, score, onBurn }) => {
     const [displayedMessage, setDisplayedMessage] = useState('');
     const [isTyping, setIsTyping] = useState(true);
     const [shouldSlam, setShouldSlam] = useState(false);
     const [inkDrops, setInkDrops] = useState<InkDrop[]>([]);
     const [isShaking, setIsShaking] = useState(false);
+
+    // Self-Destruct States
+    const [isBurning, setIsBurning] = useState(false);
+    const [countdown, setCountdown] = useState(5.00);
+    const [isGlitching, setIsGlitching] = useState(false);
+    const [isScrambling, setIsScrambling] = useState(false);
+    const [isPurged, setIsPurged] = useState(false);
 
     const config = RESULT_CONFIG[typeCode] || RESULT_CONFIG.REJT;
 
@@ -52,8 +60,31 @@ const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, re
         return () => clearInterval(timer);
     }, [reportMessage]);
 
+    // Handle Countdown and Glitch logic
+    useEffect(() => {
+        if (!isBurning) return;
+
+        const interval = setInterval(() => {
+            setCountdown(prev => {
+                const next = Math.max(0, prev - 0.05);
+
+                // Reveal Glitch at < 3s
+                if (next < 3.00 && !isGlitching) setIsGlitching(true);
+                // Reveal Scrambling at < 1.5s
+                if (next < 1.50 && !isScrambling) setIsScrambling(true);
+
+                if (next <= 0) {
+                    clearInterval(interval);
+                    triggerPurge();
+                }
+                return next;
+            });
+        }, 50);
+
+        return () => clearInterval(interval);
+    }, [isBurning, isGlitching, isScrambling]);
+
     const triggerSlam = () => {
-        // Generate ink drops
         const drops: InkDrop[] = [];
         for (let i = 0; i < config.count; i++) {
             const angle = Math.random() * Math.PI * 2;
@@ -69,12 +100,26 @@ const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, re
         }
         setInkDrops(drops);
 
-        //slam timing
         setTimeout(() => {
             setShouldSlam(true);
             setIsShaking(true);
             setTimeout(() => setIsShaking(false), 200);
         }, 150);
+    };
+
+    const triggerPurge = () => {
+        setIsPurged(true);
+        if (onBurn) onBurn();
+    };
+
+    const startDestruction = () => {
+        setIsBurning(true);
+    };
+
+    const scrambleText = (text: string) => {
+        if (!isScrambling) return text;
+        const chars = "█▓▒░$#@%&?!<>";
+        return text.split('').map(() => chars[Math.floor(Math.random() * chars.length)]).join('');
     };
 
     const getStampUrl = () => {
@@ -87,13 +132,15 @@ const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, re
         }
     };
 
+    if (isPurged) return null;
+
     return (
-        <div className={`report-card font-mono text-left max-w-md mx-auto relative overflow-hidden bg-white p-8 border-2 border-zinc-900 shadow-2xl ${isShaking ? 'shake' : ''}`}>
+        <div className={`report-card font-mono text-left max-w-md mx-auto relative overflow-hidden bg-white p-8 border-2 border-zinc-900 shadow-2xl ${isShaking ? 'shake' : ''} ${isGlitching ? 'glitch-active' : ''}`}>
             {/* Paper Texture Overlay */}
             <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/cardboard-flat.png')]" />
 
             {/* SILHOUETTE - Dossier Style */}
-            <div className="absolute right-0 bottom-0 w-64 h-64 opacity-[0.05] pointer-events-none z-0 transform translate-x-10 translate-y-10">
+            <div className={`absolute right-0 bottom-0 w-64 h-64 opacity-[0.05] pointer-events-none z-0 transform translate-x-10 translate-y-10 ${isGlitching ? 'glitch-active' : ''}`}>
                 <img src="/assets/silhouettes/silhouette_hat_man.png" alt="" className="w-full h-full object-contain" />
             </div>
 
@@ -104,19 +151,27 @@ const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, re
 
             <div className="meta-grid grid grid-cols-[80px_1fr] gap-2 text-xs mb-8 relative z-10">
                 <span className="label text-zinc-500 uppercase">STATUS:</span>
-                <span className="value text-red-700 font-bold uppercase">{isTyping ? 'DECRYPTING...' : 'CLASSIFIED'}</span>
+                <span className="value text-red-700 font-bold uppercase">
+                    {isScrambling ? scrambleText('CLASSIFIED') : (isTyping ? 'DECRYPTING...' : 'CLASSIFIED')}
+                </span>
 
-                <span className="label text-zinc-500 uppercase">ORIGIN:</span>
-                <span className="value text-zinc-900 uppercase font-bold">{spyMetadata.origin.replace('_', ' ')}</span>
+                <span className="label text-zinc-500 uppercase">SUBJECT:</span>
+                <span className="value text-zinc-900 uppercase font-bold">
+                    {isScrambling ? scrambleText(spyMetadata.origin) : spyMetadata.origin.replace('_', ' ')}
+                </span>
 
                 <span className="label text-zinc-500 uppercase">SECTOR:</span>
-                <span className="value text-zinc-900 uppercase font-bold">{spyMetadata.target.replace('_', ' ')}</span>
+                <span className="value text-zinc-900 uppercase font-bold">
+                    {isScrambling ? scrambleText(spyMetadata.target) : spyMetadata.target.replace('_', ' ')}
+                </span>
 
                 <span className="label text-zinc-500 uppercase">AUDIT:</span>
-                <span className="value text-zinc-700 uppercase">{score}% MATCH</span>
+                <span className="value text-zinc-700 uppercase">
+                    {isScrambling ? scrambleText(score.toString()) : `${score}% MATCH`}
+                </span>
             </div>
 
-            <div className="stamp-layer absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
+            <div className={`stamp-layer absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden ${isGlitching ? 'glitch-active' : ''}`}>
                 {shouldSlam && (
                     <img
                         src={getStampUrl()}
@@ -147,14 +202,31 @@ const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, re
             </div>
 
             <div className="message-box border-t border-dashed border-zinc-300 pt-6 min-h-[140px] text-sm leading-relaxed text-zinc-800 relative z-10">
-                <span className="whitespace-pre-wrap">{displayedMessage}</span>
+                <span className="whitespace-pre-wrap">{isScrambling ? scrambleText(displayedMessage) : displayedMessage}</span>
                 {isTyping && <span className="cursor inline-block w-2 h-4 bg-zinc-800 ml-1 animate-pulse" />}
             </div>
 
+            {/* BURN CONTROL */}
+            {!isBurning ? (
+                <div className="mt-8 flex justify-end relative z-20">
+                    <button
+                        onClick={startDestruction}
+                        className="bg-black text-white text-[10px] font-black px-4 py-2 rounded uppercase tracking-[0.2em] hover:bg-red-700 transition-colors shadow-lg"
+                    >
+                        [ BURN RECORD ]
+                    </button>
+                </div>
+            ) : (
+                <div className="mt-8 text-right text-red-700 font-black text-xs animate-pulse tracking-widest z-20 relative">
+                    AUTO-PURGE IN: {countdown.toFixed(2)}s
+                </div>
+            )}
+
             <style jsx>{`
                 .report-card {
-                    background-color: #f4f4f5; /* Off-white paper */
+                    background-color: #f4f4f5;
                     box-shadow: 0 20px 50px rgba(0,0,0,0.3), inset 0 0 100px rgba(0,0,0,0.05);
+                    transition: transform 0.2s ease-out;
                 }
                 .shake {
                     animation: shake 0.2s cubic-bezier(.36,.07,.19,.97) both;
@@ -167,6 +239,9 @@ const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, re
                 .ink-drop {
                     opacity: 0;
                     animation: splash var(--duration) ease-out var(--delay) forwards;
+                }
+                .glitch-active {
+                    animation: rgb-split 0.1s infinite linear;
                 }
                 @keyframes slam {
                     0% { transform: scale(4) rotate(20deg); opacity: 0; }
@@ -181,6 +256,13 @@ const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, re
                     20%, 80% { transform: translate3d(4px, -4px, 0); }
                     30%, 50%, 70% { transform: translate3d(-6px, 6px, 0); }
                     40%, 60% { transform: translate3d(6px, -6px, 0); }
+                }
+                @keyframes rgb-split {
+                    0% { text-shadow: 2px 0 #ef4444, -2px 0 #3b82f6; transform: translate(1px, 1px); }
+                    25% { text-shadow: -2px 0 #ef4444, 2px 0 #3b82f6; transform: translate(-1px, -1px); }
+                    50% { text-shadow: 1px 0 #ef4444, -1px 0 #3b82f6; transform: translate(-2px, 1px); }
+                    75% { text-shadow: -1px 0 #ef4444, 1px 0 #3b82f6; transform: translate(2px, -1px); }
+                    100% { text-shadow: 2px 0 #ef4444, -2px 0 #3b82f6; transform: translate(0, 0); }
                 }
             `}</style>
         </div>

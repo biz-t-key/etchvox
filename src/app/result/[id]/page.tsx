@@ -50,6 +50,7 @@ export default function ResultPage() {
     });
 
     const [showOTO, setShowOTO] = useState(false);
+    const [isPurged, setIsPurged] = useState(false);
 
     const isSpyMode = result?.typeCode === 'HIRED' || result?.typeCode === 'SUSP' || result?.typeCode === 'REJT' || result?.typeCode === 'BURN' || !!result?.spyMetadata;
 
@@ -235,10 +236,44 @@ export default function ResultPage() {
         setProcessingPayment(false);
     };
 
+    const handleSpyBurn = async () => {
+        try {
+            await fetch('/api/results/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ resultId })
+            });
+            setIsPurged(true);
+        } catch (err) {
+            console.error("Failed to purge spy data:", err);
+            setIsPurged(true);
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-black">
                 <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+        );
+    }
+
+    if (isPurged) {
+        return (
+            <div className="min-h-screen bg-black flex flex-col items-center justify-center p-8 font-mono">
+                <div className="max-w-md w-full">
+                    <div className="text-white text-sm md:text-base mb-12 border-l-4 border-red-600 pl-6 space-y-2 opacity-80">
+                        <p className="tracking-widest animate-pulse">&gt; DATA PURGED.</p>
+                        <p className="tracking-widest animate-pulse delay-75">&gt; EVIDENCE DESTROYED.</p>
+                        <p className="tracking-widest animate-pulse delay-150">&gt; CONNECTION TERMINATED.</p>
+                    </div>
+                    <button
+                        onClick={() => window.location.href = '/'}
+                        className="w-full border border-zinc-800 text-zinc-600 hover:border-cyan-500 hover:text-cyan-500 py-4 rounded transition-all uppercase text-xs tracking-[0.3em]"
+                    >
+                        START NEW MISSION
+                    </button>
+                </div>
             </div>
         );
     }
@@ -390,6 +425,7 @@ export default function ResultPage() {
                                         result.spyAnalysis ? { stamp: result.typeCode, ...result.spyAnalysis } : { stamp: result.typeCode },
                                         result.spyMetadata!
                                     )}
+                                    onBurn={handleSpyBurn}
                                 />
                                 <div className="mt-12 flex justify-center">
                                     <button
