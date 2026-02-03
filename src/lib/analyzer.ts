@@ -145,6 +145,13 @@ export class VoiceAnalyzer {
         }
     }
 
+    /**
+     * Get enhanced 30-dimensional bio-acoustic vector for Voice Mirror
+     * [0-4] Pitch Dynamics: F0 Mean, Std, Min, Max, Range
+     * [5-9] Quality: Jitter (Local, Abs), Shimmer (Local, dB), HNR
+     * [10-24] Resonance: Spectral features
+     * [25-29] Temporal: Speech Rate, Pause Duration, V/UV Ratio
+     */
     get30DVector(): number[] {
         const validPitch = this.pitchSamples.filter(p => p > 0);
         const validVol = this.volumeSamples.filter(v => v > 0);
@@ -154,25 +161,176 @@ export class VoiceAnalyzer {
         const validFlatness = this.flatnessSamples.filter(f => f > 0);
 
         const vector = new Array(30).fill(0);
-        vector[0] = Math.min(1, (validPitch.reduce((a, b) => a + b, 0) / (validPitch.length || 1)) / 500);
-        vector[1] = Math.min(1, (validVol.reduce((a, b) => a + b, 0) / (validVol.length || 1)));
-        vector[2] = Math.min(1, (validCentroid.reduce((a, b) => a + b, 0) / (validCentroid.length || 1)) / 5000);
-        vector[3] = Math.min(1, (validZcr.reduce((a, b) => a + b, 0) / (validZcr.length || 1)) / 1); // zcr is 0-1
-        vector[4] = Math.min(1, (validRolloff.reduce((a, b) => a + b, 0) / (validRolloff.length || 1)) / 10000);
-        vector[5] = Math.min(1, (validFlatness.reduce((a, b) => a + b, 0) / (validFlatness.length || 1)));
 
-        for (let i = 6; i < 15; i++) {
-            vector[i] = validPitch[i] ? Math.min(1, validPitch[i] / 500) : 0.5;
+        // [0-4] Pitch Dynamics (F0)
+        if (validPitch.length > 0) {
+            const pitchMean = validPitch.reduce((a, b) => a + b, 0) / validPitch.length;
+            const pitchStd = this.calculateStandardDeviation(validPitch);
+            const pitchMin = Math.min(...validPitch);
+            const pitchMax = Math.max(...validPitch);
+            const pitchRange = pitchMax - pitchMin;
+
+            vector[0] = Math.min(1, pitchMean / 300); // Normalize by typical max (300 Hz)
+            vector[1] = Math.min(1, pitchStd / 50);   // Std typically 0-50 Hz
+            vector[2] = Math.min(1, pitchMin / 300);
+            vector[3] = Math.min(1, pitchMax / 300);
+            vector[4] = Math.min(1, pitchRange / 200);
         }
 
-        const pitchVar = this.calculateStandardDeviation(validPitch);
-        const volVar = this.calculateStandardDeviation(validVol);
-        for (let i = 15; i < 30; i++) {
-            const noise = Math.sin(i * 1.5) * 0.005;
-            vector[i] = Math.min(1, Math.max(0, (pitchVar / 150) + (volVar * 3) + noise));
+        // [5-9] Quality Metrics
+        // Jitter (pitch perturbation) - approximated from pitch variance
+        const jitter = validPitch.length > 1 ? this.calculateJitter(validPitch) : 0.01;
+        const jitterAbs = jitter * 1000; // Convert to ms-scale
+
+        // Shimmer (amplitude perturbation) - approximated from volume variance
+        const shimmer = validVol.length > 1 ? this.calculateShimmer(validVol) : 0.05;
+        const shimmerDb = 20 * Math.log10(shimmer + 0.01); // Convert to dB
+
+        // HNR (Harmonics-to-Noise Ratio) - using SNR as proxy
+        const hnr = this.snrSamples.length > 0
+            ? this.snrSamples.reduce((a, b) => a + b, 0) / this.snrSamples.length
+            : 15;
+
+        vector[5] = Math.min(1, jitter / 0.05);           // Jitter Local (0-5%)
+        vector[6] = Math.min(1, jitterAbs / 50);          // Jitter Absolute (ms)
+        vector[7] = Math.min(1, shimmer / 0.2);           // Shimmer Local (0-20%)
+        vector[8] = Math.min(1, (shimmerDb + 20) / 40);   // Shimmer dB (-20 to 20)
+        vector[9] = Math.min(1, hnr / 30);                // HNR (0-30 dB)
+
+        // [10-24] Resonance & Spectral Features
+        // Simplified formants (F1, F2, F3) - estimated from spectral centroid and rolloff
+        const centroidMean = validCentroid.length > 0
+            ? validCentroid.reduce((a, b) => a + b, 0) / validCentroid.length
+            : 2000;
+        const rolloffMean = validRolloff.length > 0
+            ? validRolloff.reduce((a, b) => a + b, 0) / validRolloff.length
+            : 5000;
+
+        // Formant approximations (proper formant extraction requires LPC, which is complex)
+        const f1Approx = Math.min(1000, centroidMean * 0.3);  // F1 typically 300-1000 Hz
+        const f2Approx = Math.min(3000, centroidMean * 0.8);  // F2 typically 800-3000 Hz
+        const f3Approx = Math.min(5000, rolloffMean * 0.6);   // F3 typically 2000-5000 Hz
+
+        vector[10] = Math.min(1, f1Approx / 1000);        // F1 Center
+        vector[11] = 0.2;                                  // F1 Bandwidth (placeholder)
+        vector[12] = Math.min(1, f2Approx / 3000);        // F2 Center
+        vector[13] = 0.3;                                  // F2 Bandwidth (placeholder)
+        vector[14] = Math.min(1, f3Approx / 5000);        // F3 Center
+        vector[15] = 0.4;                                  // F3 Bandwidth (placeholder)
+
+        // Spectral features
+        vector[16] = Math.min(1, centroidMean / 5000);    // Spectral Centroid
+        vector[17] = Math.min(1, rolloffMean / 10000);    // Spectral Rolloff
+
+        // Spectral Flux (frame-to-frame change)
+        const spectralFlux = this.calculateSpectralFlux(validCentroid);
+        vector[18] = Math.min(1, spectralFlux / 500);
+
+        // Spectral Entropy (using flatness as proxy)
+        const flatnessMean = validFlatness.length > 0
+            ? validFlatness.reduce((a, b) => a + b, 0) / validFlatness.length
+            : 0.5;
+        vector[19] = flatnessMean; // Already 0-1
+
+        // Zero Crossing Rate
+        const zcrMean = validZcr.length > 0
+            ? validZcr.reduce((a, b) => a + b, 0) / validZcr.length
+            : 0.5;
+        vector[20] = zcrMean; // Already 0-1
+
+        // MFCC-based energy features (using first 4 MFCC components)
+        if (this.mfccSamples.length > 0) {
+            for (let i = 0; i < 4; i++) {
+                const dimValues = this.mfccSamples.map(v => v[i] || 0);
+                const mean = dimValues.reduce((a, b) => a + b, 0) / dimValues.length;
+                vector[21 + i] = Math.min(1, Math.abs(mean) / 20); // Normalize MFCC
+            }
+        } else {
+            vector[21] = vector[22] = vector[23] = vector[24] = 0.5;
         }
+
+        // [25-29] Temporal Features
+        const totalDuration = this.timestampSamples.length > 1
+            ? (this.timestampSamples[this.timestampSamples.length - 1] - this.timestampSamples[0]) / 1000
+            : 10;
+
+        // Speech Rate (syllables/sec approximation from volume peaks)
+        const speechRate = this.estimateSpeed() * 10; // Scale to syllables/sec
+        vector[25] = Math.min(1, speechRate / 10);
+
+        // Pause Detection
+        let pauseCount = 0;
+        let totalPauseDuration = 0;
+        for (let i = 1; i < this.timestampSamples.length; i++) {
+            const gap = this.timestampSamples[i] - this.timestampSamples[i - 1];
+            if (gap > 500) { // 500ms threshold for pause
+                pauseCount++;
+                totalPauseDuration += gap;
+            }
+        }
+
+        const avgPauseDuration = pauseCount > 0 ? totalPauseDuration / pauseCount / 1000 : 0;
+        vector[26] = Math.min(1, avgPauseDuration / 2); // Normalize by 2 seconds
+
+        // Voiced/Unvoiced Ratio
+        const voicedFrames = validPitch.length;
+        const totalFrames = this.pitchSamples.length || 1;
+        const voicedRatio = voicedFrames / totalFrames;
+        vector[27] = voicedRatio;
+
+        // Additional temporal stability metrics
+        const volStd = this.calculateStandardDeviation(validVol);
+        vector[28] = Math.min(1, volStd / 0.1); // Volume stability
+
+        const pitchStability = validPitch.length > 1 ? this.calculateStandardDeviation(validPitch) : 10;
+        vector[29] = Math.min(1, pitchStability / 50); // Pitch stability
+
         return vector;
     }
+
+    // Helper: Calculate Jitter (pitch period perturbation)
+    private calculateJitter(pitchSamples: number[]): number {
+        if (pitchSamples.length < 2) return 0.01;
+
+        let sum = 0;
+        for (let i = 1; i < pitchSamples.length; i++) {
+            const diff = Math.abs(pitchSamples[i] - pitchSamples[i - 1]);
+            sum += diff;
+        }
+        const avgAbsDiff = sum / (pitchSamples.length - 1);
+        const avgPitch = pitchSamples.reduce((a, b) => a + b, 0) / pitchSamples.length;
+
+        return avgAbsDiff / (avgPitch || 1);
+    }
+
+    // Helper: Calculate Shimmer (amplitude perturbation)
+    private calculateShimmer(volumeSamples: number[]): number {
+        if (volumeSamples.length < 2) return 0.05;
+
+        let sum = 0;
+        for (let i = 1; i < volumeSamples.length; i++) {
+            const diff = Math.abs(volumeSamples[i] - volumeSamples[i - 1]);
+            sum += diff;
+        }
+        const avgAbsDiff = sum / (volumeSamples.length - 1);
+        const avgVol = volumeSamples.reduce((a, b) => a + b, 0) / volumeSamples.length;
+
+        return avgAbsDiff / (avgVol || 0.01);
+    }
+
+    // Helper: Calculate Spectral Flux (frame-to-frame spectral change)
+    private calculateSpectralFlux(centroidSamples: number[]): number {
+        if (centroidSamples.length < 2) return 0;
+
+        let sum = 0;
+        for (let i = 1; i < centroidSamples.length; i++) {
+            const diff = Math.abs(centroidSamples[i] - centroidSamples[i - 1]);
+            sum += diff;
+        }
+
+        return sum / (centroidSamples.length - 1);
+    }
+
 
     // Calculate final analysis result
     analyze(mode: string = 'solo', spyMetadata: any = null): AnalysisResult {
