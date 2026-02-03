@@ -1,0 +1,51 @@
+﻿// Appending Thriller and Poetic scenarios to mirrorContent.ts
+
+const THRILLER_SCENARIOS = 
+    // ===== THRILLER =====
+    {
+        id: 'acheron_trench',
+        title: 'Acheron Trench',
+        genre: 'thriller',
+        tone_instruction: 'Maintain a gritty, claustrophobic delivery. Focus on physical strain, cold, and the rhythmic compression of the deep-sea environment. Use short, punchy sentences.',
+        days: [/* ... 7 days from the Acheron data ... */]
+    },
+    {
+        id: 'ghost_ship',
+        title: 'The Ghost Ship',
+        genre: 'thriller',
+        tone_instruction: 'Start with confident, hard-boiled cynicism. Gradually shift into panicked paranoia, ending in a haunting, rhythmic acceptance.',
+        days: [/* ... 7 days from Ghost Ship data ... */]
+    },
+    {
+        id: 'the_seed',
+        title: 'The Seed',
+        genre: 'thriller',
+        tone_instruction: 'Adopt a gravelly, battle-worn voice. The transition should move from cold professionalism to a raw, heartbreaking tenderness.',
+        days: [/* ... 7 days from The Seed data ... */]
+    }
+];
+
+const POETIC_SCENARIOS = 
+    // ===== POETIC =====
+    {
+        id: 'winter_cabin',
+        title: 'Winter Cabin',
+        genre: 'poetic',
+        tone_instruction: 'A fragile, breathy whisper. Lean into the sibilance of s and th sounds. Keep the pace slow.',
+        days: [/* ... 7 days from Winter Cabin data ... */]
+    },
+    {
+        id: 'archive_1994',
+        title: 'Archive 1994',
+        genre: 'poetic',
+        tone_instruction: 'Gritty, nostalgic, and slightly airy. Emphasize the crackle in the throat.',
+        days: [/* ... 7 days from Archive 1994 data ... */]
+    },
+    {
+        id: 'cloud_train',
+        title: 'Cloud Train',
+        genre: 'poetic',
+        tone_instruction: 'Weightless and ethereal. Use a soft, breathy delivery that trails off.',
+        days: [/* ... 7 days from Cloud Train data ... */]
+    }
+;

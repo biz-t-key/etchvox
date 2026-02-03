@@ -8,8 +8,14 @@ import { MIRROR_ORACLE_SYSTEM_PROMPT } from '@/lib/mirrorPrompt';
 
 interface MirrorDashboardProps {
     vector: number[];
-    onAnnotate?: (tag: string) => void;
-    onClose?: () => void;
+    onClose: () => void;
+    context?: {
+        genre: string;
+        scenario: string;
+        mood: string;
+        dayIndex: number;
+        progressLevel: string;
+    };
 }
 
 interface OracleResponse {
@@ -25,7 +31,7 @@ interface OracleResponse {
     suggested_tags: string[];
 }
 
-export default function MirrorDashboard({ vector, onAnnotate, onClose }: MirrorDashboardProps) {
+export default function MirrorDashboard({ vector, onClose, context }: MirrorDashboardProps) {
     const [zScoreResult, setZScoreResult] = useState<ZScoreResult | null>(null);
     const [oracleResponse, setOracleResponse] = useState<OracleResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -104,10 +110,6 @@ export default function MirrorDashboard({ vector, onAnnotate, onClose }: MirrorD
             },
             annotationTag: tag
         });
-
-        if (onAnnotate) {
-            onAnnotate(tag);
-        }
     }
 
     if (isLoading) {
@@ -155,6 +157,17 @@ export default function MirrorDashboard({ vector, onAnnotate, onClose }: MirrorD
                         Voice Mirror
                     </h1>
                     <p className="text-gray-400 text-sm font-mono">Bio-Acoustic Analysis • {new Date().toLocaleDateString()}</p>
+                    {context && (
+                        <div className="flex items-center justify-center gap-4 text-xs text-gray-500 font-mono">
+                            <span>Genre: {context.genre}</span>
+                            <span>•</span>
+                            <span>Mood: {context.mood.toUpperCase()}</span>
+                            <span>•</span>
+                            <span>Day {context.dayIndex}/7</span>
+                            <span>•</span>
+                            <span>Level: {context.progressLevel}</span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Alert Level Banner */}

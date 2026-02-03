@@ -3,10 +3,20 @@
 import { useState, useRef, useEffect } from 'react';
 import { VoiceAnalyzer } from '@/lib/analyzer';
 import { initializeAuth, loadUserHash } from '@/lib/authService';
+import { getScenariosByGenre, getReadingText, getProgressLevel, type Genre, type Mood, type Scenario } from '@/lib/mirrorContent';
+import { saveVoiceLog, loadVoiceLogHistory } from '@/lib/mirrorEngine';
 import MirrorDashboard from '@/components/mirror/MirrorDashboard';
 import Link from 'next/link';
 
-type Phase = 'auth' | 'ready' | 'recording' | 'analyzing' | 'result';
+type Phase = 'auth' | 'calibration' | 'genre' | 'mood' | 'reading' | 'analyzing' | 'result';
+
+const CALIBRATION_TEXT = 'Hello, world.';
+const GENRE_LOCK_DAYS = 7;
+
+interface GenreSelection {
+    genre: Genre;
+    timestamp: number;
+}
 
 export default function MirrorPage() {
     const [phase, setPhase] = useState<Phase>('auth');
@@ -15,8 +25,21 @@ export default function MirrorPage() {
     const [isNewUser, setIsNewUser] = useState(false);
     const [showMnemonic, setShowMnemonic] = useState(false);
 
+    // Genre & Scenario state
+    const [selectedGenre, setSelectedGenre] = useState<Genre | null>(null);
+    const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
+    const [lastGenreChange, setLastGenreChange] = useState<number | null>(null);
+    const [canChangeGenre, setCanChangeGenre] = useState(true);
+
+    // Mood & Reading state
+    const [selectedMood, setSelectedMood] = useState<Mood | null>(null);
+    const [currentDayIndex, setCurrentDayIndex] = useState(1);
+    const [readingText, setReadingText] = useState('');
+
+    // Recording state
     const [timeLeft, setTimeLeft] = useState(5);
     const [vector, setVector] = useState<number[] | null>(null);
+    const [progressLevel, setProgressLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner');
 
     const analyzerRef = useRef<VoiceAnalyzer | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -25,6 +48,8 @@ export default function MirrorPage() {
 
     useEffect(() => {
         checkAuth();
+        loadGenrePreference();
+        calculateProgress();
     }, []);
 
     async function checkAuth() {
@@ -37,16 +62,62 @@ export default function MirrorPage() {
             if (auth.isNew) {
                 setShowMnemonic(true);
             } else {
-                setPhase('ready');
+                setPhase('calibration');
             }
         } catch (error) {
             console.error('Auth initialization failed:', error);
         }
     }
 
-    async function startRecording() {
+    function loadGenrePreference() {
+        if (typeof window === 'undefined') return;
+
         try {
-            setPhase('recording');
+            const saved = localStorage.getItem('mirror_genre_selection');
+            if (saved) {
+                const data: GenreSelection = JSON.parse(saved);
+                const daysSinceChange = (Date.now() - data.timestamp) / (1000 * 60 * 60 * 24);
+
+                if (daysSinceChange < GENRE_LOCK_DAYS) {
+                    setSelectedGenre(data.genre);
+                    setLastGenreChange(data.timestamp);
+                    setCanChangeGenre(false);
+                } else {
+                    setCanChangeGenre(true);
+                }
+            }
+        } catch (e) {
+            console.error('Failed to load genre preference:', e);
+        }
+    }
+
+    function calculateProgress() {
+        const history = loadVoiceLogHistory();
+        const level = getProgressLevel(history.length);
+        setProgressLevel(level);
+
+        // Calculate current day in the 7-day cycle
+        const completedDays = history.length % 7;
+        setCurrentDayIndex(completedDays + 1);
+    }
+
+    function saveGenreSelection(genre: Genre) {
+        if (typeof window === 'undefined') return;
+
+        const data: GenreSelection = {
+            genre,
+            timestamp: Date.now()
+        };
+
+        localStorage.setItem('mirror_genre_selection', JSON.stringify(data));
+        setSelectedGenre(genre);
+        setLastGenreChange(data.timestamp);
+        setCanChangeGenre(false);
+    }
+
+    async function startRecording(isCalibration: boolean) {
+        try {
+            setPhase(isCalibration ? 'calibration' : 'reading');
 
             const stream = await navigator.mediaDevices.getUserMedia({
                 audio: {
@@ -66,7 +137,7 @@ export default function MirrorPage() {
 
             // Start collecting samples
             const collectLoop = () => {
-                if (analyzerRef.current && phase === 'recording') {
+                if (analyzerRef.current) {
                     analyzerRef.current.collectSample();
                 }
                 animationFrameRef.current = requestAnimationFrame(collectLoop);
@@ -78,7 +149,7 @@ export default function MirrorPage() {
             timerRef.current = setInterval(() => {
                 setTimeLeft((prev) => {
                     if (prev <= 1) {
-                        finishRecording();
+                        finishRecording(isCalibration);
                         return 0;
                     }
                     return prev - 1;
@@ -89,7 +160,7 @@ export default function MirrorPage() {
         }
     }
 
-    function finishRecording() {
+    function finishRecording(isCalibration: boolean) {
         if (timerRef.current) {
             clearInterval(timerRef.current);
         }
@@ -110,19 +181,59 @@ export default function MirrorPage() {
             if (analyzerRef.current) {
                 const v = analyzerRef.current.get30DVector();
                 setVector(v);
-                setPhase('result');
+
+                if (isCalibration) {
+                    // After calibration, check if genre is already selected
+                    if (selectedGenre && !canChangeGenre) {
+                        setPhase('mood');
+                    } else {
+                        setPhase('genre');
+                    }
+                } else {
+                    setPhase('result');
+                }
             }
         }, 1500);
     }
 
+    function handleGenreSelect(genre: Genre) {
+        saveGenreSelection(genre);
+        const scenarios = getScenariosByGenre(genre);
+        if (scenarios.length > 0) {
+            setSelectedScenario(scenarios[0]); // For MVP, select first scenario of genre
+        }
+        setPhase('mood');
+    }
+
+    function handleMoodSelect(mood: Mood) {
+        setSelectedMood(mood);
+
+        if (selectedScenario) {
+            const text = getReadingText(selectedScenario.id, currentDayIndex, mood);
+            setReadingText(text);
+        }
+
+        // Reset analyzer for main reading
+        if (analyzerRef.current) {
+            analyzerRef.current.reset();
+        }
+
+        setTimeout(() => startRecording(false), 500);
+    }
+
     function handleDone() {
-        setPhase('ready');
+        setPhase('calibration');
         setVector(null);
+        setSelectedMood(null);
+        setReadingText('');
 
         // Reset analyzer
         if (analyzerRef.current) {
             analyzerRef.current.reset();
         }
+
+        // Recalculate progress
+        calculateProgress();
     }
 
     // Auth phase
@@ -143,7 +254,7 @@ export default function MirrorPage() {
                                 <h2 className="text-red-400 font-bold text-sm uppercase tracking-wider">⚠️ Critical: Save Your Recovery Phrase</h2>
                                 <p className="text-gray-300 text-sm leading-relaxed">
                                     This 12-word phrase is your ONLY way to access your data on a new device.
-                                    Take a screenshot or write it down. We cannot recover it for you.
+                                    Take a screenshot or write it down.
                                 </p>
                             </div>
 
@@ -161,7 +272,7 @@ export default function MirrorPage() {
                             <button
                                 onClick={() => {
                                     setShowMnemonic(false);
-                                    setPhase('ready');
+                                    setPhase('calibration');
                                 }}
                                 className="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold rounded-xl hover:shadow-[0_0_20px_rgba(34,211,238,0.5)] transition-all"
                             >
@@ -180,8 +291,20 @@ export default function MirrorPage() {
     }
 
     // Result phase
-    if (phase === 'result' && vector) {
-        return <MirrorDashboard vector={vector} onClose={handleDone} />;
+    if (phase === 'result' && vector && selectedMood) {
+        return (
+            <MirrorDashboard
+                vector={vector}
+                onClose={handleDone}
+                context={{
+                    genre: selectedGenre || 'philosophy',
+                    scenario: selectedScenario?.title || 'Unknown',
+                    mood: selectedMood,
+                    dayIndex: currentDayIndex,
+                    progressLevel
+                }}
+            />
+        );
     }
 
     // Analyzing phase
@@ -196,12 +319,24 @@ export default function MirrorPage() {
         );
     }
 
-    // Recording phase
-    if (phase === 'recording') {
+    // Recording phases (calibration or reading)
+    if (phase === 'calibration' || phase === 'reading') {
+        const isCalibration = phase === 'calibration';
+        const displayText = isCalibration ? CALIBRATION_TEXT : readingText;
+
         return (
             <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
-                <div className="text-center space-y-12">
-                    <h2 className="text-2xl font-bold text-white">Speak naturally for 5 seconds</h2>
+                <div className="max-w-2xl w-full text-center space-y-12">
+                    <div className="space-y-4">
+                        <h2 className="text-sm font-black uppercase tracking-widest text-cyan-400">
+                            {isCalibration ? '🎯 Calibration' : `📖 Day ${currentDayIndex} Reading`}
+                        </h2>
+                        <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10">
+                            <p className="text-2xl text-white leading-relaxed font-serif">
+                                {displayText}
+                            </p>
+                        </div>
+                    </div>
 
                     <div className="flex items-center justify-center">
                         <div className="relative w-32 h-32">
@@ -222,7 +357,91 @@ export default function MirrorPage() {
         );
     }
 
-    // Ready phase
+    // Genre selection phase
+    if (phase === 'genre') {
+        const genres: { id: Genre; name: string; icon: string; desc: string }[] = [
+            { id: 'philosophy', name: 'Philosophy', icon: '🏛️', desc: 'Stoic wisdom and resilience' },
+            { id: 'thriller', name: 'Thriller', icon: '🌊', desc: 'Survival and tension' },
+            { id: 'poetic', name: 'Poetic', icon: '🌙', desc: 'Ethereal and introspective' }
+        ];
+
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
+                <div className="max-w-3xl w-full space-y-12">
+                    <div className="text-center space-y-4">
+                        <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                            Select Your Reading Genre
+                        </h1>
+                        <p className="text-gray-400">This choice will be locked for 7 days</p>
+                        {progressLevel && (
+                            <p className="text-cyan-400 text-sm font-mono">Progress Level: {progressLevel.toUpperCase()}</p>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {genres.map((genre) => (
+                            <button
+                                key={genre.id}
+                                onClick={() => handleGenreSelect(genre.id)}
+                                className="group relative bg-white/5 backdrop-blur-sm hover:bg-white/10 border border-white/10 hover:border-cyan-500/50 rounded-2xl p-8 transition-all hover:shadow-[0_0_30px_rgba(34,211,238,0.3)]"
+                            >
+                                <div className="text-6xl mb-4">{genre.icon}</div>
+                                <h3 className="text-xl font-bold text-white mb-2">{genre.name}</h3>
+                                <p className="text-gray-400 text-sm">{genre.desc}</p>
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="text-center">
+                        <Link href="/" className="text-gray-500 hover:text-gray-300 text-sm transition">
+                            ← Back to Home
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Mood selection phase
+    if (phase === 'mood') {
+        const moods: { id: Mood; name: string; icon: string; desc: string }[] = [
+            { id: 'high', name: 'High Energy', icon: '⚡', desc: 'Intense, provocative' },
+            { id: 'mid', name: 'Balanced', icon: '⚖️', desc: 'Measured, steady' },
+            { id: 'low', name: 'Reflective', icon: '🌊', desc: 'Somber, contemplative' }
+        ];
+
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
+                <div className="max-w-2xl w-full space-y-12">
+                    <div className="text-center space-y-4">
+                        <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                            How Are You Feeling?
+                        </h1>
+                        <p className="text-gray-400">Select your current energy level</p>
+                        <p className="text-cyan-400 text-sm font-mono">Day {currentDayIndex}/7 • {selectedScenario?.title}</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4">
+                        {moods.map((mood) => (
+                            <button
+                                key={mood.id}
+                                onClick={() => handleMoodSelect(mood.id)}
+                                className="group relative bg-white/5 backdrop-blur-sm hover:bg-white/10 border border-white/10 hover:border-cyan-500/50 rounded-2xl p-6 transition-all hover:shadow-[0_0_30px_rgba(34,211,238,0.3)] flex items-center gap-6"
+                            >
+                                <div className="text-4xl">{mood.icon}</div>
+                                <div className="flex-1 text-left">
+                                    <h3 className="text-xl font-bold text-white">{mood.name}</h3>
+                                    <p className="text-gray-400 text-sm">{mood.desc}</p>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Calibration ready phase (default)
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
             <div className="max-w-2xl w-full space-y-12">
@@ -230,36 +449,40 @@ export default function MirrorPage() {
                     <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
                         Voice Mirror
                     </h1>
-                    <p className="text-gray-400 text-lg">Daily Bio-Acoustic Check-In</p>
+                    <p className="text-gray-400 text-lg">Daily Bio-Acoustic Reading Practice</p>
                     {userHash && (
                         <p className="text-gray-600 text-xs font-mono">ID: {userHash.slice(0, 8)}...{userHash.slice(-8)}</p>
                     )}
                 </div>
 
                 <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 space-y-6">
-                    <h2 className="text-sm font-black uppercase tracking-widest text-cyan-400">How It Works</h2>
-                    <ul className="space-y-3 text-gray-300">
+                    <h2 className="text-sm font-black uppercase tracking-widest text-cyan-400">Today's Flow</h2>
+                    <ol className="space-y-3 text-gray-300">
                         <li className="flex items-start gap-3">
                             <span className="text-cyan-400 font-bold">1.</span>
-                            <span>Record a 5-second voice sample</span>
+                            <span>Calibration: Read "Hello, world"</span>
                         </li>
                         <li className="flex items-start gap-3">
                             <span className="text-cyan-400 font-bold">2.</span>
-                            <span>Receive a bio-acoustic analysis from the Voice Oracle</span>
+                            <span>Select your mood (high/mid/low)</span>
                         </li>
                         <li className="flex items-start gap-3">
                             <span className="text-cyan-400 font-bold">3.</span>
-                            <span>Tag your state to build your personalized baseline</span>
+                            <span>Read aloud the selected text</span>
                         </li>
-                    </ul>
+                        <li className="flex items-start gap-3">
+                            <span className="text-cyan-400 font-bold">4.</span>
+                            <span>Receive Oracle analysis & tag your state</span>
+                        </li>
+                    </ol>
                 </div>
 
                 <button
-                    onClick={startRecording}
+                    onClick={() => startRecording(true)}
                     className="w-full py-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xl font-bold rounded-2xl hover:shadow-[0_0_30px_rgba(34,211,238,0.5)] transition-all"
                 >
                     <span className="mr-3">🎤</span>
-                    Start Mirror Session
+                    Start Calibration
                 </button>
 
                 <div className="text-center">
