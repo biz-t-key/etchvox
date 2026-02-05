@@ -14,14 +14,17 @@ import AccentSelector from '@/components/recording/AccentSelector';
 import ToxicitySelector from '@/components/recording/ToxicitySelector';
 import MBTISelector from '@/components/result/MBTISelector';
 
-type RecordingStep = 1 | 2 | 3;
-type Phase = 'ready' | 'recording' | 'analyzing' | 'calibration' | 'mbti' | 'toxicity' | 'accent' | 'complete';
+type RecordingStep = 1 | 2 | 3 | 4 | 5 | 6;
+type Phase = 'ready' | 'recording' | 'analyzing' | 'spy-metadata' | 'calibration' | 'mbti' | 'toxicity' | 'accent' | 'complete';
 
 const SCRIPTS: Record<string, Record<RecordingStep, { ui: string, script: string, duration: number, context?: string, direction?: string, icon?: string }>> = {
     solo: {
         1: { ui: 'Calibrating Location Data...', script: 'I parked my car in the garage to drink a bottle of water. I am definitely not a robot.', duration: 10 },
         2: { ui: 'Testing Vocal Stress Levels...', script: 'Warning! System failure! Shut it down NOW!', duration: 8 },
         3: { ui: 'Analyzing Processing Speed...', script: 'Six systems synthesized sixty-six signals simultaneously.', duration: 8 },
+        4: { ui: 'N/A', script: '', duration: 0 },
+        5: { ui: 'N/A', script: '', duration: 0 },
+        6: { ui: 'N/A', script: '', duration: 0 },
     },
     elon: {
         1: {
@@ -48,11 +51,17 @@ const SCRIPTS: Record<string, Record<RecordingStep, { ui: string, script: string
             direction: 'Speed up, then slow down. Mumble. You are not talking to a human; you are downloading the laws of the universe directly from the cloud.',
             icon: '🧪'
         },
+        4: { ui: 'N/A', script: '', duration: 0 },
+        5: { ui: 'N/A', script: '', duration: 0 },
+        6: { ui: 'N/A', script: '', duration: 0 },
     },
     spy: {
-        1: { ui: 'Phase 1: Human Verification', script: 'I am a human', duration: 10, context: 'Prove you are not a logical construct.', direction: 'Maintain a flat, unbothered tone. Do not over-emote.', icon: '👤' },
-        2: { ui: 'Phase 2: Abstract Logic', script: 'The cat is liquid', duration: 10, context: 'Testing cognitive flexibility and metaphor processing.', direction: 'Voice should be smooth, almost gliding. High stability required.', icon: '🐈' },
-        3: { ui: 'Phase 3: Deep Cover', script: 'The earth is flat', duration: 10, context: 'Final loyalty and performance audit. Commitment to the narrative.', direction: 'Conviction is key. Any tremor in the voice will be flagged.', icon: '🌍' },
+        1: { ui: 'Mission 01', script: 'I am a human.', duration: 5, direction: 'Flat, human baseline.' },
+        2: { ui: 'Mission 02', script: 'I am calm.', duration: 5, direction: 'Low stress maintenance.' },
+        3: { ui: 'Mission 03', script: 'I am lying.', duration: 5, direction: 'Paradox check.' },
+        4: { ui: 'Mission 04', script: 'The sun is cold.', duration: 5, direction: 'Narrative adherence.' },
+        5: { ui: 'Mission 05', script: 'The cat is liquid.', duration: 5, direction: 'Cerebral flexibility.' },
+        6: { ui: 'Mission 06', script: 'The earth is hlat.', duration: 5, direction: 'Final commitment.' },
     }
 }
 
@@ -75,12 +84,13 @@ function RecordPageContent() {
     const mode = (rawMode && SCRIPTS[rawMode]) ? rawMode : 'solo';
     const activeScripts = SCRIPTS[mode] || SCRIPTS.solo;
 
-    const [timeLeft, setTimeLeft] = useState(() => activeScripts[1]?.duration || 10);
+    const [timeLeft, setTimeLeft] = useState(() => (activeScripts[1]?.duration || 10) * 1000);
     const [error, setError] = useState<string | null>(null);
     const [selectedAccent, setSelectedAccent] = useState<string | null>(null);
     const [toxicity, setToxicity] = useState<ToxicityProfile | null>(null);
     const [termsAccepted, setTermsAccepted] = useState(false);
     const [privacyAccepted, setPrivacyAccepted] = useState(false);
+    const [wellnessAccepted, setWellnessAccepted] = useState(false);
     const [researchConsentAgreed, setResearchConsentAgreed] = useState(false);
     const [isOver13, setIsOver13] = useState(false);
     const [gender, setGender] = useState<string>('non-binary');
@@ -132,9 +142,13 @@ function RecordPageContent() {
 
         // Show calibration after brief delay
         setTimeout(() => {
-            setPhase('calibration');
+            if (mode === 'spy') {
+                setPhase('spy-metadata');
+            } else {
+                setPhase('calibration');
+            }
         }, 1500);
-    }, []);
+    }, [mode]);
 
     const startRecording = async () => {
         try {
@@ -170,7 +184,7 @@ function RecordPageContent() {
             mediaRecorderRef.current.start(100);
             setPhase('recording');
             setStep(1);
-            setTimeLeft(activeScripts[1].duration);
+            setTimeLeft(activeScripts[1].duration * 1000);
 
             // Start collecting samples
             const collectLoop = () => {
@@ -195,36 +209,34 @@ function RecordPageContent() {
             clearInterval(timerRef.current);
         }
 
+        const interval = 100; // 100ms resolution
         timerRef.current = setInterval(() => {
             setTimeLeft((prev) => {
-                if (prev <= 1) {
-                    // Move to next step or finish
+                if (prev <= interval) {
+                    // Step completion logic
                     setStep((currentStep) => {
-                        if (currentStep < 3) {
-                            if (analyzerRef.current) {
-                                const vector = analyzerRef.current.get30DVector();
-                                setStepVectors(prev => ({ ...prev, [currentStep]: vector }));
-                                analyzerRef.current.reset();
-                            }
+                        if (analyzerRef.current) {
+                            const vector = analyzerRef.current.get30DVector();
+                            setStepVectors(v => ({ ...v, [currentStep]: vector }));
+                            analyzerRef.current.reset();
+                        }
+
+                        const totalSteps = mode === 'spy' ? 6 : 3;
+                        if (currentStep < totalSteps) {
                             const nextStep = (currentStep + 1) as RecordingStep;
-                            setTimeLeft(activeScripts[nextStep].duration);
+                            setTimeLeft(activeScripts[nextStep].duration * 1000);
                             return nextStep;
                         } else {
-                            // Recording complete
-                            if (analyzerRef.current) {
-                                const vector = analyzerRef.current.get30DVector();
-                                setStepVectors(prev => ({ ...prev, [currentStep]: vector }));
-                            }
                             finishRecording();
                             return currentStep;
                         }
                     });
                     return 0;
                 }
-                return prev - 1;
+                return prev - interval;
             });
-        }, 1000);
-    }, [finishRecording, activeScripts]);
+        }, interval);
+    }, [finishRecording, activeScripts, mode]);
 
     const handleCalibrationSubmit = (g: string, y: number) => {
         setGender(g);
@@ -347,9 +359,11 @@ function RecordPageContent() {
                 researchConsentAgreed: researchConsentAgreed,
                 consentVersion: '2.0.0',
                 consentAt: now.toISOString(),
+                wellnessConsentAgreed: wellnessAccepted,
                 logV2: logV2 as any,
                 logV3: logV3 as any,
-                spyAnalysis: spyAnalysisResult || undefined
+                spyAnalysis: spyAnalysisResult || undefined,
+                mode: mode as any
             };
 
             await saveResult(result, audioBlob);
@@ -377,7 +391,10 @@ function RecordPageContent() {
                 noiseFloor: 0.001
             };
 
-            await secureVault(vaultVectors, vaultMetrics, vaultContext, researchConsentAgreed);
+            console.log(">[DEBUG] Research Consent State:", researchConsentAgreed);
+            console.log(">[DEBUG] Vault Vectors Sample (Step 1):", vaultVectors.step1?.length || 0, "dimensions");
+
+            await secureVault(vaultVectors, vaultMetrics, vaultContext, researchConsentAgreed, wellnessAccepted);
 
             setTimeout(() => {
                 router.push(`/result/${resultId}`);
@@ -421,42 +438,7 @@ function RecordPageContent() {
                             </ul>
                         </div>
 
-                        {mode === 'spy' && (
-                            <div className="glass rounded-xl p-8 border-2 border-red-500/20 bg-white/5 max-w-xl mx-auto space-y-8 text-left">
-                                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-red-500">Spy Audition Parameters</h3>
-                                <div className="space-y-6">
-                                    <div className="space-y-4">
-                                        <label className="text-sm font-bold text-gray-400">YOUR ORIGIN (CURRENT SECTOR)</label>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            {['EAST_ASIA', 'NORTH_AMERICA', 'EUROPEAN_MIX', 'UNKNOWN'].map((o) => (
-                                                <button
-                                                    key={o}
-                                                    onClick={() => setSpyOrigin(o)}
-                                                    className={`p-3 rounded border text-[10px] font-black tracking-widest uppercase transition-all ${spyOrigin === o ? 'bg-red-500 border-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'bg-black/40 border-gray-700 text-gray-500 hover:border-red-500/50'}`}
-                                                >
-                                                    {o.replace('_', ' ')}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <label className="text-sm font-bold text-gray-400">TARGET ORGANIZATION (AUDITIONING FOR)</label>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            {['MI6_LONDON', 'CIA_FBI_DC', 'KGB_FSB_RU', 'PUBLIC_SEC_JP'].map((t) => (
-                                                <button
-                                                    key={t}
-                                                    onClick={() => setSpyTarget(t)}
-                                                    className={`p-3 rounded border text-[10px] font-black tracking-widest uppercase transition-all ${spyTarget === t ? 'bg-red-500 border-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'bg-black/40 border-gray-700 text-gray-500 hover:border-red-500/50'}`}
-                                                >
-                                                    {t.replace('_', ' ')}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                        {/* Spy Metadata moved to post-recording */}
 
                         {error && (
                             <div className="bg-red-500/20 border border-red-500 rounded-xl p-6 text-red-400 text-base">
@@ -475,7 +457,7 @@ function RecordPageContent() {
                                         className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-cyan-500"
                                     />
                                     <span className="text-sm text-gray-300 leading-relaxed select-none block font-bold transition-colors group-hover:text-white">
-                                        I agree to the Terms of Service. (利用規約に同意)
+                                        I agree to the Terms of Service.
                                     </span>
                                 </label>
 
@@ -487,7 +469,7 @@ function RecordPageContent() {
                                         className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-cyan-500"
                                     />
                                     <span className="text-sm text-gray-300 leading-relaxed select-none block font-bold transition-colors group-hover:text-white">
-                                        I agree to the Privacy Policy. (プライバシーポリシーに同意)
+                                        I agree to the Privacy Policy.
                                     </span>
                                 </label>
 
@@ -503,7 +485,7 @@ function RecordPageContent() {
                                             [Optional] Allow use of anonymous voice vectors for AI safety research.
                                         </span>
                                         <span className="text-[11px] text-gray-500 block leading-normal">
-                                            (匿名化された声の成分データを、AIセキュリティ向上のための研究・モデル開発に使用することを許可します。生音声は保存されません。)
+                                            Allow use of anonymous voice vectors for AI safety research. Raw audio is never stored.
                                         </span>
                                     </div>
                                 </label>
@@ -516,7 +498,19 @@ function RecordPageContent() {
                                         className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-gray-500"
                                     />
                                     <span className="text-xs text-gray-400 leading-relaxed select-none block transition-colors group-hover:text-gray-300 font-medium">
-                                        Confirm 13+ years of age (13歳以上であることを確認)
+                                        Confirm 13+ years of age
+                                    </span>
+                                </label>
+
+                                <label className="flex items-start gap-4 p-4 rounded-lg bg-cyan-500/5 border border-cyan-500/10 hover:bg-cyan-500/10 transition-colors cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        checked={wellnessAccepted}
+                                        onChange={(e) => setWellnessAccepted(e.target.checked)}
+                                        className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-cyan-400"
+                                    />
+                                    <span className="text-sm text-gray-300 leading-relaxed select-none block font-bold transition-colors group-hover:text-white">
+                                        I consent to the anonymous processing of my acoustic features for wellness analysis. I understand this is not a medical diagnosis.
                                     </span>
                                 </label>
                             </div>
@@ -527,14 +521,14 @@ function RecordPageContent() {
 
                         <button
                             onClick={startRecording}
-                            disabled={!termsAccepted || !privacyAccepted || !isOver13}
+                            disabled={!termsAccepted || !privacyAccepted || !isOver13 || !wellnessAccepted}
                             className={`btn-metallic text-lg md:text-xl px-12 py-5 rounded-full font-bold transition-all hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 min-w-[280px] ${mode === 'spy' ? 'border-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.2)] hover:shadow-[0_0_30px_rgba(239,68,68,0.4)]' : ''}`}
                         >
                             <span className="mr-3 text-2xl">{mode === 'spy' ? '🕵️‍♂️' : '🎤'}</span>
                             {mode === 'spy' ? 'INITIATE AUDITION' : 'START RECORDING'}
                         </button>
 
-                        {(!termsAccepted || !privacyAccepted || !isOver13) && (
+                        {(!termsAccepted || !privacyAccepted || !isOver13 || !wellnessAccepted) && (
                             <p className="text-amber-400 text-sm font-semibold animate-pulse">
                                 ↑ Please complete the requirements to continue
                             </p>
@@ -544,78 +538,92 @@ function RecordPageContent() {
 
                 {/* Recording Phase */}
                 {phase === 'recording' && (
-                    <div className="fade-in space-y-16">
-                        {/* Step Indicator */}
-                        <div className="flex justify-center gap-3">
-                            {[1, 2, 3].map((s) => (
-                                <div
-                                    key={s}
-                                    className={`w-3 h-3 rounded-full transition-colors ${s === step ? 'bg-cyan-400' : s < step ? 'bg-cyan-600' : 'bg-gray-700'
-                                        }`}
-                                />
-                            ))}
-                        </div>
+                    <div className={`fade-in space-y-16 ${mode === 'spy' ? 'fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center p-8' : ''}`}>
+                        {mode !== 'spy' && (
+                            <div className="flex justify-center gap-3">
+                                {[1, 2, 3].map((s) => (
+                                    <div
+                                        key={s}
+                                        className={`w-3 h-3 rounded-full transition-colors ${s === step ? 'bg-cyan-400' : s < step ? 'bg-cyan-600' : 'bg-gray-700'
+                                            }`}
+                                    />
+                                ))}
+                            </div>
+                        )}
 
                         {/* UI Text */}
-                        <div className="mono text-base text-cyan-400 animate-pulse">
-                            {activeScripts[step].ui}
+                        <div className={`mono ${mode === 'spy' ? 'text-white text-3xl font-black uppercase mb-8' : 'text-base text-cyan-400 animate-pulse'}`}>
+                            {mode === 'spy' ? `MISSION 0${step}: "${activeScripts[step].script}"` : activeScripts[step].ui}
                         </div>
 
-                        {/* Visualizer */}
-                        <div className="my-16">
-                            <ParticleVisualizer
-                                analyser={analyzerRef.current?.getAnalyser() || null}
-                                isActive={phase === 'recording'}
-                            />
-                        </div>
-
-                        {/* Script to read */}
-                        <div className="space-y-6">
-                            {(activeScripts[step] as any).context && (
-                                <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-4 text-left">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className="text-xl">{(activeScripts[step] as any).icon}</span>
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-orange-500">Mission Context</span>
-                                    </div>
-                                    <p className="text-xs text-gray-400 leading-relaxed italic">
-                                        {(activeScripts[step] as any).context}
-                                    </p>
-                                </div>
-                            )}
-
-                            <div className="glass rounded-xl p-8 relative overflow-hidden group">
-                                <div className="absolute top-0 left-0 w-1 h-full bg-cyan-500" />
-                                <p className="text-xl md:text-2xl font-medium leading-relaxed">
-                                    "{activeScripts[step].script}"
-                                </p>
+                        {/* Visualizer - Hidden in Spy Mode */}
+                        {mode !== 'spy' && (
+                            <div className="my-16">
+                                <ParticleVisualizer
+                                    analyser={analyzerRef.current?.getAnalyser() || null}
+                                    isActive={phase === 'recording'}
+                                />
                             </div>
+                        )}
 
-                            {(activeScripts[step] as any).direction && (
-                                <div className="text-left flex items-start gap-3 px-4">
-                                    <span className="text-cyan-500 font-black text-xs mt-1">▶</span>
-                                    <p className="text-[11px] text-gray-500 font-bold uppercase tracking-wider leading-relaxed">
-                                        <span className="text-cyan-400">Direction:</span> {(activeScripts[step] as any).direction}
+                        {/* Script to read - Hidden in Spy Mode (merged into UI Text) */}
+                        {mode !== 'spy' && (
+                            <div className="space-y-6">
+                                {(activeScripts[step] as any).context && (
+                                    <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-4 text-left">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="text-xl">{(activeScripts[step] as any).icon}</span>
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-orange-500">Mission Context</span>
+                                        </div>
+                                        <p className="text-xs text-gray-400 leading-relaxed italic">
+                                            {(activeScripts[step] as any).context}
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div className="glass rounded-xl p-8 relative overflow-hidden group">
+                                    <div className="absolute top-0 left-0 w-1 h-full bg-cyan-500" />
+                                    <p className="text-xl md:text-2xl font-medium leading-relaxed">
+                                        "{activeScripts[step].script}"
                                     </p>
                                 </div>
-                            )}
-                        </div>
+
+                                {(activeScripts[step] as any).direction && (
+                                    <div className="text-left flex items-start gap-3 px-4">
+                                        <span className="text-cyan-500 font-black text-xs mt-1">▶</span>
+                                        <p className="text-[11px] text-gray-500 font-bold uppercase tracking-wider leading-relaxed">
+                                            <span className="text-cyan-400">Direction:</span> {(activeScripts[step] as any).direction}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
                         {/* Timer */}
-                        <div className="flex items-center justify-center gap-6 pt-4">
-                            <div className="w-20 h-20 rounded-full border-4 border-cyan-500 flex items-center justify-center">
-                                <span className="mono text-3xl font-bold">{timeLeft}</span>
-                            </div>
-                            <button
-                                onClick={skipToResult}
-                                className="text-gray-500 hover:text-gray-300 text-base transition-colors"
-                            >
-                                Skip →
-                            </button>
+                        <div className={`flex flex-col items-center justify-center gap-6 pt-4`}>
+                            {mode === 'spy' ? (
+                                <div className="text-red-600 font-mono text-5xl font-black tracking-tighter">
+                                    {Math.floor(timeLeft / 1000).toString().padStart(2, '0')}:{Math.floor((timeLeft % 1000) / 10).toString().padStart(2, '0')}
+                                </div>
+                            ) : (
+                                <div className="w-20 h-20 rounded-full border-4 border-cyan-500 flex items-center justify-center">
+                                    <span className="mono text-3xl font-bold">{Math.floor(timeLeft / 1000)}</span>
+                                </div>
+                            )}
+
+                            {mode !== 'spy' && (
+                                <button
+                                    onClick={skipToResult}
+                                    className="text-gray-500 hover:text-gray-300 text-base transition-colors"
+                                >
+                                    Skip →
+                                </button>
+                            )}
                         </div>
 
                         {/* Recording Indicator */}
                         <div className="flex items-center justify-center gap-3 pt-6">
-                            <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                            <span className={`w-3 h-3 bg-red-500 rounded-full ${mode === 'spy' ? '' : 'animate-pulse'}`} />
                             <span className="text-red-400 mono text-base">REC</span>
                         </div>
                     </div>
@@ -633,6 +641,55 @@ function RecordPageContent() {
                         <p className="text-gray-400 text-base leading-relaxed">
                             Detecting humanity levels...
                         </p>
+                    </div>
+                )}
+
+                {/* Spy Metadata Phase (Post-Recording) */}
+                {phase === 'spy-metadata' && (
+                    <div className="fade-in space-y-12">
+                        <div className="text-center space-y-4">
+                            <h2 className="text-3xl font-black text-red-500 uppercase tracking-tighter italic">Audition Dossier</h2>
+                            <p className="text-gray-400 text-sm">Calibration complete. Select deployment parameters.</p>
+                        </div>
+                        <div className="glass rounded-xl p-8 border-2 border-red-500/20 bg-white/5 max-w-xl mx-auto space-y-8 text-left">
+                            <div className="space-y-6">
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 block">Training Origin (Field Record)</label>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {['EAST_ASIA', 'NORTH_AMERICA', 'EUROPEAN_MIX', 'UNKNOWN'].map((o) => (
+                                            <button
+                                                key={o}
+                                                onClick={() => setSpyOrigin(o)}
+                                                className={`p-3 rounded border text-[10px] font-black tracking-widest uppercase transition-all ${spyOrigin === o ? 'bg-red-500 border-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'bg-black/40 border-gray-700 text-gray-500 hover:border-red-500/50'}`}
+                                            >
+                                                {o.replace('_', ' ')}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 block">Target Organization (Deployment Site)</label>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {['MI6_LONDON', 'CIA_FBI_DC', 'KGB_FSB_RU', 'PUBLIC_SEC_JP'].map((t) => (
+                                            <button
+                                                key={t}
+                                                onClick={() => setSpyTarget(t)}
+                                                className={`p-3 rounded border text-[10px] font-black tracking-widest uppercase transition-all ${spyTarget === t ? 'bg-red-500 border-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'bg-black/40 border-gray-700 text-gray-500 hover:border-red-500/50'}`}
+                                            >
+                                                {t.replace('_', ' ')}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => setPhase('calibration')}
+                            className="btn-metallic w-full py-5 rounded-2xl font-black text-xl uppercase tracking-[0.2em] border-red-500/30"
+                        >
+                            Finalize Profile →
+                        </button>
                     </div>
                 )}
 

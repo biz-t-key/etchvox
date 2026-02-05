@@ -51,19 +51,7 @@ export default function TermsPage() {
                     </section>
 
                     <section className="space-y-6">
-                        <h2 className="text-2xl font-bold text-white uppercase tracking-wider border-b border-white/10 pb-2">3. Donations (Buy Me a Coffee)</h2>
-                        <div className="bg-cyan-500/5 border border-cyan-500/20 rounded-2xl p-6">
-                            <p className="text-gray-300 text-sm leading-relaxed">
-                                Any funds provided via "Buy Me a Coffee" or similar platforms are strictly <strong className="text-cyan-400">voluntary donations (gifts)</strong> to support server costs and coffee consumption.
-                            </p>
-                            <p className="text-gray-400 text-xs mt-4 leading-relaxed font-mono">
-                                No goods, services, or exclusive privileges are purchased beyond the digital convenience of the session. This transaction is framed as community support and does not fall under the Specified Commercial Transactions Act of Japan.
-                            </p>
-                        </div>
-                    </section>
-
-                    <section className="space-y-6">
-                        <h2 className="text-2xl font-bold text-white uppercase tracking-wider border-b border-white/10 pb-2">4. Governing Law & Jurisdiction</h2>
+                        <h2 className="text-2xl font-bold text-white uppercase tracking-wider border-b border-white/10 pb-2">3. Governing Law & Jurisdiction</h2>
                         <p className="text-gray-300 text-sm leading-relaxed">
                             These Terms are governed by the laws of Japan. Any disputes shall be subject to the exclusive jurisdiction of the Tokyo District Court.
                         </p>

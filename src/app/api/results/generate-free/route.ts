@@ -33,20 +33,11 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: true, message: 'Already exists' });
         }
 
-        // 2. Verify community goal status
-        const statsSnap = await getDoc(doc(db, 'stats', 'global'));
-        const totalAmount = statsSnap.exists() ? statsSnap.data().totalAmount || 0 : 0;
-
+        // 2. Unlocked for everyone now
         const isSolo = data.typeCode !== 'COUPLE_MIX' && !data.coupleData;
         const isCouple = !isSolo;
 
-        let isUnlocked = false;
-        if (isSolo && totalAmount >= MILESTONES.SOLO_REPORT_UNLOCK) isUnlocked = true;
-        if (isCouple && totalAmount >= MILESTONES.COUPLE_REPORT_UNLOCK) isUnlocked = true;
-
-        if (!isUnlocked) {
-            return NextResponse.json({ error: 'Community goal not yet reached' }, { status: 403 });
-        }
+        let isUnlocked = true; // All features are now free
 
         // 3. Trigger Gemini generation (reusing logic from webhook)
         const { SoloIdentityEngine, CoupleResonanceEngine, normalizeMetricsForEngine } = await import('@/lib/voiceProcessor');

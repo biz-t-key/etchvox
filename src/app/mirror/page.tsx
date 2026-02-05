@@ -5,10 +5,14 @@ import { VoiceAnalyzer } from '@/lib/analyzer';
 import { initializeAuth, loadUserHash } from '@/lib/authService';
 import { getScenariosByGenre, getReadingText, getProgressLevel, type Genre, type Mood, type Scenario } from '@/lib/mirrorContent';
 import { saveVoiceLog, loadVoiceLogHistory } from '@/lib/mirrorEngine';
+import { saveAudioBlob } from '@/lib/mirrorDb';
 import MirrorDashboard from '@/components/mirror/MirrorDashboard';
+import MirrorRecap from '@/components/mirror/MirrorRecap';
+import SubscriptionWall from '@/components/mirror/SubscriptionWall';
+import { checkSubscription } from '@/lib/subscription';
 import Link from 'next/link';
 
-type Phase = 'auth' | 'calibration' | 'genre' | 'mood' | 'reading' | 'analyzing' | 'result';
+type Phase = 'auth' | 'calibration' | 'genre' | 'mood' | 'reading' | 'analyzing' | 'result' | 'recap';
 
 const CALIBRATION_TEXT = 'Hello, world.';
 const GENRE_LOCK_DAYS = 7;
@@ -36,10 +40,20 @@ export default function MirrorPage() {
     const [currentDayIndex, setCurrentDayIndex] = useState(1);
     const [readingText, setReadingText] = useState('');
 
+    // Subscription state
+    const [hasSubscription, setHasSubscription] = useState<boolean | null>(null);
+    const [checkingSubscription, setCheckingSubscription] = useState(true);
+
     // Recording state
     const [timeLeft, setTimeLeft] = useState(5);
-    const [vector, setVector] = useState<number[] | null>(null);
+    const [calibrationVector, setCalibrationVector] = useState<number[] | null>(null);
+    const [readingVector, setReadingVector] = useState<number[] | null>(null);
     const [progressLevel, setProgressLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner');
+    const [capturedBlob, setCapturedBlob] = useState<Blob | null>(null);
+    const [wellnessAccepted, setWellnessAccepted] = useState(false);
+
+    // Recorder refs
+    const chunksRef = useRef<Blob[]>([]);
 
     const analyzerRef = useRef<VoiceAnalyzer | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -59,13 +73,20 @@ export default function MirrorPage() {
             setMnemonic(auth.mnemonic);
             setIsNewUser(auth.isNew);
 
+            // Check subscription status
+            const subStatus = await checkSubscription(auth.userHash);
+            setHasSubscription(subStatus.isActive);
+            setCheckingSubscription(false);
+
             if (auth.isNew) {
                 setShowMnemonic(true);
-            } else {
+            } else if (subStatus.isActive) {
                 setPhase('calibration');
             }
+            // If not subscribed, will show SubscriptionWall
         } catch (error) {
             console.error('Auth initialization failed:', error);
+            setCheckingSubscription(false);
         }
     }
 
@@ -118,6 +139,7 @@ export default function MirrorPage() {
     async function startRecording(isCalibration: boolean) {
         try {
             setPhase(isCalibration ? 'calibration' : 'reading');
+            chunksRef.current = [];
 
             const stream = await navigator.mediaDevices.getUserMedia({
                 audio: {
@@ -133,6 +155,9 @@ export default function MirrorPage() {
             analyzerRef.current.connectStream(stream);
 
             mediaRecorderRef.current = new MediaRecorder(stream);
+            mediaRecorderRef.current.ondataavailable = (e) => {
+                if (e.data.size > 0) chunksRef.current.push(e.data);
+            };
             mediaRecorderRef.current.start(100);
 
             // Start collecting samples
@@ -145,7 +170,8 @@ export default function MirrorPage() {
             collectLoop();
 
             // Start timer
-            setTimeLeft(5);
+            const duration = isCalibration ? 3 : 6;
+            setTimeLeft(duration);
             timerRef.current = setInterval(() => {
                 setTimeLeft((prev) => {
                     if (prev <= 1) {
@@ -160,7 +186,7 @@ export default function MirrorPage() {
         }
     }
 
-    function finishRecording(isCalibration: boolean) {
+    async function finishRecording(isCalibration: boolean) {
         if (timerRef.current) {
             clearInterval(timerRef.current);
         }
@@ -177,19 +203,28 @@ export default function MirrorPage() {
         setPhase('analyzing');
 
         // Extract 30D vector
-        setTimeout(() => {
+        setTimeout(async () => {
             if (analyzerRef.current) {
                 const v = analyzerRef.current.get30DVector();
-                setVector(v);
 
                 if (isCalibration) {
-                    // After calibration, check if genre is already selected
+                    setCalibrationVector(v);
+                    // After calibration...
                     if (selectedGenre && !canChangeGenre) {
                         setPhase('mood');
                     } else {
                         setPhase('genre');
                     }
                 } else {
+                    setReadingVector(v);
+                    const finalBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
+                    setCapturedBlob(finalBlob);
+
+                    // Save to IndexedDB if it's the main reading
+                    if (userHash) {
+                        await saveAudioBlob(`voice_blob_${userHash}_${currentDayIndex}`, finalBlob);
+                    }
+
                     setPhase('result');
                 }
             }
@@ -222,10 +257,18 @@ export default function MirrorPage() {
     }
 
     function handleDone() {
+        if (currentDayIndex >= 7) {
+            setPhase('result'); // To check if we should show recap?
+            // Actually, let's just reset but we need a way to trigger recap
+            // Let's add a 'recap' state to result view
+        }
+
         setPhase('calibration');
-        setVector(null);
+        setCalibrationVector(null);
+        setReadingVector(null);
         setSelectedMood(null);
         setReadingText('');
+        setCapturedBlob(null);
 
         // Reset analyzer
         if (analyzerRef.current) {
@@ -234,6 +277,23 @@ export default function MirrorPage() {
 
         // Recalculate progress
         calculateProgress();
+    }
+
+    // Checking subscription
+    if (checkingSubscription) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+                <div className="text-center space-y-4">
+                    <div className="w-16 h-16 mx-auto border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+                    <p className="text-gray-400 text-sm">Checking subscription...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Show subscription wall if not subscribed
+    if (!checkingSubscription && hasSubscription === false && userHash) {
+        return <SubscriptionWall userHash={userHash} />;
     }
 
     // Auth phase
@@ -291,10 +351,11 @@ export default function MirrorPage() {
     }
 
     // Result phase
-    if (phase === 'result' && vector && selectedMood) {
+    if (phase === 'result' && calibrationVector && readingVector && selectedMood) {
         return (
             <MirrorDashboard
-                vector={vector}
+                calibrationVector={calibrationVector}
+                readingVector={readingVector}
                 onClose={handleDone}
                 context={{
                     genre: selectedGenre || 'philosophy',
@@ -303,6 +364,8 @@ export default function MirrorPage() {
                     dayIndex: currentDayIndex,
                     progressLevel
                 }}
+                userHash={userHash || ''}
+                wellnessConsentAgreed={wellnessAccepted}
             />
         );
     }
@@ -477,9 +540,26 @@ export default function MirrorPage() {
                     </ol>
                 </div>
 
+                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+                    <label className="flex items-start gap-4 cursor-pointer group">
+                        <input
+                            type="checkbox"
+                            checked={wellnessAccepted}
+                            onChange={(e) => setWellnessAccepted(e.target.checked)}
+                            className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-cyan-500"
+                        />
+                        <div className="space-y-1 text-left">
+                            <span className="text-sm text-gray-300 leading-relaxed select-none block font-bold transition-colors group-hover:text-white">
+                                I consent to the anonymous processing of my acoustic features for wellness analysis. I understand this is not a medical diagnosis.
+                            </span>
+                        </div>
+                    </label>
+                </div>
+
                 <button
                     onClick={() => startRecording(true)}
-                    className="w-full py-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xl font-bold rounded-2xl hover:shadow-[0_0_30px_rgba(34,211,238,0.5)] transition-all"
+                    disabled={!wellnessAccepted}
+                    className="w-full py-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xl font-bold rounded-2xl hover:shadow-[0_0_30px_rgba(34,211,238,0.5)] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                     <span className="mr-3">🎤</span>
                     Start Calibration

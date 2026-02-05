@@ -36,12 +36,14 @@ export default function CouplePage() {
     const [isOver13A, setIsOver13A] = useState(false);
     const [termsA, setTermsA] = useState(false);
     const [privacyA, setPrivacyA] = useState(false);
+    const [wellnessA, setWellnessA] = useState(false);
     const [researchA, setResearchA] = useState(false);
 
     // Consent Partner B (Beta)
     const [isOver13B, setIsOver13B] = useState(false);
     const [termsB, setTermsB] = useState(false);
     const [privacyB, setPrivacyB] = useState(false);
+    const [wellnessB, setWellnessB] = useState(false);
     const [researchB, setResearchB] = useState(false);
 
     // Data Store
@@ -302,6 +304,7 @@ export default function CouplePage() {
             }),
             consentAgreed: (termsA && privacyA) && (termsB && privacyB),
             researchConsentAgreed: researchA && researchB,
+            wellnessConsentAgreed: wellnessA && wellnessB,
             consentVersion: '2.0.0_DUAL',
             consentAt: new Date().toISOString(),
         } as any;
@@ -334,7 +337,7 @@ export default function CouplePage() {
                 metadata: { partnerA: names.A, partnerB: names.B },
                 aiScore: mainMetrics.humanityScore ? (100 - mainMetrics.humanityScore) / 100 : 0.0
             };
-            await secureVault(vaultVectors, vaultMetrics, vaultContext, true);
+            await secureVault(vaultVectors, vaultMetrics, vaultContext, true, wellnessA && wellnessB);
         }
 
         setTimeout(() => {
@@ -379,6 +382,10 @@ export default function CouplePage() {
                                 <span className="text-xs text-gray-400 group-hover:text-white transition-colors">I agree to the Privacy Policy.</span>
                             </label>
                             <label className="flex items-start gap-4 p-4 rounded-xl bg-cyan-500/5 border border-cyan-500/10 hover:bg-cyan-500/10 transition-colors cursor-pointer group">
+                                <input type="checkbox" checked={wellnessA} onChange={e => setWellnessA(e.target.checked)} className="mt-1 w-5 h-5 accent-cyan-500" />
+                                <span className="text-[10px] text-cyan-500 font-bold group-hover:text-cyan-400 transition-colors">I consent to the anonymous processing of my acoustic features for wellness analysis. (Alpha)</span>
+                            </label>
+                            <label className="flex items-start gap-4 p-4 rounded-xl bg-cyan-500/5 border border-cyan-500/10 hover:bg-cyan-500/10 transition-colors cursor-pointer group opacity-60">
                                 <input type="checkbox" checked={researchA} onChange={e => setResearchA(e.target.checked)} className="mt-1 w-5 h-5 accent-cyan-500" />
                                 <span className="text-[10px] text-cyan-500 font-bold group-hover:text-cyan-400 transition-colors">[OPTIONAL] Biological Research Consent</span>
                             </label>
@@ -402,6 +409,10 @@ export default function CouplePage() {
                                 <span className="text-xs text-gray-400 group-hover:text-white transition-colors">I agree to the Privacy Policy.</span>
                             </label>
                             <label className="flex items-start gap-4 p-4 rounded-xl bg-pink-500/5 border border-pink-500/10 hover:bg-pink-500/10 transition-colors cursor-pointer group">
+                                <input type="checkbox" checked={wellnessB} onChange={e => setWellnessB(e.target.checked)} className="mt-1 w-5 h-5 accent-pink-500" />
+                                <span className="text-[10px] text-pink-500 font-bold group-hover:text-pink-400 transition-colors">I consent to the anonymous processing of my acoustic features for wellness analysis. (Beta)</span>
+                            </label>
+                            <label className="flex items-start gap-4 p-4 rounded-xl bg-pink-500/5 border border-pink-500/10 hover:bg-pink-500/10 transition-colors cursor-pointer group opacity-60">
                                 <input type="checkbox" checked={researchB} onChange={e => setResearchB(e.target.checked)} className="mt-1 w-5 h-5 accent-pink-500" />
                                 <span className="text-[10px] text-pink-500 font-bold group-hover:text-pink-400 transition-colors">[OPTIONAL] Biological Research Consent</span>
                             </label>
@@ -416,7 +427,7 @@ export default function CouplePage() {
 
             <button
                 onClick={() => setPhase('names')}
-                disabled={!termsA || !privacyA || !termsB || !privacyB || !isOver13A || !isOver13B}
+                disabled={!termsA || !privacyA || !termsB || !privacyB || !isOver13A || !isOver13B || !wellnessA || !wellnessB}
                 className="w-full bg-white text-black font-black py-5 rounded-full uppercase tracking-[0.2em] hover:bg-pink-500 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(255,255,255,0.2)] text-lg"
             >
                 Start Sequence

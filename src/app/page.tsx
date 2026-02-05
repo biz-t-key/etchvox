@@ -5,24 +5,14 @@ import Link from 'next/link';
 import { getHistory, requestSyncOtp, verifySyncOtp, removeFromHistory, VoiceResult } from '@/lib/storage';
 import { voiceTypes } from '@/lib/types';
 import { format } from 'date-fns';
-import { FEATURE_FLAGS } from '@/config/features';
-import FundingProgressBar from '@/components/layout/FundingProgressBar';
 import { getDb, isFirebaseConfigured } from '@/lib/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { getUnlockedFeatures, FeatureState } from '@/config/milestones';
 
 type Mode = 'solo' | 'couple' | 'elon' | 'spy' | null;
 
 export default function HomePage() {
   const [selectedMode, setSelectedMode] = useState<Mode>(null);
   const [history, setHistory] = useState<VoiceResult[]>([]);
-  const [totalFunding, setTotalFunding] = useState<number>(0);
-  const [features, setFeatures] = useState<FeatureState>({
-    isSoloPurchaseUnlocked: false,
-    isCoupleModeUnlocked: false,
-    isCouplePurchaseUnlocked: false,
-    currentAmount: 0
-  });
 
   // Vault Sync States
   const [restoreEmail, setRestoreEmail] = useState('');
@@ -38,19 +28,6 @@ export default function HomePage() {
 
   useEffect(() => {
     loadHistory();
-
-    // Real-time funding and feature unlock sync
-    if (isFirebaseConfigured()) {
-      const db = getDb();
-      const statsRef = doc(db, 'stats', 'global');
-      return onSnapshot(statsRef, (snapshot) => {
-        if (snapshot.exists()) {
-          const amount = snapshot.data().totalAmount || 0;
-          setTotalFunding(amount);
-          setFeatures(getUnlockedFeatures(amount));
-        }
-      });
-    }
   }, []);
 
   const handleRequestOtp = async (e: React.FormEvent) => {
@@ -227,6 +204,11 @@ export default function HomePage() {
                       selectedMode === 'elon' ? 'Calibrating for high-stakes visionary throughput.' :
                         'Identity verification for the London/DC/Moscow/Tokyo sectors.'}
                 </p>
+                {selectedMode === 'elon' && (
+                  <p className="text-[10px] text-orange-500/60 font-mono mt-4 uppercase tracking-widest max-w-sm mx-auto leading-relaxed">
+                    Notice: ELON is a diagnostic archetype for entertainment purposes and is not affiliated with any actual person or entity.
+                  </p>
+                )}
               </div>
 
               <div className="space-y-6">
@@ -247,11 +229,8 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* Funding & Metrics */}
+        {/* Statistics & Metrics */}
         <div className="space-y-32">
-          <div className="animate-fade-in-up delay-300">
-            <FundingProgressBar />
-          </div>
 
           <div className="space-y-6 pt-10">
             <p className="text-[10px] uppercase tracking-[0.4em] text-gray-600 font-black italic">Archive Statistics: Real-time Data Feed</p>
@@ -397,14 +376,7 @@ export default function HomePage() {
         <div className="flex justify-center gap-8 uppercase tracking-widest font-black">
           <Link href="/terms" className="hover:text-cyan-400 transition-colors">Terms</Link>
           <Link href="/privacy" className="hover:text-cyan-400 transition-colors">Privacy</Link>
-          <a
-            href={`https://buymeacoffee.com/${FEATURE_FLAGS.BMAC_HANDLE}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-amber-600 hover:text-amber-500 transition-colors"
-          >
-            Support
-          </a>
+          <Link href="/privacy" className="hover:text-cyan-400 transition-colors">Privacy</Link>
         </div>
         <div className="max-w-xs mx-auto leading-relaxed font-mono opacity-50">
           © 2026 EtchVox Archive. Built for entertainment purposes.

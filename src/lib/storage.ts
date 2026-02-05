@@ -22,6 +22,8 @@ export interface VoiceResult {
     metrics: AnalysisMetrics;
     gender?: string; // Solo gender
     birthYear?: number; // Solo birth year
+    isPremium?: boolean;
+    purchasedAt?: string;
     accentOrigin: string;
     createdAt: string;
     locale: string;
@@ -29,13 +31,11 @@ export interface VoiceResult {
     country?: string;
     audioUrl?: string;
     audioPath?: string;
-    isPremium?: boolean;
     vaultEnabled?: boolean;
-    purchasedAt?: string;
     toxicityProfile?: ToxicityProfile;
     aiAnalysis?: string; // Markdown text from Gemini
     mbti?: string; // User's self-reported MBTI
-    email?: string; // Customer email from payment provider (BMAC)
+    mode?: 'solo' | 'elon' | 'spy'; // Which feature was used
     coupleData?: {
         userA: { name: string; job: string; metrics: AnalysisMetrics; gender?: string; birthYear?: number; typeCode?: TypeCode; consentAgreed: boolean; researchConsentAgreed: boolean };
         userB: { name: string; job: string; metrics: AnalysisMetrics; gender?: string; birthYear?: number; typeCode?: TypeCode; consentAgreed: boolean; researchConsentAgreed: boolean };
@@ -46,6 +46,7 @@ export interface VoiceResult {
     consentAt: string;
     consentStatement?: string; // Full text of the consent given
     consentHash?: string; // SHA-256 hash for integrity
+    wellnessConsentAgreed: boolean; // Mandatory wellness processing consent
     logV2?: import('./types').VoiceLogV2; // Optional enriched Version 2.0 log
     logV3?: import('./types').VoiceLogV3; // New Schema 2.0.0
     spyMetadata?: { origin: string; target: string };
@@ -67,6 +68,20 @@ async function generateConsentHash(result: VoiceResult): Promise<string> {
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     return hashHex;
+}
+
+// Deeply remove undefined values from an object for Firestore compatibility
+function sanitizeForFirestore(obj: any): any {
+    if (Array.isArray(obj)) {
+        return obj.map(v => sanitizeForFirestore(v));
+    } else if (obj !== null && typeof obj === 'object' && !(obj instanceof Date) && !(obj instanceof Timestamp)) {
+        return Object.fromEntries(
+            Object.entries(obj)
+                .filter(([_, v]) => v !== undefined)
+                .map(([k, v]) => [k, sanitizeForFirestore(v)])
+        );
+    }
+    return obj;
 }
 
 // Save result to Firestore (and localStorage as fallback)
@@ -128,8 +143,10 @@ export async function saveResult(
                 result.logV3.meta.dataHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
             }
 
+            const sanitizedResult = sanitizeForFirestore(result);
+
             await setDoc(resultRef, {
-                ...result,
+                ...sanitizedResult,
                 createdAt: Timestamp.fromDate(new Date(result.createdAt)),
                 updatedAt: Timestamp.now(),
             });
@@ -145,6 +162,66 @@ export async function saveResult(
         } catch (error) {
             console.error('Failed to save to Firestore:', error);
         }
+    }
+}
+
+/**
+ * Save Mirror Log to Firestore for Asset-ization
+ */
+export async function saveMirrorLog(log: any, analysis: any): Promise<void> {
+    if (!isFirebaseConfigured()) return;
+
+    try {
+        const db = getDb();
+        const logId = `mirror_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        const logRef = doc(db, 'mirror_logs', logId);
+
+        // Sanitize vectors and metadata
+        const sanitizedData = sanitizeForFirestore({
+            ...log,
+            analysis,
+            createdAt: Timestamp.now(),
+            version: '1.0.0'
+        });
+
+        await setDoc(logRef, sanitizedData);
+        console.log('>[ASSET] Mirror log secured in Firestore:', logId);
+    } catch (error) {
+        console.error('Failed to save Mirror log to Firestore:', error);
+    }
+}
+
+/**
+ * Mark a result as premium (unlocked via purchase)
+ */
+export async function unlockResult(resultId: string): Promise<void> {
+    if (!isFirebaseConfigured()) return;
+
+    try {
+        const db = getDb();
+        const resultRef = doc(db, 'results', resultId);
+
+        await updateDoc(resultRef, {
+            isPremium: true,
+            purchasedAt: new Date().toISOString(),
+            updatedAt: Timestamp.now()
+        });
+
+        // Also update local storage cache if present
+        if (typeof window !== 'undefined') {
+            const localData = localStorage.getItem(`etchvox_result_${resultId}`);
+            if (localData) {
+                const result = JSON.parse(localData);
+                result.isPremium = true;
+                result.purchasedAt = new Date().toISOString();
+                localStorage.setItem(`etchvox_result_${resultId}`, JSON.stringify(result));
+            }
+        }
+
+        console.log(`✓ Result ${resultId} unlocked successfully`);
+    } catch (error) {
+        console.error('Failed to unlock result:', error);
+        throw error;
     }
 }
 
@@ -184,16 +261,18 @@ export async function getResult(resultId: string): Promise<VoiceResult | null> {
                     gender: data.gender,
                     birthYear: data.birthYear,
                     isPremium: data.isPremium,
-                    vaultEnabled: data.vaultEnabled,
                     purchasedAt: data.purchasedAt,
+                    vaultEnabled: data.vaultEnabled,
                     toxicityProfile: data.toxicityProfile,
                     aiAnalysis: data.aiAnalysis,
                     mbti: data.mbti,
+                    mode: data.mode,
                     coupleData: data.coupleData,
                     consentAgreed: data.consentAgreed || false,
                     researchConsentAgreed: data.researchConsentAgreed || false,
                     consentVersion: data.consentVersion || '0.0.0',
                     consentAt: data.consentAt || '',
+                    wellnessConsentAgreed: data.wellnessConsentAgreed || false,
                     logV2: data.logV2,
                 };
 

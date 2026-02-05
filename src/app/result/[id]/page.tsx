@@ -23,6 +23,8 @@ import { DriftAnalysis } from '@/lib/types';
 import VoiceTimelineGraph from '@/components/result/VoiceTimelineGraph';
 import SpyReportCard from '@/components/result/SpyReportCard';
 import { generateFinalReport } from '@/lib/analyzer';
+import { LEMONSQUEEZY_CONFIG } from '@/config/features';
+import { checkSubscription } from '@/lib/subscription';
 
 
 type DisplayStage = 'label' | 'metrics' | 'full';
@@ -37,23 +39,24 @@ export default function ResultPage() {
     const [drift, setDrift] = useState<DriftAnalysis | null>(null);
     const [fullHistory, setFullHistory] = useState<VoiceResult[]>([]);
     const [error, setError] = useState<string | null>(null);
-    const [processingPayment, setProcessingPayment] = useState(false);
-    const [verifyingPayment, setVerifyingPayment] = useState(false); // New state for post-redirect
     const [displayStage, setDisplayStage] = useState<DisplayStage>('label');
     const [selectedMBTI, setSelectedMBTI] = useState<MBTIType | null>(null);
     const [mbtiSkipped, setMbtiSkipped] = useState(false);
-    const [features, setFeatures] = useState<FeatureState>({
-        isSoloPurchaseUnlocked: false,
-        isCoupleModeUnlocked: false,
-        isCouplePurchaseUnlocked: false,
-        currentAmount: 0
-    });
-
-    const [showOTO, setShowOTO] = useState(false);    // Self-Destruct
+    const [showOTO, setShowOTO] = useState(false);
     const [isPurged, setIsPurged] = useState(false);
     const [isHoldingPurge, setIsHoldingPurge] = useState(false);
 
-    const isSpyMode = result?.typeCode === 'HIRED' || result?.typeCode === 'SUSP' || result?.typeCode === 'REJT' || result?.typeCode === 'BURN' || !!result?.spyMetadata;
+    // Lemon Squeezy integration
+    const [isSubscribed, setIsSubscribed] = useState(false);
+    const [checkoutLoading, setCheckoutLoading] = useState(false);
+
+    const isSpyMode = result?.typeCode === 'HIRED' ||
+        result?.typeCode === 'SUSP' ||
+        result?.typeCode === 'REJT' ||
+        result?.typeCode === 'BURN' ||
+        !!result?.spyMetadata ||
+        result?.mode === 'spy' ||
+        result?.mode === 'elon';
 
     function executeHardPurge() {
         if (typeof window === 'undefined') return;
@@ -89,19 +92,25 @@ export default function ResultPage() {
                 if (data) {
                     setResult(data);
                     if (data.mbti) {
-                        setSelectedMBTI(data.mbti as MBTIType); // Sync MBTI from saved data
+                        setSelectedMBTI(data.mbti as MBTIType);
                     }
+
+                    // Check subscription status
+                    const historyIds = JSON.parse(localStorage.getItem('etchvox_history') || '[]');
+                    const userHash = localStorage.getItem('etchvox_user_hash');
+                    if (userHash) {
+                        const subStatus = await checkSubscription(userHash);
+                        setIsSubscribed(subStatus.isActive);
+                    }
+
                     // Start staged display sequence
                     setTimeout(() => setDisplayStage('metrics'), 2500);
                     setTimeout(() => setDisplayStage('full'), 4500);
 
                     // Calculate Drift if multiple records exist
-                    const historyIds = JSON.parse(localStorage.getItem('etchvox_history') || '[]');
                     if (historyIds.length > 1) {
-                        // Find baseline (the oldest in tracked history)
-                        // historyIds are stored with newest first, so the last element is the oldest.
                         const baselineId = historyIds[historyIds.length - 1];
-                        if (baselineId !== data.id) { // Ensure we're not comparing to itself
+                        if (baselineId !== data.id) {
                             const baselineData = localStorage.getItem(`etchvox_result_${baselineId}`);
                             if (baselineData) {
                                 const baseline = JSON.parse(baselineData) as VoiceResult;
@@ -118,6 +127,12 @@ export default function ResultPage() {
                         }
                         setFullHistory(loadedHistory);
                     }
+
+                    // Only trigger free analysis if it was already unlocked/paid OR if user is subscribed
+                    // (Actually we should trigger it if it's unlocked, but we'll gate it in the UI)
+                    if (!data.aiAnalysis) {
+                        // We still trigger it, but only show it if unlocked
+                    }
                 } else {
                     setError('Result not found');
                 }
@@ -128,14 +143,7 @@ export default function ResultPage() {
             }
         }
         loadResult();
-
-        // Check query params for payment success
-        if (searchParams.get('payment') === 'success') {
-            setVerifyingPayment(true);
-            // Remove param from URL to clean up without refresh
-            window.history.replaceState({}, '', `/result/${resultId}`);
-        }
-    }, [resultId]); // Removed searchParams to avoid loop, it's read once on mount
+    }, [resultId]);
 
     // ✅ Real-time updates: Listen for AI analysis completion
     useEffect(() => {
@@ -153,16 +161,11 @@ export default function ResultPage() {
                         ...prev,
                         aiAnalysis: data.aiAnalysis,
                         aiAnalysisError: data.aiAnalysisError,
-                        isPremium: data.isPremium,
-                        vaultEnabled: data.vaultEnabled,
+                        vaultEnabled: true, // Always enabled now
                         mbti: data.mbti,
                         metrics: data.metrics || prev.metrics,
                     } as VoiceResult;
                 });
-
-                if (data.isPremium) {
-                    setVerifyingPayment(false);
-                }
 
                 if (data.mbti && !selectedMBTI) {
                     setSelectedMBTI(data.mbti as MBTIType);
@@ -172,20 +175,37 @@ export default function ResultPage() {
             console.error('Firestore listener error:', error);
         });
 
-        // Track Community Goals
-        const statsRef = doc(db, 'stats', 'global');
-        const unsubStats = onSnapshot(statsRef, (snapshot) => {
-            if (snapshot.exists()) {
-                const amount = snapshot.data().totalAmount || 0;
-                setFeatures(getUnlockedFeatures(amount));
-            }
-        });
-
-        return () => {
-            unsubscribe();
-            unsubStats();
-        };
+        return () => unsubscribe();
     }, [resultId, selectedMBTI]);
+
+    const handleCheckout = async (type: 'solo' | 'couple' | 'spy') => {
+        setCheckoutLoading(true);
+
+        try {
+            const plan = type;
+            const userHash = localStorage.getItem('etchvox_user_hash') || '';
+
+            const response = await fetch('/api/checkout/lemonsqueezy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userHash, resultId, plan })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to create checkout');
+            }
+
+            const data = await response.json();
+
+            // Redirect to Lemon Squeezy checkout
+            window.location.href = data.checkoutUrl;
+
+        } catch (err) {
+            console.error('Checkout error:', err);
+            setError('Failed to start checkout. Please try again.');
+            setCheckoutLoading(false);
+        }
+    };
 
 
     // ✅ Save MBTI to Firestore when selected
@@ -211,30 +231,6 @@ export default function ResultPage() {
         setTimeout(() => {
             document.getElementById('identity-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 100);
-    };
-
-    const handleCheckout = async (type: 'unlock' | 'vault' | 'couple') => {
-        setProcessingPayment(true);
-
-        const bmacHandle = FEATURE_FLAGS.BMAC_HANDLE;
-        let bmacUrl = "";
-
-        if (type === 'vault') {
-            // Solo Vault - Use fixed product URL
-            bmacUrl = `https://buymeacoffee.com/${bmacHandle}/e/502513`;
-        } else if (type === 'couple') {
-            // Couple Resonance - Use fixed product URL
-            bmacUrl = `https://buymeacoffee.com/${bmacHandle}/e/502517`;
-        } else {
-            // Fallback for Unlock ($5) until Extras URL is provided
-            const amount = 5;
-            const message = encodeURIComponent(`ID: ${resultId}`);
-            bmacUrl = `https://buymeacoffee.com/${bmacHandle}/?amount=${amount}&message=${message}`;
-        }
-
-        window.open(bmacUrl, '_blank');
-        setVerifyingPayment(true);
-        setProcessingPayment(false);
     };
 
     const handleSpyBurn = async () => {
@@ -307,73 +303,17 @@ export default function ResultPage() {
         console.warn(`[ResultPage] Missing voice type data for code: ${result.typeCode}`);
     }
 
-    // Check if premium (either from stored result or just successful payment)
-    const isPremium = result.isPremium === true || result.vaultEnabled === true || searchParams.get('payment') === 'success';
+    // Gating Logic: Standalone diagnostics always require purchase
+    const isPremium = result.isPremium === true;
+    const showAIReport = isPremium;
+    const showVideo = isPremium;
+    const showSpyReport = isPremium;
 
-    // Logic for specific features
-    const showAIReport = result.vaultEnabled === true ||
-        (searchParams.get('payment') === 'success' && searchParams.get('type') !== 'unlock');
-
-    const showVideo = isPremium; // Any payment unlocks video
+    const diagnosticType = result.mode === 'spy' ? 'spy' : (isCouple ? 'couple' : 'solo');
+    const diagnosticPrice = diagnosticType === 'spy' ? LEMONSQUEEZY_CONFIG.SPY_PRICE : (isCouple ? LEMONSQUEEZY_CONFIG.COUPLE_PRICE : LEMONSQUEEZY_CONFIG.SOLO_PRICE);
 
     return (
         <main className="min-h-screen bg-black text-white selection:bg-cyan-500/30 font-sans flex flex-col items-center overflow-x-hidden w-full relative">
-            {/* OTO Modal Overlay */}
-            {showOTO && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm animate-fade-in">
-                    <div className="bg-gradient-to-br from-gray-900 via-black to-gray-900 border border-white/20 rounded-3xl p-6 md:p-10 max-w-lg w-full text-center relative shadow-[0_0_50px_rgba(236,72,153,0.3)]">
-                        <div className="absolute top-4 right-4 text-gray-500 cursor-pointer hover:text-white" onClick={() => setShowOTO(false)}>✕</div>
-
-                        <div className="text-[10px] text-cyan-400 font-bold uppercase tracking-[0.3em] mb-4 animate-pulse">
-                            Wait! One-Time Offer
-                        </div>
-
-                        <h3 className="text-2xl md:text-3xl font-black text-white uppercase mb-2 tracking-tight">
-                            Upgrade to Vault
-                        </h3>
-                        <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-500 mb-6">
-                            +$10.00
-                        </div>
-
-                        <ul className="text-left text-sm text-gray-300 space-y-3 mb-8 bg-white/5 p-6 rounded-xl border border-white/5">
-                            <li className="flex items-center gap-3">
-                                <span className="text-green-400">✓</span>
-                                <span><strong>Deep AI Identity Audit:</strong> Gap analysis of your voice vs MBTI.</span>
-                            </li>
-                            <li className="flex items-center gap-3">
-                                <span className="text-green-400">✓</span>
-                                <span><strong>Permanent Voice Storage:</strong> Track your vocal evolution over time.</span>
-                            </li>
-                            <li className="flex items-center gap-3">
-                                <span className="text-green-400">✓</span>
-                                <span><strong>High-Quality Video:</strong> Unlock your shareable visualization.</span>
-                            </li>
-                        </ul>
-
-                        <button
-                            onClick={() => {
-                                setShowOTO(false);
-                                handleCheckout('vault');
-                            }}
-                            disabled={processingPayment}
-                            className="w-full btn-amber py-6 mb-4 text-xl"
-                        >
-                            Yes, Upgrade Me ($10.00)
-                        </button>
-
-                        <button
-                            onClick={() => {
-                                setShowOTO(false);
-                                handleCheckout('unlock');
-                            }}
-                            disabled={processingPayment}
-                            className="text-xs text-gray-500 hover:text-white underline decoration-gray-700 underline-offset-4 uppercase tracking-widest transition-colors"
-                        >
-                            No thanks, I'll take the video only ($5.00)
-                        </button>
-                    </div>
-                </div>
-            )}
 
             {/* Background Decoration */}
             <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
@@ -418,39 +358,38 @@ export default function ResultPage() {
                     <div className="animate-fade-in w-full space-y-24 md:space-y-40 pt-12 flex flex-col items-center">
                         {isSpyMode ? (
                             <div className="w-full max-w-lg mx-auto">
-                                <SpyReportCard
-                                    typeCode={result.typeCode}
-                                    spyMetadata={result.spyMetadata!}
-                                    score={result.spyAnalysis?.score || 0}
-                                    reportMessage={generateFinalReport(
-                                        result.spyAnalysis ? { stamp: result.typeCode, ...result.spyAnalysis } : { stamp: result.typeCode },
-                                        result.spyMetadata!
-                                    )}
-                                    onBurn={handleSpyBurn}
-                                    autoBurn={!result.researchConsentAgreed}
-                                    isHoldingPurge={isHoldingPurge}
-                                />
-                                <div className="mt-12 flex justify-center">
-                                    <button
-                                        onClick={() => {
-                                            if (isSpyMode) setIsHoldingPurge(true);
-                                            handleCheckout('unlock');
-                                        }}
-                                        disabled={processingPayment}
-                                        className="btn-cyan group relative overflow-hidden px-8 py-4 rounded-xl flex items-center gap-3 transition-all hover:scale-105"
-                                    >
-                                        <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                                        <span className="text-xl">🕵️</span>
-                                        <div className="text-left">
-                                            <div className="text-[10px] uppercase tracking-widest opacity-70">
-                                                {isSpyMode ? 'Intelligence Audit' : 'Full Analysis'}
-                                            </div>
-                                            <div className="font-black text-lg">
-                                                {isSpyMode ? 'UNLOCK DOSSIER' : 'UNLOCK $5.00'}
-                                            </div>
+                                {!showSpyReport ? (
+                                    <div className="bg-zinc-900 border border-red-500/20 rounded-2xl p-12 text-center space-y-8 relative overflow-hidden font-mono">
+                                        <div className="absolute inset-0 bg-red-900/5" />
+                                        <div className="relative z-10">
+                                            <div className="text-5xl mb-6">🔒</div>
+                                            <h3 className="text-2xl font-black text-red-500 uppercase tracking-tight mb-2 italic">INTEL_GATED</h3>
+                                            <p className="text-zinc-500 text-xs max-w-xs mx-auto leading-relaxed mb-8 uppercase">
+                                                MISSION_REPORT: ENCRYPTED. ACCESS_LEVEL: RESTRICTED. INITIALIZE_PURCHASE_PROTOCOL_TO_DECRYPT.
+                                            </p>
+                                            <button
+                                                onClick={() => handleCheckout('spy')}
+                                                disabled={checkoutLoading}
+                                                className="w-full bg-red-600 text-white font-black text-xs px-8 py-4 rounded uppercase tracking-widest hover:bg-red-500 shadow-[0_0_20px_rgba(220,38,38,0.4)] transition-all disabled:opacity-50"
+                                            >
+                                                {checkoutLoading ? 'Processing...' : `UNOCK_DOSSIER ($${LEMONSQUEEZY_CONFIG.SPY_PRICE})`}
+                                            </button>
                                         </div>
-                                    </button>
-                                </div>
+                                    </div>
+                                ) : (
+                                    <SpyReportCard
+                                        typeCode={result.typeCode}
+                                        spyMetadata={result.spyMetadata!}
+                                        score={result.spyAnalysis?.score || 0}
+                                        reportMessage={generateFinalReport(
+                                            result.spyAnalysis ? { stamp: result.typeCode, ...result.spyAnalysis } : { stamp: result.typeCode },
+                                            result.spyMetadata!
+                                        )}
+                                        onBurn={handleSpyBurn}
+                                        autoBurn={!result.researchConsentAgreed}
+                                        isHoldingPurge={isHoldingPurge}
+                                    />
+                                )}
                             </div>
                         ) : (
                             /* Metrics Card - Balanced & Cinematic */
@@ -613,7 +552,7 @@ export default function ResultPage() {
                                     </div>
                                 </div>
 
-                                {/* AI AUDIT REPORT (PREMIUM) */}
+                                {/* AI AUDIT REPORT (PREMIUM GATING) */}
                                 {showAIReport && (
                                     <div className="w-full mb-12">
                                         <div className="flex items-center gap-3 mb-12 px-1">
@@ -623,7 +562,27 @@ export default function ResultPage() {
                                             </h2>
                                         </div>
 
-                                        {result.aiAnalysis ? (
+                                        {!isPremium ? (
+                                            <div className="bg-black/50 border border-cyan-500/20 rounded-2xl p-12 text-center space-y-8 relative overflow-hidden">
+                                                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-pink-500/5" />
+                                                <div className="relative z-10">
+                                                    <div className="text-5xl mb-6">🔒</div>
+                                                    <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-2 italic">Neural Report Locked</h3>
+                                                    <p className="text-gray-400 text-sm max-w-md mx-auto leading-relaxed mb-8">
+                                                        The deep-core identity audit includes vocal DNA mapping, metabolic markers, and behavioral predictions.
+                                                    </p>
+                                                    <div className="max-w-xs mx-auto">
+                                                        <button
+                                                            onClick={() => handleCheckout(diagnosticType)}
+                                                            disabled={checkoutLoading}
+                                                            className="w-full bg-white text-black font-black text-xs px-8 py-5 rounded-xl uppercase tracking-widest hover:bg-cyan-400 hover:shadow-[0_0_20px_rgba(34,211,238,0.4)] transition-all disabled:opacity-50"
+                                                        >
+                                                            {checkoutLoading ? 'Processing...' : `Unlock this report ($${diagnosticPrice})`}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : result.aiAnalysis ? (
                                             <div className="bg-black/50 border border-cyan-500/30 rounded-2xl p-6 md:p-8 text-left space-y-4 shadow-[0_0_30px_rgba(6,182,212,0.15)]">
                                                 <div className="prose prose-invert prose-sm max-w-none">
                                                     <ReactMarkdown
@@ -647,28 +606,17 @@ export default function ResultPage() {
                                                     <span className="text-[10px] text-cyan-500/70 uppercase tracking-widest font-bold">Generated by Gemini AI</span>
                                                 </div>
                                             </div>
-                                        ) : (result as any).aiAnalysisError ? (
-                                            <div className="text-center p-12 border border-dashed border-red-500/30 rounded-xl bg-gradient-to-br from-red-500/5 to-transparent">
-                                                <div className="text-4xl mb-4">⚠️</div>
-                                                <div className="text-sm font-bold text-red-400 uppercase tracking-widest mb-3">Analysis Error</div>
-                                                <div className="text-gray-400 text-xs max-w-md mx-auto leading-relaxed mb-4">
-                                                    {(result as any).aiAnalysisError}
-                                                </div>
-                                                <a href="mailto:info@etchvox.com" className="text-cyan-400 text-xs underline hover:text-cyan-300">
-                                                    Contact Support
-                                                </a>
-                                            </div>
                                         ) : (
                                             <div className="text-center p-12 border border-dashed border-cyan-500/30 rounded-xl bg-gradient-to-br from-cyan-500/5 to-transparent">
                                                 <div className="w-16 h-16 mx-auto mb-4 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
                                                 <div className="text-sm font-bold text-cyan-400 uppercase tracking-widest mb-3">🧬 Neural Analysis In Progress</div>
                                                 <div className="text-gray-400 text-xs max-w-xs mx-auto leading-relaxed">
-                                                    Your vocal DNA is being decoded by the AI engine. This typically takes 10-20 seconds. The report will appear automatically—no need to reload.
+                                                    Your vocal DNA is being decoded by the AI engine. This typically takes 10-20 seconds.
                                                 </div>
                                             </div>
                                         )}
 
-                                        {/* Phase 2: High Fidelity Audit log */}
+                                        {/* Premium Details: Metrics & History */}
                                         {isPremium && result.logV2 && (
                                             <div className="space-y-20">
                                                 <section className="mt-20">
@@ -680,203 +628,88 @@ export default function ResultPage() {
                                                         <VoiceTimelineGraph history={fullHistory} />
                                                     </section>
                                                 )}
+
+                                                {drift && (
+                                                    <section className="mt-20 glass rounded-3xl p-8 border border-magenta-500/30 relative overflow-hidden group">
+                                                        <div className="absolute top-0 right-0 p-4 opacity-20">
+                                                            <span className="text-4xl">📊</span>
+                                                        </div>
+
+                                                        <div className="relative z-10 space-y-6 text-center md:text-left">
+                                                            <div>
+                                                                <h3 className="text-2xl font-black text-white uppercase tracking-tighter mb-2 italic">
+                                                                    Voice Drift Detected
+                                                                </h3>
+                                                                <p className="text-gray-400 text-sm font-mono uppercase tracking-[0.2em]">
+                                                                    Status: <span className={
+                                                                        drift.status === 'STABLE' ? 'text-green-400' :
+                                                                            drift.status === 'UPGRADE' ? 'text-cyan-400' :
+                                                                                'text-red-400'
+                                                                    }>{drift.status}</span>
+                                                                </p>
+                                                            </div>
+
+                                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                                                                <DriftStat label="Drift Rate" value={`${drift.driftRate > 0 ? '+' : ''}${drift.driftRate}%`} color={drift.driftRate > 0 ? 'text-cyan-400' : 'text-red-400'} />
+                                                                <DriftStat label="Pitch Shift" value={`${drift.changes.pitch > 0 ? '+' : ''}${drift.changes.pitch}%`} />
+                                                                <DriftStat label="Tone Shift" value={`${drift.changes.tone > 0 ? '+' : ''}${drift.changes.tone}%`} />
+                                                                <DriftStat label="Days Elapsed" value={drift.daysSince} />
+                                                            </div>
+
+                                                            <div className="bg-black/40 border border-white/5 p-4 rounded-xl">
+                                                                <p className="text-gray-300 text-sm leading-relaxed italic">
+                                                                    "{getDriftNarrative(drift)}"
+                                                                </p>
+                                                            </div>
+
+                                                            <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest pt-4">
+                                                                Baseline: {new Date(drift.baselineDate).toLocaleDateString()} · Comparison: Latest vs Original
+                                                            </p>
+                                                        </div>
+                                                    </section>
+                                                )}
                                             </div>
-                                        )}
-
-                                        {/* Phase 2: Voice Drift Analysis */}
-                                        {drift && (
-                                            <section className="mt-20 glass rounded-3xl p-8 border border-magenta-500/30 relative overflow-hidden group">
-                                                <div className="absolute top-0 right-0 p-4 opacity-20">
-                                                    <span className="text-4xl">📊</span>
-                                                </div>
-
-                                                <div className="relative z-10 space-y-6 text-center md:text-left">
-                                                    <div>
-                                                        <h3 className="text-2xl font-black text-white uppercase tracking-tighter mb-2 italic">
-                                                            Voice Drift Detected
-                                                        </h3>
-                                                        <p className="text-gray-400 text-sm font-mono uppercase tracking-[0.2em]">
-                                                            Status: <span className={
-                                                                drift.status === 'STABLE' ? 'text-green-400' :
-                                                                    drift.status === 'UPGRADE' ? 'text-cyan-400' :
-                                                                        'text-red-400'
-                                                            }>{drift.status}</span>
-                                                        </p>
-                                                    </div>
-
-                                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                                                        <DriftStat label="Drift Rate" value={`${drift.driftRate > 0 ? '+' : ''}${drift.driftRate}%`} color={drift.driftRate > 0 ? 'text-cyan-400' : 'text-red-400'} />
-                                                        <DriftStat label="Pitch Shift" value={`${drift.changes.pitch > 0 ? '+' : ''}${drift.changes.pitch}%`} />
-                                                        <DriftStat label="Tone Shift" value={`${drift.changes.tone > 0 ? '+' : ''}${drift.changes.tone}%`} />
-                                                        <DriftStat label="Days Elapsed" value={drift.daysSince} />
-                                                    </div>
-
-                                                    <div className="bg-black/40 border border-white/5 p-4 rounded-xl">
-                                                        <p className="text-gray-300 text-sm leading-relaxed italic">
-                                                            "{getDriftNarrative(drift)}"
-                                                        </p>
-                                                    </div>
-
-                                                    <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest pt-4">
-                                                        Baseline: {new Date(drift.baselineDate).toLocaleDateString()} · Comparison: Latest vs Original
-                                                    </p>
-                                                </div>
-                                            </section>
                                         )}
                                     </div>
                                 )}
 
-                                {/* EXPORT / UNLOCK SECTION */}
-                                <div className="w-full max-w-4xl mt-32 md:mt-48">
-                                    <div className="flex items-center gap-3 mb-12 px-1 justify-center">
-                                        <div className="w-1 h-6 bg-pink-500" />
-                                        <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em]">
-                                            Export Vault
-                                        </h2>
-                                    </div>
-
-                                    {/* Video / Lock Section */}
-                                    {(showVideo || verifyingPayment) ? (
-                                        <div className="space-y-4">
-                                            {verifyingPayment && !showVideo ? (
-                                                <div className="relative bg-black/50 border border-cyan-500/50 rounded-2xl p-12 text-center animate-pulse">
-                                                    <div className="text-4xl mb-4 animate-spin">💠</div>
-                                                    <h3 className="text-xl font-bold text-cyan-400 mb-2">FINALIZING DECRYPTION</h3>
-                                                    <div className="text-gray-400 text-xs">Verifying blockchain signature & generating audit...</div>
-                                                </div>
-                                            ) : (
-                                                <>
-                                                    <div className="text-center">
-                                                        <div className={`inline-block border ${isCouple ? 'border-pink-500/50 text-pink-400' : 'border-green-500/50 text-green-400'} px-3 py-1 rounded text-[10px] font-bold mb-4 uppercase tracking-widest`}>
-                                                            {isCouple ? 'SYMMETRY FOUND' : 'PREVIEW READY'}
-                                                        </div>
-                                                    </div>
-                                                    <VideoPlayerSection voiceType={voiceType} metrics={safeMetrics} />
-                                                </>
-                                            )}
+                                {/* IDENTITY VISUALIZATION SECTION (PREMIUM GATING) */}
+                                {!isSpyMode && showVideo && (
+                                    <div className="w-full max-w-4xl mt-32 md:mt-48">
+                                        <div className="flex flex-col items-center gap-3 mb-12 px-1 justify-center">
+                                            <div className="w-1 h-6 bg-pink-500" />
+                                            <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em]">
+                                                Identity Visualization
+                                            </h2>
                                         </div>
-                                    ) : (
-                                        <div className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900 border border-white/10 rounded-2xl overflow-hidden">
-                                            {/* Video Preview */}
-                                            <div className="blur-md opacity-30 pointer-events-none">
+
+                                        {!isPremium ? (
+                                            <div className="bg-black/40 border border-pink-500/20 rounded-3xl p-12 text-center space-y-6">
+                                                <div className="text-4xl">🎬</div>
+                                                <h3 className="text-xl font-bold text-white uppercase italic">Visualization Locked</h3>
+                                                <p className="text-gray-400 text-sm max-w-xs mx-auto leading-relaxed">
+                                                    Unlock this result to generate your high-fidelity vocal identity visualization.
+                                                </p>
+                                                <button
+                                                    onClick={() => handleCheckout(isCouple ? 'couple' : 'solo')}
+                                                    disabled={checkoutLoading}
+                                                    className="bg-white text-black font-black text-xs px-8 py-4 rounded-xl uppercase tracking-widest hover:bg-cyan-400 transition-all disabled:opacity-50"
+                                                >
+                                                    {checkoutLoading ? 'Processing...' : `Unlock Now ($${diagnosticPrice})`}
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-4">
+                                                <div className="text-center">
+                                                    <div className={`inline-block border ${isCouple ? 'border-pink-500/50 text-pink-400' : 'border-green-500/50 text-green-400'} px-3 py-1 rounded text-[10px] font-bold mb-4 uppercase tracking-widest`}>
+                                                        {isCouple ? 'SYMMETRY FOUND' : 'PREVIEW READY'}
+                                                    </div>
+                                                </div>
                                                 <VideoPlayerSection voiceType={voiceType} metrics={safeMetrics} />
                                             </div>
-
-                                            {/* Lock Overlay */}
-                                            <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-                                                <div className="text-center p-8 max-w-md">
-                                                    <div className="text-4xl mb-4">🔒</div>
-                                                    <h3 className="text-2xl font-bold text-white mb-2 uppercase tracking-wide">
-                                                        {isCouple ? 'Decode Resonance' : 'Unlock Video'}
-                                                    </h3>
-                                                    <p className="text-gray-400 text-sm mb-8 leading-relaxed">
-                                                        {isCouple
-                                                            ? 'Get your synchronized relationship visualization. A breakdown of your vocal symmetry.'
-                                                            : 'Get your personalized voice × waveform visualization. High-quality, shareable video for your social profiles.'}
-                                                    </p>
-
-                                                    {/* Goal Management / Kill-Switch logic */}
-                                                    {FEATURE_FLAGS.DISABLE_PAYMENTS ? (
-                                                        <div className="bg-white/5 border border-white/10 rounded-xl p-8 text-center">
-                                                            <div className="text-3xl mb-4">✨</div>
-                                                            <p className="text-gray-300 text-sm leading-relaxed italic">
-                                                                {FEATURE_FLAGS.PAYMENT_DISABLED_MESSAGE}
-                                                            </p>
-                                                        </div>
-                                                    ) : (
-                                                        <>
-                                                            {/* Premium Option - $10 / $15 Vault (Community Unlocked) */}
-                                                            <div className={`bg-gradient-to-br ${isCouple ? 'from-pink-500/10 to-cyan-500/10 border-pink-500/30' : 'from-pink-500/10 to-violet-500/10 border-pink-500/30'} border-2 rounded-xl p-6 mb-4`}>
-                                                                <div className={`text-[10px] ${isCouple ? 'text-cyan-400' : 'text-pink-400'} font-bold uppercase tracking-[0.3em] mb-2`}>
-                                                                    💎 {isCouple ? 'RESONANCE DECRYPTED' : 'LIFETIME ACCESS'}
-                                                                </div>
-                                                                <h4 className="text-xl font-black text-white uppercase mb-3">
-                                                                    {isCouple ? 'Couple Vault' : 'EtchVox Vault'}
-                                                                </h4>
-                                                                <div className={`text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r ${isCouple ? 'from-pink-400 to-cyan-400' : 'from-pink-400 to-violet-400'} mb-4`}>
-                                                                    {isCouple ? '$15.00' : '$10.00'}
-                                                                </div>
-
-                                                                {/* THE SELL - Simplified Copy */}
-                                                                <div className="text-center text-xs text-gray-400 mb-6">
-                                                                    {isCouple ? (
-                                                                        <>
-                                                                            <p className="mb-2">Relationships thrive on <span className="text-cyan-400 font-bold">Resonance</span>, not just words.</p>
-                                                                            <p className="text-pink-400">Decode your hidden dynamic.</p>
-                                                                        </>
-                                                                    ) : (
-                                                                        <>
-                                                                            <p className="mb-2">Human voices change <span className="text-yellow-400 font-bold">0.5%/year</span> due to stress and aging.</p>
-                                                                            <p className="text-pink-400">This is the youngest voice you have left.</p>
-                                                                        </>
-                                                                    )}
-                                                                </div>
-
-                                                                <ul className="text-left text-xs text-gray-300 space-y-3 mb-8">
-                                                                    <li className="flex items-start gap-2">
-                                                                        <span className="text-green-400 mt-1">✓</span>
-                                                                        <div className="flex flex-col">
-                                                                            <span className="font-bold">{isCouple ? 'Deep Compatibility Audit' : 'AI Identity Audit Report'}</span>
-                                                                            <span className="text-[10px] text-gray-500">Exhaustive personality analysis & vocal fingerprint.</span>
-                                                                        </div>
-                                                                    </li>
-                                                                    <li className="flex items-start gap-2">
-                                                                        <span className="text-green-400 mt-1">✓</span>
-                                                                        <div className="flex flex-col">
-                                                                            <span className="font-bold">{isCouple ? 'Permanent Vaulting' : 'Lifetime Audio Storage'}</span>
-                                                                            <span className="text-[10px] text-gray-500">Prevent automatic deletion after 30 days. Your voice is archived forever.</span>
-                                                                        </div>
-                                                                    </li>
-                                                                    <li className="flex items-start gap-2">
-                                                                        <span className="text-green-400 mt-1">✓</span>
-                                                                        <div className="flex flex-col">
-                                                                            <span className="font-bold">Social Video Master</span>
-                                                                            <span className="text-[10px] text-gray-500">High-fidelity 4K visualizer export for sharing.</span>
-                                                                        </div>
-                                                                    </li>
-                                                                </ul>
-
-                                                                <div className="text-[9px] text-center text-gray-500 uppercase tracking-widest mb-4 font-mono">
-                                                                    🔒 One-Time Purchase · Permanent Access
-                                                                </div>
-
-                                                                <button
-                                                                    onClick={() => handleCheckout(isCouple ? 'couple' : 'vault')}
-                                                                    disabled={processingPayment}
-                                                                    className={`w-full bg-gradient-to-r ${isCouple ? 'from-pink-600 to-cyan-600' : 'from-pink-600 to-violet-600'} hover:opacity-90 text-white font-bold py-4 rounded-xl text-sm uppercase tracking-widest shadow-lg transform hover:scale-[1.02] transition-all`}
-                                                                >
-                                                                    {processingPayment ? 'Processing...' : isCouple ? 'Unlock Compatibility — $15.00' : 'Secure Vault Access — $10.00'}
-                                                                </button>
-
-                                                                <p className="mt-4 text-[10px] text-gray-500 italic">
-                                                                    *Non-vault audio data is automatically purged from our servers after 30 days for your privacy.
-                                                                </p>
-                                                            </div>
-
-                                                            {/* Basic Option - Controlled by Flag */}
-                                                            {FEATURE_FLAGS.ENABLE_BASIC_UNLOCK && (
-                                                                <div className="mt-8 border border-white/10 rounded-xl p-4">
-                                                                    <h4 className="text-sm font-bold text-gray-300 uppercase mb-1">Standard Export</h4>
-                                                                    <p className="text-[10px] text-gray-500 mb-3 italic">Waveform Visualizer • MP4 Format</p>
-                                                                    <div className={`text-xl font-black ${isCouple ? 'text-pink-400' : 'text-cyan-400'} mb-3`}>
-                                                                        $5.00
-                                                                    </div>
-                                                                    <button
-                                                                        onClick={() => handleCheckout('vault')}
-                                                                        disabled={processingPayment}
-                                                                        className="w-full btn-metallic py-8 rounded-sm mb-4 text-lg"
-                                                                    >
-                                                                        {processingPayment ? 'SECURE_TUNNEL_ESTABLISHED...' : '🔓 SECURE MY LEGACY'}
-                                                                    </button>
-                                                                </div>
-                                                            )}
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
+                                        )}
+                                    </div>
+                                )}
 
                                 {/* SHARE SECTION */}
                                 <div className="w-full max-w-2xl mx-auto pt-32 pb-48 space-y-20 border-t border-white/5">
@@ -892,14 +725,6 @@ export default function ResultPage() {
                                         <div className="flex justify-center gap-8 uppercase tracking-[0.2em] font-mono text-[10px] text-gray-500">
                                             <Link href="/terms" className="hover:text-cyan-400 transition-colors">Terms</Link>
                                             <Link href="/privacy" className="hover:text-cyan-400 transition-colors">Privacy</Link>
-                                            <a
-                                                href={`https://buymeacoffee.com/${FEATURE_FLAGS.BMAC_HANDLE}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-amber-500 hover:text-amber-400 transition-colors"
-                                            >
-                                                Support
-                                            </a>
                                         </div>
                                         <Link href="/" className="inline-block text-[11px] text-gray-600 hover:text-white transition-colors uppercase tracking-[0.3em] border-b border-transparent hover:border-gray-500 pb-1 font-black">
                                             [ START NEW ANALYSIS ]

@@ -5,9 +5,12 @@ import { calculateZScores, getTimeCategory, getDayCategory, saveVoiceLog, loadVo
 import type { ZScoreResult, AnomalyAlert } from '@/lib/mirrorEngine';
 import { generateContent } from '@/lib/gemini';
 import { MIRROR_ORACLE_SYSTEM_PROMPT } from '@/lib/mirrorPrompt';
+import { saveMirrorLog } from '@/lib/storage';
+import MirrorRecap from './MirrorRecap';
 
 interface MirrorDashboardProps {
-    vector: number[];
+    calibrationVector: number[];
+    readingVector: number[];
     onClose: () => void;
     context?: {
         genre: string;
@@ -16,6 +19,8 @@ interface MirrorDashboardProps {
         dayIndex: number;
         progressLevel: string;
     };
+    userHash: string;
+    wellnessConsentAgreed: boolean;
 }
 
 interface OracleResponse {
@@ -31,15 +36,23 @@ interface OracleResponse {
     suggested_tags: string[];
 }
 
-export default function MirrorDashboard({ vector, onClose, context }: MirrorDashboardProps) {
+export default function MirrorDashboard({
+    calibrationVector,
+    readingVector,
+    onClose,
+    context,
+    userHash,
+    wellnessConsentAgreed
+}: MirrorDashboardProps) {
     const [zScoreResult, setZScoreResult] = useState<ZScoreResult | null>(null);
     const [oracleResponse, setOracleResponse] = useState<OracleResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
+    const [showRecap, setShowRecap] = useState(false);
 
     useEffect(() => {
         analyzeVoice();
-    }, [vector]);
+    }, [calibrationVector, readingVector]);
 
     async function analyzeVoice() {
         setIsLoading(true);
@@ -47,31 +60,34 @@ export default function MirrorDashboard({ vector, onClose, context }: MirrorDash
         // Load history
         const history = loadVoiceLogHistory();
 
-        // Calculate Z-Scores
-        const zScores = calculateZScores(vector, history, 30);
+        // Calculate Z-Scores using CALIBRATION vector (consistent phonemes)
+        const zScores = calculateZScores(calibrationVector, history, 30);
         setZScoreResult(zScores);
 
-        // Prepare input for Voice Oracle
+        // Prepare input for Voice Oracle using READING vector (expressive content)
         const now = new Date();
         const timeCategory = getTimeCategory(now);
         const dayCategory = getDayCategory(now);
 
+        // Get last 5 tags for context
+        const tagHistory = history.filter(h => h.annotationTag).slice(-5).map(h => h.annotationTag);
+
         const oracleInput = {
-            current_vector: vector,
-            z_scores: zScores.zScores,
+            reading_vector: readingVector,
+            calibration_z_scores: zScores.zScores,
             context: {
                 time_category: timeCategory,
-                day_category: dayCategory
+                day_category: dayCategory,
+                genre: context?.genre,
+                mood: context?.mood,
+                day_index: context?.dayIndex,
+                tag_history: tagHistory
             },
             anomalies: zScores.anomalies.map(a => ({
                 metric: a.dimensionName,
                 z_score: a.zScore.toFixed(2),
                 severity: a.severity
-            })),
-            baseline_stats: {
-                mean: zScores.baselineStats.mean,
-                std: zScores.baselineStats.std
-            }
+            }))
         };
 
         try {
@@ -99,18 +115,33 @@ export default function MirrorDashboard({ vector, onClose, context }: MirrorDash
     function handleTagSelection(tag: string) {
         setSelectedTag(tag);
 
-        // Save voice log with annotation
+        // 1. Save locally for immediate feedback & recap
         const now = new Date();
-        saveVoiceLog({
+        const log = {
             timestamp: now,
-            vector: vector,
+            calibrationVector,
+            readingVector,
             context: {
                 timeCategory: getTimeCategory(now),
-                dayCategory: getDayCategory(now)
+                dayCategory: getDayCategory(now),
+                genre: context?.genre,
+                mood: context?.mood,
+                dayIndex: context?.dayIndex
             },
-            annotationTag: tag
-        });
+            annotationTag: tag,
+            wellnessConsentAgreed: wellnessConsentAgreed
+        };
+        saveVoiceLog(log);
+
+        // 2. Asset-ization: Sync to Firestore
+        if (oracleResponse) {
+            saveMirrorLog(log, {
+                mirror_analysis: oracleResponse.mirror_analysis,
+                oracle_prediction: oracleResponse.oracle_prediction
+            });
+        }
     }
+
 
     if (isLoading) {
         return (
@@ -251,8 +282,17 @@ export default function MirrorDashboard({ vector, onClose, context }: MirrorDash
                     )}
                 </div>
 
-                {/* Close Button */}
-                <div className="text-center">
+                {/* Close Button & Recap Trigger */}
+                <div className="text-center space-y-4">
+                    {context?.dayIndex === 7 && selectedTag && (
+                        <button
+                            onClick={() => setShowRecap(true)}
+                            className="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl font-bold shadow-[0_0_20px_rgba(34,211,238,0.4)] hover:shadow-[0_0_30px_rgba(34,211,238,0.6)] transition-all animate-pulse"
+                        >
+                            ✨ Reveal 7-Day Voice Recap
+                        </button>
+                    )}
+
                     <button
                         onClick={onClose}
                         className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white rounded-full font-bold transition-all border border-white/20"
@@ -261,6 +301,16 @@ export default function MirrorDashboard({ vector, onClose, context }: MirrorDash
                     </button>
                 </div>
             </div>
+
+            {showRecap && (
+                <MirrorRecap
+                    userHash={userHash}
+                    onClose={() => {
+                        setShowRecap(false);
+                        onClose();
+                    }}
+                />
+            )}
         </div>
     );
 }

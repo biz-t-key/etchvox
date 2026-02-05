@@ -107,12 +107,14 @@ const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, re
             setIsShaking(true);
             setTimeout(() => setIsShaking(false), 200);
 
-            // AUTO-BURN Logic: Trigger destruction after slam completes
+            // AUTO-BURN Disablied per user request to simplify flow
+            /*
             if (autoBurn) {
                 setTimeout(() => {
                     if (!isHoldingPurge) startDestruction();
                 }, 1000);
             }
+            */
         }, 150);
     };
 
@@ -215,17 +217,8 @@ const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, re
                 {isTyping && <span className="cursor inline-block w-2 h-4 bg-zinc-800 ml-1 animate-pulse" />}
             </div>
 
-            {/* BURN CONTROL */}
-            {!isBurning ? (
-                <div className="mt-8 flex justify-end relative z-20">
-                    <button
-                        onClick={startDestruction}
-                        className="bg-black text-white text-[10px] font-black px-4 py-2 rounded uppercase tracking-[0.2em] hover:bg-red-700 transition-colors shadow-lg"
-                    >
-                        [ BURN RECORD ]
-                    </button>
-                </div>
-            ) : (
+            {/* Self-Destruct flow disabled per user request */}
+            {isBurning && !isPurged && (
                 <div className={`mt-8 text-right font-black text-xs tracking-widest z-20 relative ${isHoldingPurge ? 'text-cyan-600' : 'text-red-700 animate-pulse'}`}>
                     {isHoldingPurge ? (
                         <>PURGE SUSPENDED: INITIATING AUDIT...</>

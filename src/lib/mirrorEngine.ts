@@ -5,12 +5,16 @@ import type { VoiceResult } from './storage';
 
 export interface VoiceLog {
     timestamp: Date;
-    vector: number[]; // 30D bio-acoustic vector
+    calibrationVector: number[]; // 30D vector from "Hello world"
+    readingVector: number[];    // 30D vector from dynamic reading
     context: {
         timeCategory: 'Morning' | 'Afternoon' | 'Evening' | 'Night';
         dayCategory: 'Weekday' | 'Weekend';
+        genre?: string;
+        mood?: string;
+        dayIndex?: number;
     };
-    annotationTag?: string;
+    annotationTag?: string; // User's subjective label after oracle feedback
 }
 
 export interface ZScoreResult {
@@ -99,7 +103,9 @@ export function calculateZScores(
     const std = new Array(30).fill(0);
 
     for (let dim = 0; dim < 30; dim++) {
-        const values = recentHistory.map(log => log.vector[dim]);
+        const values = recentHistory.map(log =>
+            log.calibrationVector ? log.calibrationVector[dim] : (log as any).vector[dim]
+        );
 
         // Mean
         mean[dim] = values.reduce((a, b) => a + b, 0) / values.length;
