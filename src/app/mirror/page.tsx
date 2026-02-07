@@ -3,16 +3,17 @@
 import { useState, useRef, useEffect } from 'react';
 import { VoiceAnalyzer } from '@/lib/analyzer';
 import { initializeAuth, loadUserHash } from '@/lib/authService';
-import { getScenariosByGenre, getReadingText, getProgressLevel, type Genre, type Mood, type Scenario } from '@/lib/mirrorContent';
+import { getScenariosByGenre, getReadingText, getProgressLevel, type Genre, type Mood, type Scenario, type Archetype } from '@/lib/mirrorContent';
 import { saveVoiceLog, loadVoiceLogHistory } from '@/lib/mirrorEngine';
 import { saveAudioBlob } from '@/lib/mirrorDb';
+import { uploadMirrorBlob } from '@/lib/storage';
+import { polishAudio } from '@/lib/audioPolisher';
 import MirrorDashboard from '@/components/mirror/MirrorDashboard';
-import MirrorRecap from '@/components/mirror/MirrorRecap';
 import SubscriptionWall from '@/components/mirror/SubscriptionWall';
 import { checkSubscription } from '@/lib/subscription';
 import Link from 'next/link';
 
-type Phase = 'auth' | 'calibration' | 'genre' | 'mood' | 'reading' | 'analyzing' | 'result' | 'recap';
+type Phase = 'auth' | 'calibration' | 'archetype' | 'genre' | 'mood' | 'reading' | 'analyzing' | 'polishing' | 'result' | 'recap';
 
 const CALIBRATION_TEXT = 'Hello, world.';
 const GENRE_LOCK_DAYS = 7;
@@ -37,6 +38,7 @@ export default function MirrorPage() {
 
     // Mood & Reading state
     const [selectedMood, setSelectedMood] = useState<Mood | null>(null);
+    const [selectedArchetype, setSelectedArchetype] = useState<Archetype | null>(null);
     const [currentDayIndex, setCurrentDayIndex] = useState(1);
     const [readingText, setReadingText] = useState('');
 
@@ -209,20 +211,38 @@ export default function MirrorPage() {
 
                 if (isCalibration) {
                     setCalibrationVector(v);
-                    // After calibration...
-                    if (selectedGenre && !canChangeGenre) {
-                        setPhase('mood');
-                    } else {
-                        setPhase('genre');
-                    }
+                    setPhase('archetype');
                 } else {
                     setReadingVector(v);
-                    const finalBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
-                    setCapturedBlob(finalBlob);
+                    const rawBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
 
-                    // Save to IndexedDB if it's the main reading
-                    if (userHash) {
-                        await saveAudioBlob(`voice_blob_${userHash}_${currentDayIndex}`, finalBlob);
+                    // Stage 1: Analyzing (UI state already set above)
+                    // (Wait for 1.5s as per original timeout logic)
+
+                    // Stage 2: Polishing
+                    setPhase('polishing');
+                    try {
+                        const polishedBlob = await polishAudio(rawBlob);
+                        setCapturedBlob(polishedBlob);
+
+                        // Save the polished version to IndexedDB
+                        if (userHash) {
+                            await saveAudioBlob(`voice_blob_${userHash}_${currentDayIndex}`, polishedBlob);
+                            // Background Sync to R2 for cross-device persistence
+                            uploadMirrorBlob(userHash, currentDayIndex, polishedBlob).then(success => {
+                                if (success) console.log(`✓ Day ${currentDayIndex} asset synced to cloud`);
+                            });
+                        }
+                    } catch (error) {
+                        console.error('Polishing failed, saving raw:', error);
+                        setCapturedBlob(rawBlob);
+                        if (userHash) {
+                            await saveAudioBlob(`voice_blob_${userHash}_${currentDayIndex}`, rawBlob);
+                            // Background Sync to R2 for cross-device persistence
+                            uploadMirrorBlob(userHash, currentDayIndex, rawBlob).then(success => {
+                                if (success) console.log(`✓ Day ${currentDayIndex} asset synced to cloud (raw)`);
+                            });
+                        }
                     }
 
                     setPhase('result');
@@ -237,7 +257,22 @@ export default function MirrorPage() {
         if (scenarios.length > 0) {
             setSelectedScenario(scenarios[0]); // For MVP, select first scenario of genre
         }
+
+        // Auto-set archetype for Cinematic Grit
+        if (genre === 'cinematic_grit') {
+            setSelectedArchetype('cinematic_grit');
+        }
+
         setPhase('mood');
+    }
+
+    function handleArchetypeSelect(archetype: Archetype) {
+        setSelectedArchetype(archetype);
+        if (selectedGenre && !canChangeGenre) {
+            setPhase('mood');
+        } else {
+            setPhase('genre');
+        }
     }
 
     function handleMoodSelect(mood: Mood) {
@@ -362,11 +397,32 @@ export default function MirrorPage() {
                     scenario: selectedScenario?.title || 'Unknown',
                     mood: selectedMood,
                     dayIndex: currentDayIndex,
-                    progressLevel
+                    progressLevel,
+                    archetype: selectedArchetype || 'optimizer',
+                    readingText,
+                    sampleRate: 48000
                 }}
                 userHash={userHash || ''}
                 wellnessConsentAgreed={wellnessAccepted}
             />
+        );
+    }
+
+    // Polishing phase
+    if (phase === 'polishing') {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+                <div className="text-center space-y-4">
+                    <div className="relative w-24 h-24 mx-auto">
+                        <div className="absolute inset-0 border-4 border-cyan-500/20 rounded-full" />
+                        <div className="absolute inset-0 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-white mb-2">Refining Resonance...</h2>
+                        <p className="text-cyan-400 font-mono text-xs animate-pulse uppercase tracking-widest">Applying Neural Filters • High-Pass • EQ • Comp</p>
+                    </div>
+                </div>
+            </div>
         );
     }
 
@@ -420,17 +476,60 @@ export default function MirrorPage() {
         );
     }
 
-    // Genre selection phase
-    if (phase === 'genre') {
-        const genres: { id: Genre; name: string; icon: string; desc: string }[] = [
-            { id: 'philosophy', name: 'Philosophy', icon: '🏛️', desc: 'Stoic wisdom and resilience' },
-            { id: 'thriller', name: 'Thriller', icon: '🌊', desc: 'Survival and tension' },
-            { id: 'poetic', name: 'Poetic', icon: '🌙', desc: 'Ethereal and introspective' }
+    // Archetype selection phase
+    if (phase === 'archetype') {
+        const archetypes: { id: Archetype; name: string; icon: string; desc: string; colors: string }[] = [
+            { id: 'optimizer', name: 'The Optimizer', icon: '⚡', desc: 'Efficiency and High-Output. Reframes drift as system latency.', colors: 'hover:border-cyan-500/50 hover:shadow-[0_0_30px_rgba(34,211,238,0.3)]' },
+            { id: 'stoic', name: 'The Stoic', icon: '🏛️', desc: 'Equilibrium and Stillness. Reframes drift as external turbulence.', colors: 'hover:border-slate-500/50 hover:shadow-[0_0_30px_rgba(100,116,139,0.3)]' },
+            { id: 'alchemist', name: 'The Alchemist', icon: '🔮', desc: 'Creative Energy and Flow. Reframes drift as primal resonance.', colors: 'hover:border-purple-500/50 hover:shadow-[0_0_30px_rgba(168,85,247,0.3)]' }
         ];
 
         return (
             <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
                 <div className="max-w-3xl w-full space-y-12">
+                    <div className="text-center space-y-4">
+                        <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                            Choose Your Mirror Archetype
+                        </h1>
+                        <p className="text-gray-400">How should the Oracle interpret your vocal signature today?</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {archetypes.map((arch) => (
+                            <button
+                                key={arch.id}
+                                onClick={() => handleArchetypeSelect(arch.id)}
+                                className={`group relative bg-white/5 backdrop-blur-sm hover:bg-white/10 border border-white/10 rounded-2xl p-8 transition-all ${arch.colors}`}
+                            >
+                                <div className="text-6xl mb-4 grayscale group-hover:grayscale-0 transition-all">{arch.icon}</div>
+                                <h3 className="text-xl font-bold text-white mb-2">{arch.name}</h3>
+                                <p className="text-gray-400 text-sm leading-relaxed">{arch.desc}</p>
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="text-center">
+                        <button onClick={() => setPhase('calibration')} className="text-gray-500 hover:text-gray-300 text-sm transition">
+                            ← Back to Calibration
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Genre selection phase
+    if (phase === 'genre') {
+        const genres: { id: Genre; name: string; icon: string; desc: string }[] = [
+            { id: 'philosophy', name: 'Philosophy', icon: '🏛️', desc: 'Stoic wisdom and resilience' },
+            { id: 'thriller', name: 'Thriller', icon: '🌊', desc: 'Survival and tension' },
+            { id: 'poetic', name: 'Poetic', icon: '🌙', desc: 'Ethereal and introspective' },
+            { id: 'cinematic_grit', name: 'Cinematic Grit', icon: '🥃', desc: 'Hard-won truth and stillness' }
+        ];
+
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
+                <div className="max-w-4xl w-full space-y-12">
                     <div className="text-center space-y-4">
                         <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
                             Select Your Reading Genre
@@ -441,16 +540,18 @@ export default function MirrorPage() {
                         )}
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         {genres.map((genre) => (
                             <button
                                 key={genre.id}
                                 onClick={() => handleGenreSelect(genre.id)}
-                                className="group relative bg-white/5 backdrop-blur-sm hover:bg-white/10 border border-white/10 hover:border-cyan-500/50 rounded-2xl p-8 transition-all hover:shadow-[0_0_30px_rgba(34,211,238,0.3)]"
+                                className="group relative bg-white/5 backdrop-blur-sm hover:bg-white/10 border border-white/10 hover:border-cyan-500/50 rounded-2xl p-8 transition-all hover:shadow-[0_0_30px_rgba(34,211,238,0.3)] text-left flex items-start gap-6"
                             >
-                                <div className="text-6xl mb-4">{genre.icon}</div>
-                                <h3 className="text-xl font-bold text-white mb-2">{genre.name}</h3>
-                                <p className="text-gray-400 text-sm">{genre.desc}</p>
+                                <div className="text-5xl">{genre.icon}</div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-white mb-2">{genre.name}</h3>
+                                    <p className="text-gray-400 text-sm leading-relaxed">{genre.desc}</p>
+                                </div>
                             </button>
                         ))}
                     </div>
@@ -504,70 +605,98 @@ export default function MirrorPage() {
         );
     }
 
-    // Calibration ready phase (default)
+    // Check if recording already done today
+    const history = loadVoiceLogHistory();
+    const today = new Date().toDateString();
+    const alreadyRecordedToday = history.some(log => new Date(log.timestamp).toDateString() === today);
+
+    // Simplified onboarding view for subscribed users
+    const renderOnboarding = () => (
+        <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 space-y-8 text-left">
+            <div className="space-y-3 text-center">
+                <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 uppercase tracking-tight">
+                    Calibration Protocol
+                </h2>
+                <p className="text-gray-400 text-sm italic">
+                    Protocol active. Authenticated session in progress.
+                </p>
+            </div>
+
+            <div className="space-y-6">
+                <div className="flex items-start gap-4 bg-white/5 p-5 rounded-2xl border border-white/5">
+                    <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 font-bold shrink-0">1</div>
+                    <div className="text-sm">
+                        <p className="text-white font-bold uppercase tracking-wider">Sync Daily Session</p>
+                        <p className="text-gray-400 leading-relaxed">Complete your required 6-second vocal sample once every 24 hours to maintain biometric accuracy.</p>
+                    </div>
+                </div>
+                <div className="flex items-start gap-4 bg-white/5 p-5 rounded-2xl border border-white/5">
+                    <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 font-bold shrink-0">2</div>
+                    <div className="text-sm">
+                        <p className="text-white font-bold uppercase tracking-wider">Oracle Alignment</p>
+                        <p className="text-gray-400 leading-relaxed">The Voice Oracle evaluates your drift from baseline. Data is processed locally in your biometric vault.</p>
+                    </div>
+                </div>
+
+                {alreadyRecordedToday && (
+                    <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-2xl p-6 text-center space-y-2">
+                        <p className="text-cyan-400 text-sm font-black uppercase tracking-widest leading-none">
+                            ✨ Daily Alignment Secured
+                        </p>
+                        <p className="text-gray-400 text-xs leading-relaxed opacity-70 italic">
+                            Biometric patterns have been successfully cached. Return in 24 hours to proceed to the next narrative phase.
+                        </p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+
+    // Calibration ready phase (default view)
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
+        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6 py-12">
             <div className="max-w-2xl w-full space-y-12">
                 <div className="text-center space-y-4">
-                    <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                    <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 uppercase tracking-tighter">
                         Voice Mirror
                     </h1>
-                    <p className="text-gray-400 text-lg">Daily Bio-Acoustic Reading Practice</p>
-                    {userHash && (
-                        <p className="text-gray-600 text-xs font-mono">ID: {userHash.slice(0, 8)}...{userHash.slice(-8)}</p>
-                    )}
+                    <div className="inline-block px-4 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-mono font-bold tracking-[0.2em] uppercase">
+                        STATUS: {progressLevel}
+                    </div>
                 </div>
 
-                <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 space-y-6">
-                    <h2 className="text-sm font-black uppercase tracking-widest text-cyan-400">Today's Flow</h2>
-                    <ol className="space-y-3 text-gray-300">
-                        <li className="flex items-start gap-3">
-                            <span className="text-cyan-400 font-bold">1.</span>
-                            <span>Calibration: Read "Hello, world"</span>
-                        </li>
-                        <li className="flex items-start gap-3">
-                            <span className="text-cyan-400 font-bold">2.</span>
-                            <span>Select your mood (high/mid/low)</span>
-                        </li>
-                        <li className="flex items-start gap-3">
-                            <span className="text-cyan-400 font-bold">3.</span>
-                            <span>Read aloud the selected text</span>
-                        </li>
-                        <li className="flex items-start gap-3">
-                            <span className="text-cyan-400 font-bold">4.</span>
-                            <span>Receive Oracle analysis & tag your state</span>
-                        </li>
-                    </ol>
-                </div>
+                {renderOnboarding()}
 
-                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-                    <label className="flex items-start gap-4 cursor-pointer group">
-                        <input
-                            type="checkbox"
-                            checked={wellnessAccepted}
-                            onChange={(e) => setWellnessAccepted(e.target.checked)}
-                            className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-cyan-500"
-                        />
-                        <div className="space-y-1 text-left">
-                            <span className="text-sm text-gray-300 leading-relaxed select-none block font-bold transition-colors group-hover:text-white">
-                                I consent to the anonymous processing of my acoustic features for wellness analysis. I understand this is not a medical diagnosis.
-                            </span>
-                        </div>
-                    </label>
-                </div>
+                {!alreadyRecordedToday && (
+                    <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+                        <label className="flex items-start gap-4 cursor-pointer group">
+                            <input
+                                type="checkbox"
+                                checked={wellnessAccepted}
+                                onChange={(e) => setWellnessAccepted(e.target.checked)}
+                                className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-cyan-500"
+                            />
+                            <div className="space-y-1 text-left">
+                                <span className="text-xs text-gray-400 leading-relaxed select-none block font-bold transition-colors group-hover:text-white uppercase tracking-wider">
+                                    I consent to the anonymous processing of my acoustic features for wellness analysis. I understand this is not a medical diagnosis.
+                                </span>
+                            </div>
+                        </label>
+                    </div>
+                )}
 
                 <button
                     onClick={() => startRecording(true)}
-                    disabled={!wellnessAccepted}
-                    className="w-full py-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xl font-bold rounded-2xl hover:shadow-[0_0_30px_rgba(34,211,238,0.5)] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    disabled={!wellnessAccepted || alreadyRecordedToday}
+                    className="w-full py-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xl font-black uppercase tracking-widest rounded-3xl hover:shadow-[0_0_40px_rgba(34,211,238,0.4)] transition-all disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed transform active:scale-95"
                 >
                     <span className="mr-3">🎤</span>
-                    Start Calibration
+                    {alreadyRecordedToday ? 'Session Locked' : 'INITIATE CALIBRATION'}
                 </button>
 
                 <div className="text-center">
-                    <Link href="/" className="text-gray-500 hover:text-gray-300 text-sm transition">
-                        ← Back to Home
+                    <Link href="/" className="text-gray-500 hover:text-white text-[10px] uppercase tracking-[0.3em] font-black transition-all">
+                        ← RETURN TO SYSTEM HOME
                     </Link>
                 </div>
             </div>

@@ -1,27 +1,37 @@
-# 🎤 EtchVox - AI Voice Personality Analysis
+# 🎤 VoiceGlow - AI Voice Analysis Platform
 
 **"Your Face is 10/10. What about your Voice?"**
 
-EtchVox is an AI-powered voice analysis platform that determines your personality type based on acoustic characteristics. Think MBTI, but for your voice.
+VoiceGlow is an AI-powered voice analysis platform featuring three distinct diagnostic modes: **Voice Mirror** (7-day voice training), **Solo Analysis** (16 personality types), and **Couple Compatibility** (relationship insights).
 
-🌐 **Live**: [etchvox.com](https://etchvox.com)
+🌐 **Live**: [voiceglow.com](https://voiceglow.com) (formerly etchvox.com)
 
 ---
 
 ## ✨ Features
 
-### Core Features
-- **🎯 16 Voice Types** - Scientifically categorized personality types
-- **🔊 Real-time Analysis** - 100% client-side processing (zero server cost)
-- **💀 Brutal Roasts** - Honest, witty personality insights
-- **💕 Couple Mode** - Voice compatibility analysis for partners
-- **🌏 Multi-language** - English & Japanese support
+### 🪞 Voice Mirror (Premium - Subscription Required)
+- **7-Day Voice Training** - Daily reading practice with AI-guided resonance tracking
+- **4 Archetypal Identities** - Philosophy, Thriller, Poetic, Cinematic Grit
+- **AI Oracle Analysis** - Deep acoustic insights with Alignment Score (0-100%)
+- **Resonance Dossier** - Beautiful video export with identity-specific visuals
+  - Optimizer: Cyan grid + barcode stamp
+  - Stoic: Parchment texture + wax seal
+  - Alchemist: Sacred geometry + gold accents
+  - Cinematic Grit: Concrete effect + CLASSIFIED stamp
+- **Privacy-First** - All data stored in browser (IndexedDB + localStorage)
 
-### Premium Features
-- **🔓 Full Reports** - $4.99 unlock
-- **🔒 Voice Vault** - Lifetime storage + aging tracker ($10)
-- **📊 Compatibility Matrix** - 16x16 relationship insights
-- **🎨 Custom OG Images** - Social sharing optimized
+### 🎯 Solo Analysis (Pay-per-Use)
+- **16 Voice Types** - Personality archetypes based on acoustic characteristics
+- **Brutal Roasts** - Honest, witty AI-generated insights
+- **Real-time Processing** - 100% client-side analysis (Web Audio API)
+- **Spy Mode** - Anonymous voice analysis with self-destruct timer
+- **Multi-language** - English & Japanese support
+
+### 💕 Couple Mode (Pay-per-Use)
+- **Voice Compatibility Analysis** - Relationship insights for partners
+- **16x16 Compatibility Matrix** - Detailed interaction dynamics
+- **Dual Recording Interface** - Synchronized analysis for two voices
 
 ---
 
@@ -33,7 +43,7 @@ EtchVox is an AI-powered voice analysis platform that determines your personalit
 | **Styling** | Tailwind CSS, Custom Cyberpunk Theme |
 | **Analysis** | Web Audio API, Client-side ML |
 | **Database** | Firebase (Firestore + Storage) |
-| **Payments** | Stripe |
+| **Payments** | Lemon Squeezy (Subscriptions + One-time) |
 | **Hosting** | Vercel |
 | **i18n** | Custom implementation |
 
@@ -42,35 +52,44 @@ EtchVox is an AI-powered voice analysis platform that determines your personalit
 ## 🏗️ Project Structure
 
 ```
-etchvox/
+voiceglow/
 ├─ src/
 │  ├─ app/                    # Next.js App Router
 │  │  ├─ page.tsx            # Landing Page
-│  │  ├─ record/             # Recording Flow
+│  │  ├─ mirror/             # Voice Mirror (7-day training)
+│  │  ├─ record/             # Solo Analysis Recording
 │  │  ├─ result/[id]/        # Result Display + Payments
 │  │  ├─ couple/             # Couple Mode
+│  │  ├─ gallery/            # Debug Gallery (Dev)
+│  │  ├─ terms/              # Terms of Service
+│  │  ├─ privacy/            # Privacy Policy
 │  │  ├─ api/
-│  │  │  ├─ checkout/        # Stripe Checkout
-│  │  │  ├─ webhook/         # Stripe Webhooks
+│  │  │  ├─ checkout/lemonsqueezy/  # Subscription Checkout
+│  │  │  ├─ webhook/lemonsqueezy/   # Subscription Webhooks
+│  │  │  ├─ identity/        # Solo/Couple Analysis APIs
 │  │  │  └─ og/              # OG Image Generation
-│  ├─ components/            # React Components
-│  ├─ lib/                   # Core Logic
+│  ├─ components/
+│  │  ├─ mirror/             # Voice Mirror Components
+│  │  │  ├─ MirrorDashboard.tsx   # Analysis Results
+│  │  │  ├─ MirrorRecap.tsx       # 7-Day Video Recap
+│  │  │  └─ SubscriptionWall.tsx  # Paywall
+│  │  └─ result/             # Result Components
+│  │     ├─ ResultCard.tsx        # Solo Analysis Card
+│  │     └─ SpyReportCard.tsx     # Spy Mode Card
+│  ├─ lib/
 │  │  ├─ analyzer.ts         # Voice Analysis Engine
 │  │  ├─ types.ts            # 16 Types Master Data
-│  │  ├─ quantizer.ts        # Acoustic → Semantic Tags
-│  │  ├─ scm.ts              # Stereotype Content Model
-│  │  ├─ compatibility.ts    # Couple Analysis
-│  │  ├─ compatibilityMatrix.ts # 16x16 Scores
+│  │  ├─ mirrorContent.ts    # Voice Mirror Scenarios
+│  │  ├─ mirrorEngine.ts     # Z-Score Analysis Engine
+│  │  ├─ mirrorDb.ts         # IndexedDB for Audio Storage
+│  │  ├─ subscription.ts     # Lemon Squeezy Integration
 │  │  ├─ firebase.ts         # Firebase SDK
 │  │  └─ storage.ts          # Data Persistence
 │  └─ hooks/                 # Custom Hooks
 ├─ public/
 │  └─ locales/               # i18n Translations
-├─ scripts/
-│  └─ couple_processor.py    # Couple Audio Processing
-├─ FIREBASE_SETUP.md         # Firebase Guide
-├─ STRIPE_SETUP.md          # Stripe Guide
-└─ PHASE2_IMPLEMENTATION.md  # Advanced Features
+└─ config/
+   └─ features.ts            # Feature Flags & Pricing
 
 ```
 
@@ -82,7 +101,7 @@ etchvox/
 
 ```bash
 git clone <your-repo>
-cd etchvox
+cd voiceglow
 npm install
 ```
 
@@ -99,10 +118,15 @@ NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
 NEXT_PUBLIC_FIREBASE_APP_ID=
 
-# Stripe (Required for payments)
-STRIPE_SECRET_KEY=sk_test_...
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
+# Lemon Squeezy (Required for payments)
+LEMONSQUEEZY_API_KEY=
+LEMONSQUEEZY_WEBHOOK_SECRET=
+NEXT_PUBLIC_LEMONSQUEEZY_STORE_ID=
+NEXT_PUBLIC_LEMONSQUEEZY_WEEKLY_VARIANT_ID=
+NEXT_PUBLIC_LEMONSQUEEZY_MONTHLY_VARIANT_ID=
+NEXT_PUBLIC_LEMONSQUEEZY_SOLO_VARIANT_ID=
+NEXT_PUBLIC_LEMONSQUEEZY_COUPLE_VARIANT_ID=
+NEXT_PUBLIC_LEMONSQUEEZY_SPY_VARIANT_ID=
 
 # App
 NEXT_PUBLIC_BASE_URL=http://localhost:3000
@@ -118,12 +142,28 @@ Open [http://localhost:3000](http://localhost:3000)
 
 ---
 
-## 📱 User Flow
+## 📱 User Flows
+
+### Voice Mirror Flow (Subscription Required)
 
 ```
-Landing Page
+Landing → Subscribe (Weekly/Monthly)
     ↓
-Recording (3 steps, 30 seconds)
+Biometric Authentication (Mnemonic Phrase)
+    ↓
+Genre Selection (Philosophy / Thriller / Poetic / Cinematic Grit)
+    ↓
+Day 1-7: Calibration → Mood Selection → Reading (6 seconds)
+    ↓
+AI Oracle Analysis (Alignment Score, Predictions, Tags)
+    ↓
+Day 7: Resonance Dossier (Video Export with Archetypal Design)
+```
+
+### Solo Analysis Flow
+
+```
+Landing → Record (30 seconds)
     ↓
 Toxicity Input (Nicotine/Alcohol/Sleep)
     ↓
@@ -131,57 +171,76 @@ Accent Selection
     ↓
 Analysis (Client-side)
     ↓
-Result Page
-    ├─ Free: Type + Blurred Roast + Compatibility Preview
-    └─ Paid ($4.99): Full Unlock + Vault Option ($10 OTO)
+Result Page → $10 Unlock (Solo Analysis)
+    ├─ Free Preview: Type + Blurred Roast
+    └─ Paid: Full Report + Downloadable PDF
+```
+
+### Couple Mode Flow
+
+```
+Landing → Couple Mode → Dual Recording
+    ↓
+Analysis (Both Voices)
+    ↓
+Result Page → $15 Unlock (Couple Compatibility)
+    ├─ Free Preview: Basic Compatibility Score
+    └─ Paid: Full Matrix + Relationship Insights
 ```
 
 ---
 
 ## 💰 Monetization
 
-### Pricing
+### Pricing Model
 
-| Product | Price | Conversion |
-|---------|-------|------------|
-| **Full Unlock** | $4.99 | ~5% of users |
-| **Vault (OTO)** | +$10 | ~20% of unlocks |
+| Product | Price | Type |
+|---------|-------|------|
+| **Voice Mirror (Weekly)** | $10/week | Subscription |
+| **Voice Mirror (Monthly)** | $30/month | Subscription |
+| **Solo Analysis** | $10 | One-time |
+| **Couple Analysis** | $15 | One-time |
+| **Spy Mode** | $10 | One-time |
 
 ### Revenue Projection
 
-- **10,000 visitors/month**
-- **500 unlock** ($4.99) = $2,495
-- **100 vault** ($10) = $1,000
-- **Monthly Revenue**: ~$3,500
-- **Annual**: ~$42,000
+- **Voice Mirror**: 100 subscribers/month @ $30 = $3,000/mo
+- **Solo Analysis**: 200 unlocks/month @ $10 = $2,000/mo
+- **Couple Analysis**: 50 unlocks/month @ $15 = $750/mo
+- **Monthly Revenue**: ~$5,750
+- **Annual**: ~$69,000
 
 ---
 
-## 🔧 Key Files Explained
+## 🔧 Key Features Explained
 
-### Voice Analysis
+### Voice Mirror Components
+
+| Component | Purpose |
+|-----------|---------|
+| `MirrorDashboard.tsx` | AI Oracle analysis results with Z-Score visualization |
+| `MirrorRecap.tsx` | 7-day video recap with archetypal visual design |
+| `MirrorContent.ts` | 4 genres × 3 scenarios × 7 days of curated reading texts |
+| `MirrorEngine.ts` | Z-Score calculation engine for voice deviation tracking |
+| `MirrorDb.ts` | IndexedDB wrapper for audio blob storage (browser-only) |
+| `SubscriptionWall.tsx` | Paywall component with Lemon Squeezy integration |
+
+### Solo Analysis Components
+
+| Component | Purpose |
+|-----------|---------|
+| `ResultCard.tsx` | 16 personality types with AI roasts |
+| `SpyReportCard.tsx` | Anonymous analysis with self-destruct timer |
+| `analyzer.ts` | Web Audio API processing (pitch, speed, volume, tone) |
+| `types.ts` | 16 voice types master data with roasts |
+
+### Payment Integration
 
 | File | Purpose |
 |------|---------|
-| `lib/analyzer.ts` | Web Audio API processing (pitch, speed, volume, tone) |
-| `lib/types.ts` | 16 voice types master data with roasts |
-| `lib/quantizer.ts` | Converts raw metrics to semantic tags |
-
-### Payments
-
-| File | Purpose |
-|------|---------|
-| `api/checkout/route.ts` | Stripe Checkout session creation |
-| `api/webhook/route.ts` | Payment success handler |
-| `result/[id]/page.tsx` | Unlock button + OTO modal |
-
-### Couple Mode
-
-| File | Purpose |
-|------|---------|
-| `couple/page.tsx` | Dual recording interface |
-| `lib/compatibility.ts` | Couple analysis logic |
-| `scripts/couple_processor.py` | Audio segmentation & LLM prompt |
+| `api/checkout/lemonsqueezy/route.ts` | Checkout session creation |
+| `api/webhook/lemonsqueezy/route.ts` | Subscription event handler |
+| `lib/subscription.ts` | Subscription status verification |
 
 ---
 
@@ -190,16 +249,23 @@ Result Page
 ### Theme: **Cyberpunk / Neon Brutalism**
 
 - **Colors**: Cyan (#00F0FF), Magenta (#FF00FF), Electric Green (#00FF66)
-- **Typography**: Inter (UI), JetBrains Mono (data display)
+- **Typography**: 
+  - UI: Inter, Oswald (Cinematic Grit)
+  - Data: JetBrains Mono
+  - Serif: EB Garamond (Stoic), Cinzel (Alchemist)
 - **Effects**: Glassmorphism, neon glows, scan lines, glitch animations
-- **Mobile First**: Touch-friendly (44px min targets), safe area support
+- **Voice Mirror Archetypes**:
+  - Optimizer: Tech grid + barcode
+  - Stoic: Parchment + wax seal
+  - Alchemist: Sacred geometry + gold
+  - Cinematic Grit: Concrete + CLASSIFIED stamp
 
 ### UI Philosophy
 
 1. **Instant Gratification** - Analysis completes in 3 seconds
 2. **Brutal Honesty** - No sugarcoating, entertainment over validation
-3. **Social Proof** - Shareable OG images, Instagram-optimized
-4. **Scarcity** - "Youngest voice you have left" messaging
+3. **Privacy First** - All Voice Mirror data stays in browser
+4. **Scarcity** - "7 days to transform your voice" messaging
 
 ---
 
@@ -215,9 +281,9 @@ npm i -g vercel
 vercel
 
 # Add environment variables
-vercel env add STRIPE_SECRET_KEY
-vercel env add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-vercel env add STRIPE_WEBHOOK_SECRET
+vercel env add LEMONSQUEEZY_API_KEY
+vercel env add LEMONSQUEEZY_WEBHOOK_SECRET
+vercel env add NEXT_PUBLIC_LEMONSQUEEZY_STORE_ID
 
 # Deploy to production
 vercel --prod
@@ -225,24 +291,25 @@ vercel --prod
 
 ### Post-Deployment Checklist
 
-- [ ] Set up Stripe webhook endpoint
+- [ ] Set up Lemon Squeezy webhook endpoint (`/api/webhook/lemonsqueezy`)
 - [ ] Configure Firebase (if using)
-- [ ] Test payment flow end-to-end
+- [ ] Test Voice Mirror subscription flow end-to-end
+- [ ] Test Solo/Couple payment flows
 - [ ] Verify OG images render correctly
 - [ ] Test mobile on real devices
-- [ ] Set up analytics (Vercel Analytics, etc.)
+- [ ] Set up analytics (Vercel Analytics, Lemon Squeezy Dashboard)
 
 ---
 
-## 📊 Analytics to Track
+##📊 Analytics to Track
 
 | Metric | Tool | Target |
 |--------|------|--------|
-| **Conversion Rate** | Stripe Dashboard | >5% |
-| **OTO Acceptance** | Custom tracking | >20% |
-| **Avg Session Duration** | Vercel Analytics | >2 minutes |
+| **Voice Mirror Subscription Rate** | Lemon Squeezy Dashboard | >3% |
+| **Solo/Couple Conversion Rate** | Firebase Analytics | >5% |
+| **7-Day Retention (Voice Mirror)** | Custom tracking | >60% |
+| **Avg Session Duration** | Vercel Analytics | >3 minutes |
 | **Mobile vs Desktop** | Vercel Analytics | 70% mobile |
-| **Social Shares** | URL params | Track manually |
 
 ---
 
@@ -255,35 +322,27 @@ vercel --prod
 // Ensure HTTPS in production (localhost is OK for dev)
 ```
 
-### "Stripe payment not updating result"
+### "Lemon Squeezy payment not updating subscription"
 
 ```typescript
-// 1. Check webhook is receiving events (Stripe Dashboard → Webhooks)
-// 2. Verify STRIPE_WEBHOOK_SECRET matches
+// 1. Check webhook is receiving events (Lemon Squeezy Dashboard → Webhooks)
+// 2. Verify LEMONSQUEEZY_WEBHOOK_SECRET matches
 // 3. Check Firestore rules allow writes
 ```
 
-### "Firebase not saving data"
+### "Voice Mirror data not persisting"
 
 ```typescript
-// Check isFirebaseConfigured() returns true
-// Verify Firestore rules (see FIREBASE_SETUP.md)
-// Fallback to localStorage if Firebase fails (intentional)
+// Check browser IndexedDB (DevTools → Application → IndexedDB → voiceMirrorDB)
+// Verify localStorage has mirrorLogs (DevTools → Application → Local Storage)
+// All data is browser-local by design (no server sync)
 ```
-
----
-
-## 📚 Additional Documentation
-
-- **[FIREBASE_SETUP.md](./FIREBASE_SETUP.md)** - Complete Firebase guide
-- **[STRIPE_SETUP.md](./STRIPE_SETUP.md)** - Payment integration guide
-- **[PHASE2_IMPLEMENTATION.md](./PHASE2_IMPLEMENTATION.md)** - Advanced features
 
 ---
 
 ## 🤝 Contributing
 
-This is a commercial project. For inquiries: [your-email@example.com]
+This is a commercial project. For inquiries: [info@voiceglow.com]
 
 ---
 
@@ -297,8 +356,9 @@ Proprietary. All rights reserved.
 
 - **Voice Analysis**: Inspired by acoustic psychology research
 - **16 Personality System**: Original framework
+- **Voice Mirror**: Inspired by voice training methodologies
 - **Design**: Cyberpunk 2077, Neon Genesis Evangelion aesthetics
 
 ---
 
-**Built with 🔥 by a husband who was told he sounds like a robot.**
+**Built with 🔥 by a team that believes your voice deserves as much attention as your face.**

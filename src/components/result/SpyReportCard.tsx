@@ -14,6 +14,8 @@ interface SpyReportCardProps {
     onBurn?: () => void;
     autoBurn?: boolean;
     isHoldingPurge?: boolean;
+    isPremium?: boolean;
+    onUnlock?: () => void;
 }
 
 const RESULT_CONFIG: Record<string, { color: string, count: number }> = {
@@ -32,7 +34,7 @@ interface InkDrop {
     delay: number;
 }
 
-const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, reportMessage, score, onBurn, autoBurn, isHoldingPurge }) => {
+const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, reportMessage, score, onBurn, autoBurn, isHoldingPurge, isPremium, onUnlock }) => {
     const [displayedMessage, setDisplayedMessage] = useState('');
     const [isTyping, setIsTyping] = useState(true);
     const [shouldSlam, setShouldSlam] = useState(false);
@@ -107,14 +109,11 @@ const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, re
             setIsShaking(true);
             setTimeout(() => setIsShaking(false), 200);
 
-            // AUTO-BURN Disablied per user request to simplify flow
-            /*
             if (autoBurn) {
                 setTimeout(() => {
                     if (!isHoldingPurge) startDestruction();
                 }, 1000);
             }
-            */
         }, 150);
     };
 
@@ -213,8 +212,31 @@ const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, re
             </div>
 
             <div className="message-box border-t border-dashed border-zinc-300 pt-6 min-h-[140px] text-sm leading-relaxed text-zinc-800 relative z-10">
-                <span className="whitespace-pre-wrap">{isScrambling ? scrambleText(displayedMessage) : displayedMessage}</span>
-                {isTyping && <span className="cursor inline-block w-2 h-4 bg-zinc-800 ml-1 animate-pulse" />}
+                {!isPremium ? (
+                    <div className="space-y-4">
+                        <div className="relative">
+                            <span className="whitespace-pre-wrap blur-[4px] select-none opacity-40">
+                                {displayedMessage || "THIS_REPORT_IS_ENCRYPTED_AND_RESTRICTED_TO_LEVEL_4_PERSONNEL_ONLY_PLEASE_AUTHENTICATE_TO_DECRYPT_THE_FULL_DOSSIER"}
+                            </span>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <button
+                                    onClick={onUnlock}
+                                    className="bg-zinc-900 text-white px-6 py-3 rounded text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl"
+                                >
+                                    Unlock Intelligence
+                                </button>
+                            </div>
+                        </div>
+                        <p className="text-[9px] text-zinc-400 text-center uppercase tracking-tighter">
+                            By clicking unlock, you agree to the Terms of Service. This is a one-time digital intelligence decrypt.
+                        </p>
+                    </div>
+                ) : (
+                    <>
+                        <span className="whitespace-pre-wrap">{isScrambling ? scrambleText(displayedMessage) : displayedMessage}</span>
+                        {isTyping && <span className="cursor inline-block w-2 h-4 bg-zinc-800 ml-1 animate-pulse" />}
+                    </>
+                )}
             </div>
 
             {/* Self-Destruct flow disabled per user request */}

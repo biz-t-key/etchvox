@@ -8,13 +8,20 @@ export interface VoiceLog {
     calibrationVector: number[]; // 30D vector from "Hello world"
     readingVector: number[];    // 30D vector from dynamic reading
     context: {
-        timeCategory: 'Morning' | 'Afternoon' | 'Evening' | 'Night';
+        timeCategory: 'Morning' | 'Afternoon' | 'Evening' | 'Night' | 'Midnight';
         dayCategory: 'Weekday' | 'Weekend';
         genre?: string;
         mood?: string;
         dayIndex?: number;
+        readingText?: string;
+        deviceInfo?: {
+            browser: string;
+            os: string;
+            sampleRate: number;
+        };
     };
     annotationTag?: string; // User's subjective label after oracle feedback
+    alignmentScore?: number; // AI-calculated alignment with archetype
 }
 
 export interface ZScoreResult {
@@ -52,12 +59,14 @@ const DIMENSION_NAMES = [
 /**
  * Get time category from a Date object
  */
-export function getTimeCategory(date: Date): 'Morning' | 'Afternoon' | 'Evening' | 'Night' {
+export function getTimeCategory(date: Date): 'Morning' | 'Afternoon' | 'Evening' | 'Night' | 'Midnight' {
     const hour = date.getHours();
-    if (hour >= 5 && hour < 11) return 'Morning';
-    if (hour >= 11 && hour < 17) return 'Afternoon';
-    if (hour >= 17 && hour < 23) return 'Evening';
-    return 'Night';
+
+    if (hour >= 5 && hour < 11) return 'Morning';    // 05:00-11:00 (Awakening)
+    if (hour >= 11 && hour < 17) return 'Afternoon'; // 11:00-17:00 (Activity)
+    if (hour >= 17 && hour < 22) return 'Evening';   // 17:00-22:00 (Social/Rest)
+    if (hour >= 22 || hour < 1) return 'Night';      // 22:00-01:00 (Reflection)
+    return 'Midnight';                               // 01:00-05:00 (Deep/Rest)
 }
 
 /**

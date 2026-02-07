@@ -615,5 +615,210 @@ export const FULL_CONTENT_DATA: Record<string, any> = {
                 }
             }
         ]
+    },
+
+    // ===== CINEMATIC GRIT SCENARIOS =====
+    iron_contract: {
+        days: [
+            {
+                day_index: 1,
+                context: 'The ignition of the journey. A quiet, ironclad internal contract.',
+                modes: {
+                    high: { emotion: 'Resolute', text: '[CONTRACT] (Slow inhale) I am looking at the mountain. I’ve decided. Today, the first step is everything.', word_count: 18 },
+                    mid: { emotion: 'Steady', text: '[BEGINNING] (Exhale) Pre-dawn silence. The world is still asleep... but I am already moving toward the peak.', word_count: 18 },
+                    low: { emotion: 'Grounded', text: '[INTENT] (Heavy breath) The base is cold, but the fire is internal. I step into the blue shadows.', word_count: 18 }
+                }
+            },
+            {
+                day_index: 2,
+                context: 'Focus on the physical rhythm of the effort.',
+                modes: {
+                    high: { emotion: 'Rhythmic', text: '[MOMENTUM] (Crunch) One foot, then the next. My heart is a steady engine, driving me higher.', word_count: 17 },
+                    mid: { emotion: 'Relentless', text: '[GRIT] (Rhythmic breathing) The slope is steeper, but my resolve is stronger. I don\'t stop. I don\'t blink.', word_count: 18 },
+                    low: { emotion: 'Patient', text: '[PACE] (Exhale) Slow and steady. I am measuring the mountain... one heavy, intentional step at a time.', word_count: 18 }
+                }
+            },
+            {
+                day_index: 3,
+                context: 'Turning fatigue into a source of pride.',
+                modes: {
+                    high: { emotion: 'Unyielding', text: '[FRICTION] (Sharp exhale) My muscles burn. Good. That’s the feeling of progress. That’s the feeling of winning.', word_count: 18 },
+                    mid: { emotion: 'Stoic', text: '[CERTAINTY] (Steady breath) The wind is rising, but it can’t move me. I am becoming part of the stone.', word_count: 19 },
+                    low: { emotion: 'Internal', text: '[STRENGTH] (Soft grunt) Sweat turns to ice on my skin. I’ve never felt more alive than right now.', word_count: 18 }
+                }
+            },
+            {
+                day_index: 4,
+                context: 'The breakthrough. The first reward for the struggle.',
+                modes: {
+                    high: { emotion: 'Vindicated', text: '[BREAKTHROUGH] (Gasp of cold air) I’ve cleared the clouds. The struggle is below me. The sun is mine.', word_count: 18 },
+                    mid: { emotion: 'Radiant', text: '[CLARITY] (Long inhale) Golden light on white snow. I see the horizon... and it looks like a promise kept.', word_count: 20 },
+                    low: { emotion: 'Awe', text: '[VIEW] (Quiet exhale) Above the grey. Everything is sharp. Everything is clear. I knew this was here.', word_count: 17 }
+                }
+            },
+            {
+                day_index: 5,
+                context: 'The mastery of the environment and self.',
+                modes: {
+                    high: { emotion: 'Absolute', text: '[Sovereignty] (Thin breath) Ozone and silence. I am the master of this height. No one else is here.', word_count: 18 },
+                    mid: { emotion: 'Integrated', text: '[FLOW] (Slow exhale) I move with the mountain now. Every breath is deep, focused, and completely my own.', word_count: 18 },
+                    low: { emotion: 'Minimal', text: '[PRESENCE] (Faint breath) No words needed. The achievement is in the air I breathe and the stone I touch.', word_count: 19 }
+                }
+            },
+            {
+                day_index: 6,
+                context: 'The final ridge. The peak is a formality now.',
+                modes: {
+                    high: { emotion: 'Poised', text: '[THRESHOLD] (Deep inhale) The summit is waiting. I’m not running toward it. I’m arriving, exactly on time.', word_count: 18 },
+                    mid: { emotion: 'Anticipatory', text: '[REWARD] (Steady exhale) The hardest part is over. Now, I just walk into the glory I have earned.', word_count: 18 },
+                    low: { emotion: 'Ready', text: '[FINALITY] (Rhythmic crunch) This is the moment I built, step by step. I am ready to claim it.', word_count: 18 }
+                }
+            },
+            {
+                day_index: 7,
+                context: 'The summit. The ultimate moment of quiet, positive reflection.',
+                modes: {
+                    high: { emotion: 'Triumphant', text: '[SUMMIT] (Deep, lung-filling breath) No more up to go. I am standing on the top of my life.', word_count: 21 },
+                    mid: { emotion: 'Serene', text: '[PEACE] (Slow, satisfied exhale) The world is quiet. I did what I said I would do. It’s done.', word_count: 19 },
+                    low: { emotion: 'Masterful', text: '[LEGACY] (Long pause) No noise. Just the wind... and the knowledge that I am finally, truly here.', word_count: 18 }
+                }
+            }
+        ]
+    },
+
+    titanium_navy: {
+        days: [
+            {
+                day_index: 1,
+                context: 'The quiet return. Walking through the lobby unnoticed, fueled by private knowledge.',
+                modes: {
+                    high: { emotion: 'Composed', text: '[RETURN] (Slow exhale) The lobby is cold marble and silence. They don’t see me yet... but I know what’s coming.', word_count: 19 },
+                    mid: { emotion: 'Steady', text: '[PURPOSE] (Soft breath) Back in the heart of it. Moving unnoticed through the shadows... carrying a fire they can\'t see.', word_count: 19 },
+                    low: { emotion: 'Stealthy', text: '[OBSERVATION] (Quiet sigh) Same lights, different man. I am walking through their world... wait until they see what I’ve brought.', word_count: 19 }
+                }
+            },
+            {
+                day_index: 2,
+                context: 'The preparation phase. Setting the pieces on the board without making a sound.',
+                modes: {
+                    high: { emotion: 'Calculated', text: '[STRATEGY] (Soft grunt) Every move is precise. I am setting the stage in the dark... waiting for the clock to strike.', word_count: 19 },
+                    mid: { emotion: 'Patient', text: '[PATIENCE] (Steady breath) Let them keep talking. Noise is for the weak. I am building my foundation in the silence.', word_count: 19 },
+                    low: { emotion: 'Internal', text: '[CERTAINTY] (Slow inhale) Titanium and ink. The plan is perfect. I can already feel the weight of the key in my hand.', word_count: 21 }
+                }
+            },
+            {
+                day_index: 3,
+                context: 'The tension before the shift. The old world starts to feel the pressure.',
+                modes: {
+                    high: { emotion: 'Focused', text: '[PRESSURE] (Sharp exhale) The air is heavy tonight. They feel the shift... but they can\'t point to where it’s coming from.', word_count: 19 },
+                    mid: { emotion: 'Knowing', text: '[ANTICIPATION] (Slow breath) The current is changing. I am the shadow at the edge of the room... watching the board collapse.', word_count: 19 },
+                    low: { emotion: 'Quiet', text: '[GRAVITY] (Quiet chuckle) It’s starting. The whispers in the hallway are getting louder. My name is finally back in the air.', word_count: 20 }
+                }
+            },
+            {
+                day_index: 4,
+                context: 'The tide turns. The phone call or the signature that changes everything.',
+                modes: {
+                    high: { emotion: 'Vindicated', text: '[POWER] (Clink of ice) It’s done. One signature... and the ghost of who I was is finally, truly gone. (Exhale)', word_count: 18 },
+                    mid: { emotion: 'Radiant', text: '[BREAKTHROUGH] (Soft laugh) That one call changed everything. The power has shifted. I am no longer asking... I am deciding.', word_count: 19 },
+                    low: { emotion: 'Sovereign', text: '[CLAIM] (Deep breath) The tide has turned. They’re looking at me now... seeing the man they said would never arrive.', word_count: 19 }
+                }
+            },
+            {
+                day_index: 5,
+                context: 'Occupying the new space. The feeling of belonging where you were once excluded.',
+                modes: {
+                    high: { emotion: 'Absolute', text: '[POSSESSION] (Slow exhale) Brushed titanium and navy velvet. This office fits me. I wasn\'t lucky... I was inevitable. (Pause)', word_count: 18 },
+                    mid: { emotion: 'Integrated', text: '[PRESENCE] (Quiet breath) The air up here is different. I’ve stepped out of the lobby... and into the light I earned.', word_count: 19 },
+                    low: { emotion: 'Unshakable', text: '[OWNERSHIP] (Soft grunt) I belong at this table. Every light below is a world I now understand. I am home.', word_count: 19 }
+                }
+            },
+            {
+                day_index: 6,
+                context: 'The final evening. Pouring a drink and looking out at the city.',
+                modes: {
+                    high: { emotion: 'Poised', text: '[REFLECTION] (Clink of glass) The city hums below. Eighty stories of history... and tonight, I am the one writing the ending.', word_count: 19 },
+                    mid: { emotion: 'Sophisticated', text: '[ELEGANCE] (Long inhale) Amber streetlights and cold crystal. I’m not just looking at the view... I am looking at my kingdom.', word_count: 19 },
+                    low: { emotion: 'Serene', text: '[STILLNESS] (Quiet sigh) The noise has stopped. The city is a grid of gold... and I have finally found my place.', word_count: 19 }
+                }
+            },
+            {
+                day_index: 7,
+                context: 'Midnight on the terrace. The ultimate moment of vindication.',
+                modes: {
+                    high: { emotion: 'Triumphant', text: '[VINDICATION] (Deep inhale) They said I’d never own this. (Knowing smile) They were wrong. The horizon is mine now. (Exhale)', word_count: 19 },
+                    mid: { emotion: 'Masterful', text: '[VICTORY] (Long, satisfied exhale) Midnight in the city. Every light represents a world I’ve mastered. Poise over noise... always.', word_count: 19 },
+                    low: { emotion: 'Peaceful', text: '[LEGACY] (Quiet breath) It’s finished. I’ve taken the keys to the world. Now... I simply watch the sun come up.', word_count: 19 }
+                }
+            }
+        ]
+    },
+
+    copper_dust: {
+        days: [
+            {
+                day_index: 1,
+                context: 'Leaving the orbit of the familiar. The weight of the unknown pressing against the hull.',
+                modes: {
+                    high: { emotion: 'Resolute', text: '[ORBIT] (Deep inhale) The old world is a ghost behind me. I am crossing the line into the great unknown.', word_count: 19 },
+                    mid: { emotion: 'Steady', text: '[DEPARTURE] (Hiss of oxygen) Gravity is letting go. I am fueled by a private fire... and a mission with no return.', word_count: 19 },
+                    low: { emotion: 'Focused', text: '[IGNITION] (Vibration in voice) The hull is groaning under the pressure. I don\'t look back. My eyes are on the void.', word_count: 19 }
+                }
+            },
+            {
+                day_index: 2,
+                context: 'Deep space travel. The internal silence of long-term ambition.',
+                modes: {
+                    high: { emotion: 'Stoic', text: '[VOID] (Slow exhale) Light years of silence. My ambition is the only thing keeping the cold at bay tonight. (Pause)', word_count: 18 },
+                    mid: { emotion: 'Patient', text: '[STILLNESS] (Quiet thrum) The stars are fixed. I am the only thing moving. The dream is getting closer with every breath.', word_count: 19 },
+                    low: { emotion: 'Introspective', text: '[ENDURANCE] (Steady breath) Time has no meaning here. Only the destination matters. I am becoming the journey I chose to take.', word_count: 20 }
+                }
+            },
+            {
+                day_index: 3,
+                context: 'Atmospheric entry. The friction before the breakthrough.',
+                modes: {
+                    high: { emotion: 'Tense', text: '[FRICTION] (Sharp exhale) The heat is rising. The ship is screaming... but I am the pilot of this chaos. Hold steady.', word_count: 19 },
+                    mid: { emotion: 'Determined', text: '[ENTRY] (Heavy rattle) Copper dust on the sensors. The fire outside is temporary. The ground is what stays. (Grit teeth)', word_count: 18 },
+                    low: { emotion: 'Focused', text: '[DESCENT] (Short breath) Gravity is pulling me home... to a place I’ve never been. I am claiming my territory now.', word_count: 18 }
+                }
+            },
+            {
+                day_index: 4,
+                context: 'Landing and the first shaky steps on solid ground.',
+                modes: {
+                    high: { emotion: 'Awe-struck', text: '[TOUCHDOWN] (Pressurized seal opens) The engine is cooling. I am stepping out into the violet shadows of a real world.', word_count: 18 },
+                    mid: { emotion: 'Vindicated', text: '[LANDING] (Heavy boot crunch) Copper dust under my feet. It’s no longer a projection. It’s tactile. It’s finally real.', word_count: 18 },
+                    low: { emotion: 'Humble', text: '[FOUNDATION] (Soft sigh) My legs are shaky, but the ground is firm. I’ve survived the crossing. Now... I build.', word_count: 18 }
+                }
+            },
+            {
+                day_index: 5,
+                context: 'Exploring the new ecosystem. The realization of mastery over the new environment.',
+                modes: {
+                    high: { emotion: 'Sovereign', text: '[DOMINION] (Deep inhale) Bioluminescent light and alien wind. This air belongs to me now. I am the first to breathe it.', word_count: 19 },
+                    mid: { emotion: 'Curious', text: '[SETTLEMENT] (Slow exhale) Violet shadows and metallic sheen. I am not just an explorer anymore. I am the root.', word_count: 17 },
+                    low: { emotion: 'Integrated', text: '[ADAPTATION] (Soft breath) The ship is silent. The world is waking up. I am becoming part of this new soil.', word_count: 18 }
+                }
+            },
+            {
+                day_index: 6,
+                context: 'The night before the first sunrise. Preparing the legacy.',
+                modes: {
+                    high: { emotion: 'Poised', text: '[PREPARATION] (Metallic clink) The flag is ready. Tomorrow, the map changes forever. I am the architect of what comes next.', word_count: 19 },
+                    mid: { emotion: 'Reflective', text: '[LEGACY] (Quiet sigh) One last night in the dark. I am clearing the path for those who follow my light.', word_count: 18 },
+                    low: { emotion: 'Certain', text: '[PROMISE] (Steady breath) I didn\'t just come to see. I came to stay. The first stone is already laid.', word_count: 17 }
+                }
+            },
+            {
+                day_index: 7,
+                context: 'Planting the flag as the twin suns rise. The transition to Founder.',
+                modes: {
+                    high: { emotion: 'Triumphant', text: '[SUNRISE] (Deep, lung-filling breath) The twin suns are rising. I am no longer an explorer. I am a founder.', word_count: 17 },
+                    mid: { emotion: 'Serene', text: '[MASTERFUL] (Slow, satisfied exhale) The world is quiet. I’ve settled the frontier. I am finally... home. (Knowing smile)', word_count: 18 },
+                    low: { emotion: 'Peaceful', text: '[FOUNDER] (Long exhale) The first of many. I’ve planted the flag in the copper dust. My legacy begins today.', word_count: 18 }
+                }
+            }
+        ]
     }
 };

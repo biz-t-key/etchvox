@@ -10,6 +10,28 @@ interface SubscriptionWallProps {
 export default function SubscriptionWall({ userHash }: SubscriptionWallProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [activeStep, setActiveStep] = useState(0);
+
+    const onboardingSteps = [
+        {
+            title: "1. Choose Your Genre",
+            subtitle: "Lock in your vocal style for 7 days",
+            desc: "Select from Philosophy, Thriller, Poetic, or Cinematic Grit. Your choice defines the narrative structure and AI persona for the entire week.",
+            img: "/images/mirror_step1_genre.png"
+        },
+        {
+            title: "2. Record Daily 6-Sec Reads",
+            subtitle: "Capture your authentic state",
+            desc: "Select your energy level (High, Mid, Low) and read the assigned narrative text. The Voice Oracle analyzes your alignment in real-time.",
+            img: "/images/mirror_step2_reading.png"
+        },
+        {
+            title: "3. Export Your Resonance Dossier",
+            subtitle: "7 days of data as a digital asset",
+            desc: "After 7 days, your vocal journey is synthesized into a beautiful video report with unique archetypal visuals (Stamps, Seals, and Grids).",
+            img: "/images/mirror_step3_dossier.png"
+        }
+    ];
 
     async function handleCheckout(plan: 'weekly' | 'monthly') {
         setIsLoading(true);
@@ -27,8 +49,6 @@ export default function SubscriptionWall({ userHash }: SubscriptionWallProps) {
             }
 
             const data = await response.json();
-
-            // Redirect to Lemon Squeezy checkout
             window.location.href = data.checkoutUrl;
 
         } catch (err) {
@@ -39,20 +59,74 @@ export default function SubscriptionWall({ userHash }: SubscriptionWallProps) {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
-            <div className="max-w-2xl w-full space-y-8">
+        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center py-12 px-6">
+            <div className="max-w-4xl w-full space-y-12">
                 {/* Header */}
                 <div className="text-center space-y-4">
-                    <div className="text-6xl mb-4">🎭</div>
-                    <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                    <div className="text-6xl mb-4 grayscale opacity-50">🎭</div>
+                    <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 uppercase tracking-tighter">
                         Voice Mirror
                     </h1>
-                    <p className="text-gray-400 text-lg">
+                    <p className="text-gray-400 text-lg uppercase tracking-widest text-sm font-mono">
                         Daily Bio-Acoustic Self-Tracking
                     </p>
-                    <p className="text-gray-500 text-sm font-mono">
-                        Premium Feature - Subscription Required
-                    </p>
+                </div>
+
+                {/* Onboarding Carousel (Top) */}
+                <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-8 border border-white/10 relative overflow-hidden group">
+                    <div className="absolute top-4 right-8 flex gap-2">
+                        {onboardingSteps.map((_, idx) => (
+                            <div
+                                key={idx}
+                                className={`w-2 h-2 rounded-full transition-all ${idx === activeStep ? 'w-8 bg-cyan-400' : 'bg-white/20'}`}
+                            />
+                        ))}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                        <div className="space-y-6">
+                            <div className="space-y-2">
+                                <h2 className="text-3xl font-black text-white italic">
+                                    {onboardingSteps[activeStep].title}
+                                </h2>
+                                <p className="text-cyan-400 font-bold uppercase tracking-wider text-sm">
+                                    {onboardingSteps[activeStep].subtitle}
+                                </p>
+                            </div>
+                            <p className="text-gray-400 leading-relaxed">
+                                {onboardingSteps[activeStep].desc}
+                            </p>
+
+                            <div className="flex gap-4 pt-4">
+                                <button
+                                    onClick={() => setActiveStep((prev) => (prev === 0 ? onboardingSteps.length - 1 : prev - 1))}
+                                    className="p-4 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white transition-all"
+                                >
+                                    ←
+                                </button>
+                                <button
+                                    onClick={() => setActiveStep((prev) => (prev === onboardingSteps.length - 1 ? 0 : prev + 1))}
+                                    className="flex-1 py-4 px-6 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold transition-all flex items-center justify-between"
+                                >
+                                    Next Phase
+                                    <span>→</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="relative aspect-video rounded-2xl overflow-hidden border border-white/10 bg-black/40 shadow-2xl">
+                            <img
+                                key={activeStep}
+                                src={onboardingSteps[activeStep].img}
+                                alt={onboardingSteps[activeStep].title}
+                                className="w-full h-full object-cover animate-in fade-in zoom-in duration-500"
+                                onError={(e) => {
+                                    console.error('Image failed to load:', onboardingSteps[activeStep].img);
+                                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x450?text=Module+Preview';
+                                }}
+                            />
+                        </div>
+                    </div>
                 </div>
 
                 {/* Error Message */}
@@ -62,112 +136,117 @@ export default function SubscriptionWall({ userHash }: SubscriptionWallProps) {
                     </div>
                 )}
 
-                {/* Pricing Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Weekly Plan */}
-                    <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 space-y-6 hover:border-cyan-500/50 transition-all">
-                        <div className="text-center">
-                            <h3 className="text-xl font-bold text-white mb-2">Weekly</h3>
-                            <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                                ${LEMONSQUEEZY_CONFIG.WEEKLY_PRICE}
-                            </div>
-                            <p className="text-gray-500 text-sm mt-1">per week</p>
-                        </div>
-
-                        <ul className="space-y-3 text-sm text-gray-300">
-                            <li className="flex items-center gap-2">
-                                <span className="text-cyan-400">✓</span>
-                                Daily voice calibration
-                            </li>
-                            <li className="flex items-center gap-2">
-                                <span className="text-cyan-400">✓</span>
-                                Z-Score anomaly detection
-                            </li>
-                            <li className="flex items-center gap-2">
-                                <span className="text-cyan-400">✓</span>
-                                Oracle predictions
-                            </li>
-                            <li className="flex items-center gap-2">
-                                <span className="text-cyan-400">✓</span>
-                                7-day recap montage
-                            </li>
-                        </ul>
-
-                        <button
-                            onClick={() => handleCheckout('weekly')}
-                            disabled={isLoading}
-                            className="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold rounded-xl hover:shadow-[0_0_30px_rgba(34,211,238,0.5)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isLoading ? 'Processing...' : 'Start Weekly'}
-                        </button>
+                {/* Pricing Cards (Bottom) */}
+                <div className="space-y-8">
+                    <div className="text-center space-y-2">
+                        <h3 className="text-xs font-black text-cyan-400 uppercase tracking-widest">Digital Access Pass</h3>
+                        <p className="text-gray-500 text-[10px] italic">Unlock the 7-day resonance protocol. All sessions limited to 1 recording per day.</p>
                     </div>
 
-                    {/* Monthly Plan */}
-                    <div className="bg-white/5 backdrop-blur-sm border-2 border-cyan-500/50 rounded-2xl p-8 space-y-6 relative hover:shadow-[0_0_30px_rgba(34,211,238,0.3)] transition-all">
-                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-cyan-500 text-black text-xs font-bold px-4 py-1 rounded-full">
-                            BEST VALUE
-                        </div>
-
-                        <div className="text-center">
-                            <h3 className="text-xl font-bold text-white mb-2">Monthly</h3>
-                            <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                                ${LEMONSQUEEZY_CONFIG.MONTHLY_PRICE}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* 7-Day Pass */}
+                        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 space-y-6 hover:border-cyan-500/50 transition-all">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h3 className="text-xl font-black text-white uppercase italic">7-Day Pass</h3>
+                                    <p className="text-gray-500 text-[10px] uppercase tracking-widest">Standard Access</p>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-3xl font-black text-white">
+                                        ${LEMONSQUEEZY_CONFIG.WEEKLY_PRICE}
+                                    </div>
+                                    <p className="text-gray-600 text-[10px] mt-1 font-bold">ONE-TIME</p>
+                                </div>
                             </div>
-                            <p className="text-gray-500 text-sm mt-1">per month</p>
-                            <p className="text-cyan-400 text-xs mt-2 font-bold">Save 16%</p>
+
+                            <ul className="space-y-3 text-sm text-gray-400 border-t border-white/5 pt-6">
+                                <li className="flex items-center gap-2">
+                                    <span className="text-cyan-400">✓</span>
+                                    1 Reading Session / Day
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <span className="text-cyan-400">✓</span>
+                                    AI Oracle Analysis
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <span className="text-cyan-400">✓</span>
+                                    7-Day Biometric Record
+                                </li>
+                            </ul>
+
+                            <button
+                                onClick={() => handleCheckout('weekly')}
+                                disabled={isLoading}
+                                className="w-full py-4 bg-white text-black font-black uppercase text-xs rounded-xl hover:bg-cyan-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95"
+                            >
+                                {isLoading ? 'INITIALIZING...' : 'Acquire 7-Day Pass'}
+                            </button>
                         </div>
 
-                        <ul className="space-y-3 text-sm text-gray-300">
-                            <li className="flex items-center gap-2">
-                                <span className="text-cyan-400">✓</span>
-                                Everything in Weekly
-                            </li>
-                            <li className="flex items-center gap-2">
-                                <span className="text-cyan-400">✓</span>
-                                30-day trend analysis
-                            </li>
-                            <li className="flex items-center gap-2">
-                                <span className="text-cyan-400">✓</span>
-                                Advanced insights
-                            </li>
-                            <li className="flex items-center gap-2">
-                                <span className="text-cyan-400">✓</span>
-                                Priority support
-                            </li>
-                        </ul>
+                        {/* 30-Day Pass */}
+                        <div className="bg-white/10 backdrop-blur-sm border-2 border-cyan-500/50 rounded-2xl p-8 space-y-6 relative hover:shadow-[0_0_40px_rgba(34,211,238,0.2)] transition-all">
+                            <div className="absolute -top-3 right-8 bg-cyan-500 text-black text-[9px] font-black px-4 py-1 rounded-full uppercase italic">
+                                Optimized Value
+                            </div>
 
-                        <button
-                            onClick={() => handleCheckout('monthly')}
-                            disabled={isLoading}
-                            className="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold rounded-xl hover:shadow-[0_0_30px_rgba(34,211,238,0.5)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isLoading ? 'Processing...' : 'Start Monthly'}
-                        </button>
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h3 className="text-xl font-black text-white uppercase italic">30-Day Pass</h3>
+                                    <p className="text-cyan-400 text-[10px] font-black uppercase tracking-widest">Full Sequence</p>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-3xl font-black text-white">
+                                        ${LEMONSQUEEZY_CONFIG.MONTHLY_PRICE}
+                                    </div>
+                                    <p className="text-cyan-600 text-[10px] mt-1 font-black">ONE-TIME</p>
+                                </div>
+                            </div>
+
+                            <ul className="space-y-3 text-sm text-gray-300 border-t border-white/10 pt-6">
+                                <li className="flex items-center gap-2">
+                                    <span className="text-cyan-400">✓</span>
+                                    1 Reading Session / Day
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <span className="text-cyan-400">✓</span>
+                                    Extended Trend Comparison
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <span className="text-cyan-400">✓</span>
+                                    Priority Biometric Analysis
+                                </li>
+                                <li className="flex items-center gap-2 font-black text-cyan-400 uppercase text-[10px] tracking-wider">
+                                    <span className="text-cyan-400">✓</span>
+                                    Save 46% vs 7-Day
+                                </li>
+                            </ul>
+
+                            <button
+                                onClick={() => handleCheckout('monthly')}
+                                disabled={isLoading}
+                                className="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-black uppercase text-xs rounded-xl hover:shadow-[0_0_30px_rgba(34,211,238,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95"
+                            >
+                                {isLoading ? 'INITIALIZING...' : 'Acquire 30-Day Pass'}
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                {/* Features List */}
-                <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-                    <h4 className="text-sm font-black uppercase tracking-widest text-cyan-400 mb-4">
-                        What You Get
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-300">
-                        <div>🎯 Daily calibration readings</div>
-                        <div>📊 Statistical deviation tracking</div>
-                        <div>🔮 AI Oracle analysis</div>
-                        <div>🎬 Weekly voice montage</div>
-                        <div>🏷️ Custom mood tagging</div>
-                        <div>📈 Long-term trend insights</div>
+                {/* Footer Info */}
+                <div className="text-center space-y-4 pt-8 opacity-50">
+                    <div className="flex items-center justify-center gap-6 text-[10px] uppercase tracking-widest text-gray-400">
+                        <span>Zero-Knowledge Data</span>
+                        <span className="w-1 h-1 bg-gray-600 rounded-full" />
+                        <span>Biometric Vault</span>
+                        <span className="w-1 h-1 bg-gray-600 rounded-full" />
+                        <span>7-Day Cycle</span>
                     </div>
-                </div>
-
-                {/* Back Link */}
-                <div className="text-center">
-                    <a href="/" className="text-gray-500 hover:text-gray-300 text-sm transition">
-                        ← Back to Home
+                    <a href="/" className="inline-block text-gray-500 hover:text-white text-xs uppercase tracking-tighter transition-all">
+                        ← RETURN TO SYSTEM HOME
                     </a>
                 </div>
             </div>
         </div>
     );
 }
+

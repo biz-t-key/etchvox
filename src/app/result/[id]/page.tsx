@@ -5,7 +5,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown'; // ✅ Markdown Renderer
 import { voiceTypes, TypeCode, groupColors } from '@/lib/types';
-import { getResult, VoiceResult } from '@/lib/storage';
+import { getResult, VoiceResult, removeFromHistory } from '@/lib/storage';
 import { getBestMatches, getWorstMatches, getCompatibilityTier } from '@/lib/compatibilityMatrix';
 import ShareButtons from '@/components/result/ShareButtons';
 import HighFidelityMetrics from '@/components/result/HighFidelityMetrics';
@@ -240,10 +240,27 @@ export default function ResultPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ resultId })
             });
-            setIsPurged(true);
+            // If it's a self-destruct (no consent), do a hard purge and redirect
+            if (!result?.researchConsentAgreed) {
+                executeHardPurge();
+            } else {
+                setIsPurged(true);
+            }
         } catch (err) {
             console.error("Failed to purge spy data:", err);
             setIsPurged(true);
+        }
+    };
+
+    const handleManualPurge = async () => {
+        if (!confirm("Are you sure? This will permanently delete this record from our servers and your device history. This action cannot be undone.")) return;
+
+        try {
+            await removeFromHistory(resultId, true);
+            setIsPurged(true);
+        } catch (err) {
+            console.error("Manual purge failed:", err);
+            alert("Failed to delete record. Please try again.");
         }
     };
 
@@ -306,8 +323,8 @@ export default function ResultPage() {
     // Gating Logic: Standalone diagnostics always require purchase
     const isPremium = result.isPremium === true;
     const showAIReport = isPremium;
-    const showVideo = isPremium;
-    const showSpyReport = isPremium;
+    const showVideo = false; // Video visualization removed from Solo/Couple diagnostic results
+    const showSpyReport = true; // Always show the card, gating handled inside
 
     const diagnosticType = result.mode === 'spy' ? 'spy' : (isCouple ? 'couple' : 'solo');
     const diagnosticPrice = diagnosticType === 'spy' ? LEMONSQUEEZY_CONFIG.SPY_PRICE : (isCouple ? LEMONSQUEEZY_CONFIG.COUPLE_PRICE : LEMONSQUEEZY_CONFIG.SOLO_PRICE);
@@ -358,38 +375,20 @@ export default function ResultPage() {
                     <div className="animate-fade-in w-full space-y-24 md:space-y-40 pt-12 flex flex-col items-center">
                         {isSpyMode ? (
                             <div className="w-full max-w-lg mx-auto">
-                                {!showSpyReport ? (
-                                    <div className="bg-zinc-900 border border-red-500/20 rounded-2xl p-12 text-center space-y-8 relative overflow-hidden font-mono">
-                                        <div className="absolute inset-0 bg-red-900/5" />
-                                        <div className="relative z-10">
-                                            <div className="text-5xl mb-6">🔒</div>
-                                            <h3 className="text-2xl font-black text-red-500 uppercase tracking-tight mb-2 italic">INTEL_GATED</h3>
-                                            <p className="text-zinc-500 text-xs max-w-xs mx-auto leading-relaxed mb-8 uppercase">
-                                                MISSION_REPORT: ENCRYPTED. ACCESS_LEVEL: RESTRICTED. INITIALIZE_PURCHASE_PROTOCOL_TO_DECRYPT.
-                                            </p>
-                                            <button
-                                                onClick={() => handleCheckout('spy')}
-                                                disabled={checkoutLoading}
-                                                className="w-full bg-red-600 text-white font-black text-xs px-8 py-4 rounded uppercase tracking-widest hover:bg-red-500 shadow-[0_0_20px_rgba(220,38,38,0.4)] transition-all disabled:opacity-50"
-                                            >
-                                                {checkoutLoading ? 'Processing...' : `UNOCK_DOSSIER ($${LEMONSQUEEZY_CONFIG.SPY_PRICE})`}
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <SpyReportCard
-                                        typeCode={result.typeCode}
-                                        spyMetadata={result.spyMetadata!}
-                                        score={result.spyAnalysis?.score || 0}
-                                        reportMessage={generateFinalReport(
-                                            result.spyAnalysis ? { stamp: result.typeCode, ...result.spyAnalysis } : { stamp: result.typeCode },
-                                            result.spyMetadata!
-                                        )}
-                                        onBurn={handleSpyBurn}
-                                        autoBurn={!result.researchConsentAgreed}
-                                        isHoldingPurge={isHoldingPurge}
-                                    />
-                                )}
+                                <SpyReportCard
+                                    typeCode={result.typeCode}
+                                    spyMetadata={result.spyMetadata!}
+                                    score={result.spyAnalysis?.score || 0}
+                                    reportMessage={generateFinalReport(
+                                        result.spyAnalysis ? { stamp: result.typeCode, ...result.spyAnalysis } : { stamp: result.typeCode },
+                                        result.spyMetadata!
+                                    )}
+                                    onBurn={handleSpyBurn}
+                                    autoBurn={!result.researchConsentAgreed}
+                                    isHoldingPurge={isHoldingPurge}
+                                    isPremium={isPremium}
+                                    onUnlock={() => handleCheckout('spy')}
+                                />
                             </div>
                         ) : (
                             /* Metrics Card - Balanced & Cinematic */
@@ -577,8 +576,11 @@ export default function ResultPage() {
                                                             disabled={checkoutLoading}
                                                             className="w-full bg-white text-black font-black text-xs px-8 py-5 rounded-xl uppercase tracking-widest hover:bg-cyan-400 hover:shadow-[0_0_20px_rgba(34,211,238,0.4)] transition-all disabled:opacity-50"
                                                         >
-                                                            {checkoutLoading ? 'Processing...' : `Unlock this report ($${diagnosticPrice})`}
+                                                            {checkoutLoading ? 'Processing...' : `Purchase Digital Assessment ($${diagnosticPrice})`}
                                                         </button>
+                                                        <p className="mt-4 text-[9px] text-gray-500 uppercase tracking-widest leading-relaxed">
+                                                            By purchasing, you agree to our Terms. This includes a full AI identity audit and character profile.
+                                                        </p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -722,9 +724,20 @@ export default function ResultPage() {
                                     />
 
                                     <div className="text-center space-y-6">
-                                        <div className="flex justify-center gap-8 uppercase tracking-[0.2em] font-mono text-[10px] text-gray-500">
-                                            <Link href="/terms" className="hover:text-cyan-400 transition-colors">Terms</Link>
-                                            <Link href="/privacy" className="hover:text-cyan-400 transition-colors">Privacy</Link>
+                                        <div className="flex flex-col items-center gap-4">
+                                            <div className="flex justify-center gap-8 uppercase tracking-[0.2em] font-mono text-[10px] text-gray-500">
+                                                <Link href="/terms" className="hover:text-cyan-400 transition-colors">Terms</Link>
+                                                <Link href="/privacy" className="hover:text-cyan-400 transition-colors">Privacy</Link>
+                                                <button
+                                                    onClick={handleManualPurge}
+                                                    className="hover:text-red-500 transition-colors uppercase"
+                                                >
+                                                    Purge Record
+                                                </button>
+                                            </div>
+                                            <p className="text-[9px] text-zinc-600 uppercase tracking-widest max-w-sm mx-auto leading-relaxed">
+                                                You have the right to be forgotten. Purging removes all traces of this analysis from both your device and our secure cloud.
+                                            </p>
                                         </div>
                                         <Link href="/" className="inline-block text-[11px] text-gray-600 hover:text-white transition-colors uppercase tracking-[0.3em] border-b border-transparent hover:border-gray-500 pb-1 font-black">
                                             [ START NEW ANALYSIS ]

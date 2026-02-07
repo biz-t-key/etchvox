@@ -192,6 +192,35 @@ export async function saveMirrorLog(log: any, analysis: any): Promise<void> {
 }
 
 /**
+ * Fetch Mirror Logs for a specific user from Firestore
+ */
+export async function getMirrorLogs(userHash: string): Promise<any[]> {
+    if (!isFirebaseConfigured() || !userHash) return [];
+
+    try {
+        const db = getDb();
+        const { query, where, getDocs, orderBy } = await import('firebase/firestore');
+        const q = query(
+            collection(db, 'mirror_logs'),
+            where('userHash', '==', userHash),
+            orderBy('timestamp', 'desc')
+        );
+
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                ...data,
+                timestamp: data.timestamp?.toDate ? data.timestamp.toDate() : new Date(data.timestamp)
+            };
+        });
+    } catch (error) {
+        console.error('Failed to fetch Mirror logs:', error);
+        return [];
+    }
+}
+
+/**
  * Mark a result as premium (unlocked via purchase)
  */
 export async function unlockResult(resultId: string): Promise<void> {
@@ -222,6 +251,32 @@ export async function unlockResult(resultId: string): Promise<void> {
     } catch (error) {
         console.error('Failed to unlock result:', error);
         throw error;
+    }
+}
+
+/**
+ * Delete all Mirror Logs for a user from Firestore (Right to Erasure)
+ */
+export async function deleteMirrorLogs(userHash: string): Promise<boolean> {
+    if (!isFirebaseConfigured() || !userHash) return false;
+
+    try {
+        const db = getDb();
+        const { query, where, getDocs, deleteDoc } = await import('firebase/firestore');
+        const q = query(
+            collection(db, 'mirror_logs'),
+            where('userHash', '==', userHash)
+        );
+
+        const snapshot = await getDocs(q);
+        const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+        await Promise.all(deletePromises);
+
+        console.log(`✓ Purged ${snapshot.size} Mirror logs from Firestore for ${userHash}`);
+        return true;
+    } catch (error) {
+        console.error('Failed to purge Mirror logs from Firestore:', error);
+        return false;
     }
 }
 
@@ -462,4 +517,45 @@ export async function removeFromHistory(id: string, deleteFromServer: boolean = 
     } catch (e) {
         console.error('Failed to remove from history:', e);
     }
+}
+
+/**
+ * Upload a Mirror audio/video blob to R2 for cross-device persistence
+ */
+export async function uploadMirrorBlob(
+    userHash: string,
+    dayIndex: number,
+    blob: Blob
+): Promise<boolean> {
+    if (!isFirebaseConfigured()) return false;
+
+    try {
+        const formData = new FormData();
+        formData.append('file', blob);
+        // We use a special ID format for Mirror blobs to distinguish them in R2
+        const mirrorId = `mirror_${userHash}_day${dayIndex}`;
+        formData.append('resultId', mirrorId);
+        formData.append('consentAgreed', 'true'); // Mirror users have agreed to wellness consent
+
+        const response = await fetch('/api/upload-audio', {
+            method: 'POST',
+            body: formData,
+        });
+
+        return response.ok;
+    } catch (error) {
+        console.error('Failed to upload mirror blob to R2:', error);
+        return false;
+    }
+}
+
+/**
+ * Fetch all cloud-cached Mirror blobs for a user
+ * Placeholder for future implementation using a specialized list API
+ */
+export async function fetchMirrorBlobs(userHash: string): Promise<{ dayIndex: number; blob: Blob }[]> {
+    if (!isFirebaseConfigured() || !userHash) return [];
+
+    // Future: implement fetch logic from R2 list API
+    return [];
 }

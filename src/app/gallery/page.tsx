@@ -6,6 +6,7 @@ import { mbtiTypes, MBTIType } from '@/lib/mbti';
 import SoloIdentityCard from '@/components/result/SoloIdentityCard';
 import DuoIdentityCard from '@/components/result/DuoIdentityCard';
 import SpyReportCard from '@/components/result/SpyReportCard';
+import MirrorRecap from '@/components/mirror/MirrorRecap';
 
 // Mock Data Generators
 const generateMockMetrics = (typeCode: TypeCode): AnalysisMetrics => {
@@ -48,12 +49,14 @@ const SAMPLE_MBTIS: MBTIType[] = ['INTJ', 'ENFP', 'ISTP', 'ESFJ'];
 const CATEGORIES = {
     STANDARD: ['HFEC', 'HFED', 'HSEC', 'HSED', 'HFCC', 'HFCD', 'HSCC', 'HSCD', 'LFEC', 'LFED', 'LSEC', 'LSED', 'LFCC', 'LFCD', 'LSCC', 'LSCD'],
     SPECIAL: ['ELON', 'NPCS', 'EPON', 'ELCS', 'NPOS', 'ELCN', 'NPCN', 'ELOS', 'EPCS', 'NLOS', 'EPOS', 'NLCN', 'EPCN', 'NLON', 'NPON', 'ELSN', 'EPCB'],
-    SPY: ['HIRED', 'SUSP', 'REJT', 'BURN']
+    SPY: ['HIRED', 'SUSP', 'REJT', 'BURN'],
+    RECAP: ['optimizer', 'stoic', 'alchemist', 'cinematic_grit']
 };
 
 export default function GalleryPage() {
     const [mode, setMode] = useState<'solo' | 'couple'>('solo');
-    const [category, setCategory] = useState<'STANDARD' | 'SPECIAL' | 'SPY'>('STANDARD');
+    const [category, setCategory] = useState<'STANDARD' | 'SPECIAL' | 'SPY' | 'RECAP'>('STANDARD');
+    const [selectedArchetype, setSelectedArchetype] = useState<string | null>(null);
 
     const visibleTypes = CATEGORIES[category] as TypeCode[];
     const duoMock = generateMockDuo();
@@ -85,7 +88,7 @@ export default function GalleryPage() {
                 {/* Category Switcher (Solo Only) */}
                 {mode === 'solo' && (
                     <div className="flex justify-center gap-2">
-                        {(['STANDARD', 'SPECIAL', 'SPY'] as const).map((cat) => (
+                        {(['STANDARD', 'SPECIAL', 'SPY', 'RECAP'] as const).map((cat) => (
                             <button
                                 key={cat}
                                 onClick={() => setCategory(cat)}
@@ -100,7 +103,26 @@ export default function GalleryPage() {
 
             {/* Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-                {mode === 'solo' && visibleTypes.map((code) => (
+                {mode === 'solo' && category === 'RECAP' && visibleTypes.map((code) => (
+                    <div key={code} className="bg-zinc-900/50 p-6 rounded-2xl border border-white/5 space-y-6">
+                        <h3 className="text-xl font-bold uppercase tracking-widest text-zinc-500">{code}</h3>
+                        <div className="aspect-video bg-black rounded-lg overflow-hidden relative group">
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 z-10">
+                                <button
+                                    onClick={() => setSelectedArchetype(code)}
+                                    className="bg-white text-black px-6 py-2 rounded-full font-black text-xs uppercase"
+                                >
+                                    Preview Style
+                                </button>
+                            </div>
+                            <div className="w-full h-full flex items-center justify-center text-zinc-700 text-[10px] font-mono">
+                                [ {code.toUpperCase()} PREVIEW ]
+                            </div>
+                        </div>
+                    </div>
+                ))}
+
+                {mode === 'solo' && category !== 'RECAP' && visibleTypes.map((code) => (
                     <div key={code} className="space-y-4">
                         <h3 className="text-xl font-bold text-gray-500">{code}</h3>
                         <div className="transform scale-90 origin-top">
@@ -139,6 +161,16 @@ export default function GalleryPage() {
                     </div>
                 )}
             </div>
+
+            {/* Overlay for Mirror Recap */}
+            {selectedArchetype && (
+                <MirrorRecap
+                    userHash="DEBUG_HASH"
+                    onClose={() => setSelectedArchetype(null)}
+                    archetype={selectedArchetype}
+                    demoMode={true}
+                />
+            )}
         </div>
     );
 }
