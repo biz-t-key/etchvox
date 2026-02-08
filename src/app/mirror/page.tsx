@@ -653,10 +653,10 @@ export default function MirrorPage() {
         <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 space-y-10 text-left">
             <div className="space-y-4 text-center">
                 <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 uppercase tracking-tight">
-                    Etchvox Mirror: Active Presence
+                    Active Mindfulness through Voice
                 </h2>
                 <p className="text-gray-400 text-sm italic max-w-md mx-auto leading-relaxed">
-                    A meditative 7-day journey to attune your voice and mind through the power of narrative resonance.
+                    A meditative 7-day journey to attune your mind and body. Experience Active Mindfulness through the power of narrative resonance.
                 </p>
             </div>
 
