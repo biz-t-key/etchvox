@@ -649,41 +649,49 @@ export default function MirrorPage() {
     const today = new Date().toDateString();
     const alreadyRecordedToday = history.some(log => new Date(log.timestamp).toDateString() === today);
 
-    // Simplified onboarding view for subscribed users
     const renderOnboarding = () => (
-        <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 space-y-8 text-left">
-            <div className="space-y-3 text-center">
+        <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 space-y-10 text-left">
+            <div className="space-y-4 text-center">
                 <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 uppercase tracking-tight">
-                    Calibration Protocol
+                    Etchvox Mirror: Active Presence
                 </h2>
-                <p className="text-gray-400 text-sm italic">
-                    Protocol active. Authenticated session in progress.
+                <p className="text-gray-400 text-sm italic max-w-md mx-auto leading-relaxed">
+                    A meditative 7-day journey to attune your voice and mind through the power of narrative resonance.
                 </p>
             </div>
 
-            <div className="space-y-6">
-                <div className="flex items-start gap-4 bg-white/5 p-5 rounded-2xl border border-white/5">
-                    <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 font-bold shrink-0">1</div>
-                    <div className="text-sm">
-                        <p className="text-white font-bold uppercase tracking-wider">Sync Daily Session</p>
-                        <p className="text-gray-400 leading-relaxed">Complete your required 6-second vocal sample once every 24 hours to maintain biometric accuracy.</p>
+            <div className="space-y-8">
+                <div className="flex items-start gap-5">
+                    <div className="text-cyan-400 font-black text-xs pt-1 tracking-tighter shrink-0">01 / FEEL</div>
+                    <div className="space-y-1">
+                        <p className="text-white font-bold uppercase tracking-wider text-sm">Attune to the Narrative</p>
+                        <p className="text-gray-400 text-xs leading-relaxed">Immerse yourself in curated scenarios. Ground your emotions and connect deeply with the present moment.</p>
                     </div>
                 </div>
-                <div className="flex items-start gap-4 bg-white/5 p-5 rounded-2xl border border-white/5">
-                    <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 font-bold shrink-0">2</div>
-                    <div className="text-sm">
-                        <p className="text-white font-bold uppercase tracking-wider">Oracle Alignment</p>
-                        <p className="text-gray-400 leading-relaxed">The Voice Oracle evaluates your drift from baseline. Data is processed locally in your biometric vault.</p>
+
+                <div className="flex items-start gap-5">
+                    <div className="text-cyan-400 font-black text-xs pt-1 tracking-tighter shrink-0">02 / ETCH</div>
+                    <div className="space-y-1">
+                        <p className="text-white font-bold uppercase tracking-wider text-sm">Inscribe Your Pulse</p>
+                        <p className="text-gray-400 text-xs leading-relaxed">Every subtle nuance and tremor in your voice is captured as a high-fidelity biometric record of your inner state.</p>
+                    </div>
+                </div>
+
+                <div className="flex items-start gap-5">
+                    <div className="text-cyan-400 font-black text-xs pt-1 tracking-tighter shrink-0">03 / REFLECT</div>
+                    <div className="space-y-1">
+                        <p className="text-white font-bold uppercase tracking-wider text-sm">Witness Your Evolution</p>
+                        <p className="text-gray-400 text-xs leading-relaxed">At the end of your 7-day cycle, receive a cinematic compilation that mirrors your emotional trajectory with total clarity.</p>
                     </div>
                 </div>
 
                 {alreadyRecordedToday && (
                     <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-2xl p-6 text-center space-y-2">
-                        <p className="text-cyan-400 text-sm font-black uppercase tracking-widest leading-none">
-                            ✨ Daily Alignment Secured
+                        <p className="text-cyan-400 text-[10px] font-black uppercase tracking-[0.3em] leading-none">
+                            ✨ Daily Pulse Secured
                         </p>
-                        <p className="text-gray-400 text-xs leading-relaxed opacity-70 italic">
-                            Biometric patterns have been successfully cached. Return in 24 hours to proceed to the next narrative phase.
+                        <p className="text-gray-400 text-[10px] leading-relaxed opacity-70 italic">
+                            Biometric patterns cached. Return in 24 hours to proceed.
                         </p>
                     </div>
                 )}
