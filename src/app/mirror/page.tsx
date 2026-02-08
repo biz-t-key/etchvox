@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { VoiceAnalyzer } from '@/lib/analyzer';
 import { initializeAuth, loadUserHash } from '@/lib/authService';
-import { getScenariosByGenre, getReadingText, getProgressLevel, type Genre, type Mood, type Scenario, type Archetype } from '@/lib/mirrorContent';
+import { getScenariosByGenre, getReadingText, getProgressLevel, getScenarioById, type Genre, type Mood, type Scenario, type Archetype } from '@/lib/mirrorContent';
 import { saveVoiceLog, loadVoiceLogHistory } from '@/lib/mirrorEngine';
 import { saveAudioBlob } from '@/lib/mirrorDb';
 import { uploadMirrorBlob } from '@/lib/storage';
@@ -13,13 +13,14 @@ import SubscriptionWall from '@/components/mirror/SubscriptionWall';
 import { checkSubscription } from '@/lib/subscription';
 import Link from 'next/link';
 
-type Phase = 'auth' | 'calibration' | 'archetype' | 'genre' | 'mood' | 'reading' | 'analyzing' | 'polishing' | 'result' | 'recap';
+type Phase = 'auth' | 'calibration' | 'archetype' | 'genre' | 'scenario' | 'mood' | 'reading' | 'analyzing' | 'polishing' | 'result' | 'recap';
 
 const CALIBRATION_TEXT = 'Hello, world.';
 const GENRE_LOCK_DAYS = 7;
 
-interface GenreSelection {
+interface MirrorPreference {
     genre: Genre;
+    scenarioId: string;
     timestamp: number;
 }
 
@@ -33,8 +34,8 @@ export default function MirrorPage() {
     // Genre & Scenario state
     const [selectedGenre, setSelectedGenre] = useState<Genre | null>(null);
     const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
-    const [lastGenreChange, setLastGenreChange] = useState<number | null>(null);
-    const [canChangeGenre, setCanChangeGenre] = useState(true);
+    const [lastPreferenceChange, setLastPreferenceChange] = useState<number | null>(null);
+    const [canChangePreference, setCanChangePreference] = useState(true);
 
     // Mood & Reading state
     const [selectedMood, setSelectedMood] = useState<Mood | null>(null);
@@ -64,7 +65,7 @@ export default function MirrorPage() {
 
     useEffect(() => {
         checkAuth();
-        loadGenrePreference();
+        loadMirrorPreference();
         calculateProgress();
     }, []);
 
@@ -74,6 +75,7 @@ export default function MirrorPage() {
             setUserHash(auth.userHash);
             setMnemonic(auth.mnemonic);
             setIsNewUser(auth.isNew);
+            setWellnessAccepted(auth.isNew ? false : true); // Assume accepted if returning
 
             // Check subscription status
             const subStatus = await checkSubscription(auth.userHash);
@@ -85,32 +87,34 @@ export default function MirrorPage() {
             } else if (subStatus.isActive) {
                 setPhase('calibration');
             }
-            // If not subscribed, will show SubscriptionWall
         } catch (error) {
             console.error('Auth initialization failed:', error);
             setCheckingSubscription(false);
         }
     }
 
-    function loadGenrePreference() {
+    function loadMirrorPreference() {
         if (typeof window === 'undefined') return;
 
         try {
-            const saved = localStorage.getItem('mirror_genre_selection');
+            const saved = localStorage.getItem('mirror_preference_v2');
             if (saved) {
-                const data: GenreSelection = JSON.parse(saved);
+                const data: MirrorPreference = JSON.parse(saved);
                 const daysSinceChange = (Date.now() - data.timestamp) / (1000 * 60 * 60 * 24);
 
                 if (daysSinceChange < GENRE_LOCK_DAYS) {
                     setSelectedGenre(data.genre);
-                    setLastGenreChange(data.timestamp);
-                    setCanChangeGenre(false);
+                    const scenario = getScenarioById(data.scenarioId);
+                    if (scenario) setSelectedScenario(scenario);
+
+                    setLastPreferenceChange(data.timestamp);
+                    setCanChangePreference(false);
                 } else {
-                    setCanChangeGenre(true);
+                    setCanChangePreference(true);
                 }
             }
         } catch (e) {
-            console.error('Failed to load genre preference:', e);
+            console.error('Failed to load mirror preference:', e);
         }
     }
 
@@ -124,18 +128,22 @@ export default function MirrorPage() {
         setCurrentDayIndex(completedDays + 1);
     }
 
-    function saveGenreSelection(genre: Genre) {
+    function saveMirrorPreference(genre: Genre, scenarioId: string) {
         if (typeof window === 'undefined') return;
 
-        const data: GenreSelection = {
+        const data: MirrorPreference = {
             genre,
+            scenarioId,
             timestamp: Date.now()
         };
 
-        localStorage.setItem('mirror_genre_selection', JSON.stringify(data));
+        localStorage.setItem('mirror_preference_v2', JSON.stringify(data));
         setSelectedGenre(genre);
-        setLastGenreChange(data.timestamp);
-        setCanChangeGenre(false);
+        const scenario = getScenarioById(scenarioId);
+        if (scenario) setSelectedScenario(scenario);
+
+        setLastPreferenceChange(data.timestamp);
+        setCanChangePreference(false);
     }
 
     async function startRecording(isCalibration: boolean) {
@@ -217,31 +225,21 @@ export default function MirrorPage() {
                     const rawBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
 
                     // Stage 1: Analyzing (UI state already set above)
-                    // (Wait for 1.5s as per original timeout logic)
-
                     // Stage 2: Polishing
                     setPhase('polishing');
                     try {
                         const polishedBlob = await polishAudio(rawBlob);
                         setCapturedBlob(polishedBlob);
 
-                        // Save the polished version to IndexedDB
                         if (userHash) {
                             await saveAudioBlob(`voice_blob_${userHash}_${currentDayIndex}`, polishedBlob);
-                            // Background Sync to R2 for cross-device persistence
-                            uploadMirrorBlob(userHash, currentDayIndex, polishedBlob).then(success => {
-                                if (success) console.log(`✓ Day ${currentDayIndex} asset synced to cloud`);
-                            });
+                            uploadMirrorBlob(userHash, currentDayIndex, polishedBlob);
                         }
                     } catch (error) {
-                        console.error('Polishing failed, saving raw:', error);
                         setCapturedBlob(rawBlob);
                         if (userHash) {
                             await saveAudioBlob(`voice_blob_${userHash}_${currentDayIndex}`, rawBlob);
-                            // Background Sync to R2 for cross-device persistence
-                            uploadMirrorBlob(userHash, currentDayIndex, rawBlob).then(success => {
-                                if (success) console.log(`✓ Day ${currentDayIndex} asset synced to cloud (raw)`);
-                            });
+                            uploadMirrorBlob(userHash, currentDayIndex, rawBlob);
                         }
                     }
 
@@ -252,23 +250,20 @@ export default function MirrorPage() {
     }
 
     function handleGenreSelect(genre: Genre) {
-        saveGenreSelection(genre);
-        const scenarios = getScenariosByGenre(genre);
-        if (scenarios.length > 0) {
-            setSelectedScenario(scenarios[0]); // For MVP, select first scenario of genre
-        }
+        setSelectedGenre(genre);
+        setPhase('scenario');
+    }
 
-        // Auto-set archetype for Cinematic Grit
-        if (genre === 'cinematic_grit') {
-            setSelectedArchetype('cinematic_grit');
+    function handleScenarioSelect(scenario: Scenario) {
+        if (selectedGenre) {
+            saveMirrorPreference(selectedGenre, scenario.id);
+            setPhase('mood');
         }
-
-        setPhase('mood');
     }
 
     function handleArchetypeSelect(archetype: Archetype) {
         setSelectedArchetype(archetype);
-        if (selectedGenre && !canChangeGenre) {
+        if (selectedGenre && selectedScenario && !canChangePreference) {
             setPhase('mood');
         } else {
             setPhase('genre');
@@ -450,8 +445,13 @@ export default function MirrorPage() {
                         <h2 className="text-sm font-black uppercase tracking-widest text-cyan-400">
                             {isCalibration ? '🎯 Calibration' : `📖 Day ${currentDayIndex} Reading`}
                         </h2>
-                        <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10">
-                            <p className="text-2xl text-white leading-relaxed font-serif">
+                        <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 space-y-4">
+                            {!isCalibration && selectedScenario && (
+                                <div className="text-cyan-400 text-[10px] font-black uppercase tracking-[0.3em] pb-4 border-b border-white/5">
+                                    Direction: {selectedScenario.tone_instruction}
+                                </div>
+                            )}
+                            <p className="text-2xl text-white leading-relaxed font-serif pt-2">
                                 {displayText}
                             </p>
                         </div>
@@ -560,6 +560,45 @@ export default function MirrorPage() {
                         <Link href="/" className="text-gray-500 hover:text-gray-300 text-sm transition">
                             ← Back to Home
                         </Link>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Scenario selection phase
+    if (phase === 'scenario' && selectedGenre) {
+        const scenarios = getScenariosByGenre(selectedGenre);
+
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
+                <div className="max-w-4xl w-full space-y-12">
+                    <div className="text-center space-y-4">
+                        <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                            Select Your Story
+                        </h1>
+                        <p className="text-gray-400">Choose the narrative path for your 7-day resonance cycle</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {scenarios.map((scenario) => (
+                            <button
+                                key={scenario.id}
+                                onClick={() => handleScenarioSelect(scenario)}
+                                className="group relative bg-white/5 backdrop-blur-sm hover:bg-white/10 border border-white/10 hover:border-cyan-500/50 rounded-2xl p-8 transition-all hover:shadow-[0_0_30px_rgba(34,211,238,0.3)] text-left flex flex-col gap-4"
+                            >
+                                <div className="text-xs font-black uppercase tracking-widest text-cyan-500/70">{scenario.tone_instruction}</div>
+                                <h3 className="text-xl font-bold text-white mb-2">{scenario.title}</h3>
+                                <p className="text-gray-400 text-sm leading-relaxed flex-1">{scenario.description}</p>
+                                <div className="mt-4 text-cyan-400 text-xs font-bold uppercase tracking-wider group-hover:translate-x-1 transition-transform">Select Story →</div>
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="text-center">
+                        <button onClick={() => setPhase('genre')} className="text-gray-500 hover:text-gray-300 text-sm transition">
+                            ← Back to Genres
+                        </button>
                     </div>
                 </div>
             </div>

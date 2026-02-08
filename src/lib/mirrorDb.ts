@@ -1,7 +1,7 @@
 // IndexedDB utility for storing large audio blobs
 // Used for the 7-day Voice Mirror Recap
 
-const DB_NAME = 'VoiceGlowMirrorDB';
+const DB_NAME = 'EtchvoxMirrorDB';
 const STORE_NAME = 'audio_blobs';
 const DB_VERSION = 1;
 

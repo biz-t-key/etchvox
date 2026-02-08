@@ -122,7 +122,7 @@ export async function GET(request: NextRequest) {
                         color: '#666666',
                     }}
                 >
-                    What is YOUR voice type? etchvox.ai
+                    What is YOUR voice type? etchvox.com
                 </div>
             </div>
         ),

@@ -14,14 +14,14 @@ export default function TermsPage() {
                 <div className="prose prose-invert max-w-none space-y-12">
                     <section>
                         <p className="text-gray-300 leading-relaxed italic border-l-2 border-cyan-500/30 pl-6">
-                            Welcome to voiceglow.com (\"The Service\"). By accessing or using The Service, you agree to be bound by these Terms. If you do not agree, please discontinue use immediately. The Service is operated by VoiceGlow (\"The Operator\"), based in Tokyo, Japan.
+                            Welcome to etchvox.com ("The Service"). By accessing or using The Service, you agree to be bound by these Terms. If you do not agree, please discontinue use immediately. The Service is operated by Etchvox ("The Operator"), based in Tokyo, Japan.
                         </p>
                     </section>
 
                     <section className="space-y-6">
                         <h2 className="text-2xl font-bold text-white uppercase tracking-wider border-b border-white/10 pb-2">1. Service Description</h2>
                         <div className="space-y-4 text-sm text-gray-300">
-                            <p>VoiceGlow provides three distinct AI-powered voice analysis services:</p>
+                            <p>Etchvox provides three distinct AI-powered voice analysis services:</p>
                             <ul className="space-y-3 list-none ml-4">
                                 <li className="flex items-start gap-3">
                                     <span className="text-cyan-400 font-mono">01</span>
@@ -114,7 +114,7 @@ export default function TermsPage() {
                     <section className="space-y-6">
                         <h2 className="text-2xl font-bold text-white uppercase tracking-wider border-b border-white/10 pb-2">6. Intellectual Property</h2>
                         <p className="text-gray-300 text-sm leading-relaxed">
-                            All content, including but not limited to AI-generated roasts, personality frameworks, visual designs, and archetypal themes, is the proprietary property of VoiceGlow. You may download your personal analysis results for private use, but may not redistribute, sell, or publicly display them without permission.
+                            All content, including but not limited to AI-generated roasts, personality frameworks, visual designs, and archetypal themes, is the proprietary property of Etchvox. You may download your personal analysis results for private use, but may not redistribute, sell, or publicly display them without permission.
                         </p>
                     </section>
 
@@ -143,8 +143,8 @@ export default function TermsPage() {
 
                     <section className="space-y-4 pt-12 border-t border-white/10 text-center pb-20">
                         <p className="text-gray-500 text-xs uppercase tracking-widest">Questions? Contact us:</p>
-                        <a href="mailto:info@voiceglow.com" className="text-cyan-500 font-bold hover:text-cyan-400 transition-colors underline decoration-cyan-500/30">
-                            INFO@VOICEGLOW.COM
+                        <a href="mailto:info@etchvox.com" className="text-cyan-500 font-bold hover:text-cyan-400 transition-colors underline decoration-cyan-500/30">
+                            INFO@ETCHVOX.COM
                         </a>
                     </section>
                 </div>

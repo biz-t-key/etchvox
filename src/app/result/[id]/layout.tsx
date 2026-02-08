@@ -11,10 +11,10 @@ export async function generateMetadata({
 
     // We can't access localStorage on server, so we use a generic title
     // The actual OG image will be generated dynamically via API
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://voiceglow.ai';
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://etchvox.com';
 
     return {
-        title: `My Voice Type | VoiceGlow`,
+        title: `My Voice Type | Etchvox`,
         description: "Discover your voice personality type. Are you The Bored Robot or The Deep Whale?",
         openGraph: {
             title: `I discovered my voice type!`,
@@ -26,7 +26,7 @@ export async function generateMetadata({
                     url: `${baseUrl}/api/og?id=${id}`,
                     width: 1200,
                     height: 630,
-                    alt: 'VoiceGlow Result',
+                    alt: 'Etchvox Result',
                 },
             ],
         },

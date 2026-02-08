@@ -14,7 +14,7 @@ export default function PrivacyPage() {
                 <div className="prose prose-invert max-w-none space-y-12">
                     <section>
                         <p className="text-gray-300 leading-relaxed italic border-l-2 border-cyan-500/30 pl-6 text-sm">
-                            We value your privacy. This policy outlines how we handle your vocal and personal data across all VoiceGlow services.
+                            We value your privacy. This policy outlines how we handle your vocal and personal data across all Etchvox services.
                         </p>
                     </section>
 
@@ -135,7 +135,7 @@ export default function PrivacyPage() {
                             For Voice Mirror: Since all data is browser-local, you can delete it at any time via browser settings (Clear browsing data → Cookies and site data / Local storage).
                         </p>
                         <p className="text-gray-400 text-sm mt-4">
-                            To exercise these rights, contact us at: <a href="mailto:info@voiceglow.com" className="text-cyan-500 underline">info@voiceglow.com</a>
+                            To exercise these rights, contact us at: <a href="mailto:info@etchvox.com" className="text-cyan-500 underline">info@etchvox.com</a>
                         </p>
                     </section>
 
@@ -172,8 +172,8 @@ export default function PrivacyPage() {
 
                     <section className="space-y-4 pt-12 border-t border-white/10 text-center pb-20">
                         <p className="text-gray-500 text-[10px] uppercase tracking-widest">Privacy Inquiries:</p>
-                        <a href="mailto:info@voiceglow.com" className="text-cyan-500 font-bold hover:text-cyan-400 transition-colors underline decoration-cyan-500/30 text-xs">
-                            INFO@VOICEGLOW.COM
+                        <a href="mailto:info@etchvox.com" className="text-cyan-500 font-bold hover:text-cyan-400 transition-colors underline decoration-cyan-500/30 text-xs">
+                            INFO@ETCHVOX.COM
                         </a>
                     </section>
                 </div>

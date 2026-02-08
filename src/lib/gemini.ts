@@ -15,8 +15,8 @@ export async function generateContent(systemPrompt: string, userPayload: string)
     }
 
     try {
-        // Use Gemini 2.0 Flash Lite for high speed and cost efficiency
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite-preview-02-05' });
+        // Use Gemini 2.5 Flash Lite for maximum speed and intelligence balance
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
 
         const result = await model.generateContent([
             systemPrompt, // System instructions as first part of prompt

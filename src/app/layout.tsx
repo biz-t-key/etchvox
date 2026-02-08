@@ -41,6 +41,8 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Lora:ital,wght@0,400..700;1,400..700&family=Cinzel:wght@400..900&family=Spectral:ital,wght@0,200..800;1,200..800&family=Oswald:wght@200..700&family=Barlow+Condensed:ital,wght@0,100..900;1,100..900&display=swap"
           rel="stylesheet"
         />
+        {/* Lemon Squeezy Overlay Script */}
+        <script src="https://assets.lemonsqueezy.com/lemon.js" defer></script>
       </head>
       <body className="min-h-screen bg-black text-white antialiased">
         <main className="relative min-h-screen">

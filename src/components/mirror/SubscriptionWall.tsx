@@ -49,7 +49,16 @@ export default function SubscriptionWall({ userHash }: SubscriptionWallProps) {
             }
 
             const data = await response.json();
-            window.location.href = data.checkoutUrl;
+            const checkoutUrl = data.checkoutUrl + (data.checkoutUrl.includes('?') ? '&' : '?') + 'embed=1';
+
+            // Open Lemon Squeezy Overlay
+            if (window.LemonSqueezy) {
+                window.LemonSqueezy.Url.Open(checkoutUrl);
+                setIsLoading(false);
+            } else {
+                // Fallback to direct link if script not loaded
+                window.location.href = checkoutUrl;
+            }
 
         } catch (err) {
             console.error('Checkout error:', err);
