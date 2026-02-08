@@ -13,7 +13,6 @@
     "@aws-sdk/s3-request-presigner": "^3.971.0",
     "@google/generative-ai": "^0.24.1",
     "@remotion/player": "^4.0.406",
-    "@stripe/stripe-js": "^8.6.1",
     "@types/bip39": "^2.4.2",
     "@vercel/og": "^0.8.6",
     "bip39": "^3.1.0",
@@ -27,8 +26,7 @@
     "react-dom": "19.2.3",
     "react-markdown": "^10.1.0",
     "remotion": "^4.0.406",
-    "resend": "^6.8.0",
-    "stripe": "^20.1.2"
+    "resend": "^6.8.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

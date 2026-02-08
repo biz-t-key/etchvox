@@ -6,9 +6,9 @@
     Role: Interface Design, Core Logic, Implementation
 
 /* SITE */
-    Last update: 2026/01/21
+    Last update: 2026/02/09
     Standards: HTML5, CSS3, NEXT.js, TailwindCSS
-    Components: Framer Motion, Lucid Icons, Stripe
+    Components: Framer Motion, Lucide Icons, Lemon Squeezy
     Software: VS Code, Vercel
 
 /* MISSION */

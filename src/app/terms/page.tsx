@@ -120,9 +120,12 @@ export default function TermsPage() {
 
                     <section className="space-y-6">
                         <h2 className="text-2xl font-bold text-white uppercase tracking-wider border-b border-white/10 pb-2">7. Limitation of Liability</h2>
-                        <div className="bg-magenta-500/10 border-l-4 border-magenta-500 p-6">
+                        <div className="bg-magenta-500/10 border-l-4 border-magenta-500 p-6 space-y-4">
                             <p className="text-gray-300 text-sm leading-relaxed">
-                                <strong className="text-magenta-400">DISCLAIMER:</strong> The Service is provided \"AS IS\" without warranties of any kind. The Operator shall not be liable for any direct, indirect, incidental, or consequential damages arising from the use or inability to use the Service, including but not limited to data loss, browser storage limitations, or subscription billing issues.
+                                <strong className="text-magenta-400">DISCLAIMER:</strong> The Service is provided "AS IS" without warranties of any kind. The Operator shall not be liable for any direct, indirect, incidental, or consequential damages arising from the use or inability to use the Service, including but not limited to data loss, browser storage limitations, or subscription billing issues.
+                            </p>
+                            <p className="text-gray-300 text-sm leading-relaxed">
+                                <strong className="text-magenta-400">LIABILITY CAP:</strong> To the maximum extent permitted by law, the total liability of The Operator for any claim arising out of or relating to these Terms or the Service shall not exceed the amount paid by you to The Operator in the twelve (12) months preceding the incident, or $50.00 USD, whichever is greater.
                             </p>
                         </div>
                     </section>
