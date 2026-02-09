@@ -392,6 +392,7 @@ export default function HomePage() {
           <Link href="/terms" className="hover:text-cyan-400 transition-colors">Terms</Link>
           <Link href="/privacy" className="hover:text-cyan-400 transition-colors">Privacy</Link>
           <Link href="/sample" className="hover:text-cyan-400 transition-colors">Samples</Link>
+          <Link href="/statement" className="hover:text-cyan-400 transition-colors underline decoration-cyan-500/30">Statement</Link>
         </div>
         <div className="max-w-xs mx-auto leading-relaxed font-mono opacity-50">
           © 2026 EtchVox Archive. Built for entertainment purposes.
