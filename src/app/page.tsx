@@ -183,6 +183,21 @@ export default function HomePage() {
                 Biometric fidelity test. Verify your cover and performance under pressure.
               </p>
             </button>
+
+            {/* Voice Mirror */}
+            <Link
+              href="/mirror"
+              className="group relative glass rounded-3xl p-8 text-left transition-all hover:scale-[1.02] border-2 border-transparent hover:border-yellow-500/50 md:col-span-2"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <span className="text-4xl">🪞</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-yellow-500 px-3 py-1 bg-yellow-500/10 rounded-full italic">7-Day Program</span>
+              </div>
+              <h3 className="text-2xl font-black mb-2 italic">VOICE MIRROR</h3>
+              <p className="text-sm text-gray-400 font-medium leading-relaxed">
+                Active Mindfulness. Etch your soul into the digital grid through a 7-day resonance program.
+              </p>
+            </Link>
           </div>
         ) : (
           /* Confirmation Step */
@@ -376,7 +391,7 @@ export default function HomePage() {
         <div className="flex justify-center gap-8 uppercase tracking-widest font-black">
           <Link href="/terms" className="hover:text-cyan-400 transition-colors">Terms</Link>
           <Link href="/privacy" className="hover:text-cyan-400 transition-colors">Privacy</Link>
-          <Link href="/privacy" className="hover:text-cyan-400 transition-colors">Privacy</Link>
+          <Link href="/sample" className="hover:text-cyan-400 transition-colors">Samples</Link>
         </div>
         <div className="max-w-xs mx-auto leading-relaxed font-mono opacity-50">
           © 2026 EtchVox Archive. Built for entertainment purposes.
