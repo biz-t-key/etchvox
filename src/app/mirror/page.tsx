@@ -180,7 +180,7 @@ export default function MirrorPage() {
             collectLoop();
 
             // Start timer
-            const duration = isCalibration ? 3 : 6;
+            const duration = isCalibration ? 3 : 12;
             setTimeLeft(duration);
             timerRef.current = setInterval(() => {
                 setTimeLeft((prev) => {

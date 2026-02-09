@@ -243,7 +243,7 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
             setupVisualizer(recording);
             setTimeout(() => {
                 if (isPlaying) handleEnded();
-            }, 3000);
+            }, 8000);
             return;
         }
 
