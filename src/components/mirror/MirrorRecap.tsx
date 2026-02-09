@@ -22,61 +22,68 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
 
     const THEMES: Record<string, any> = {
         optimizer: {
+            name: "Thriller",
             bg: '#0a0a0a',
             bgImage: '/assets/mirror/optimizer.png',
-            font: "'Inter', sans-serif",
+            font: "'Inter', 'SF Pro Display', sans-serif",
             align: 'left' as const,
             color: '#FFFFFF',
-            blend: 'screen' as GlobalCompositeOperation,
-            letterSpacing: 4,
+            blend: 'overlay' as GlobalCompositeOperation,
+            letterSpacing: 4, // 0.1em approx
             lineHeight: 1.6,
             stamp: 'barcode_cyan',
-            visuals: (ctx: CanvasRenderingContext2D) => {
-                ctx.shadowColor = 'rgba(34, 211, 238, 0.4)';
-                ctx.shadowBlur = 15;
+            visuals: (ctx: CanvasRenderingContext2D, params: any) => {
+                ctx.shadowColor = 'rgba(255,255,255,0.4)';
+                ctx.shadowBlur = 10;
+                // Optimizer: Glass Warp / Skew logic handled in container style
             }
         },
         stoic: {
+            name: "Poet",
             bg: '#f4f1ea',
             bgImage: '/assets/mirror/stoic.png',
-            font: "'EB Garamond', serif",
+            font: "'EB Garamond', 'Lora', serif",
             align: 'center' as const,
             color: '#2C2C2C',
             blend: 'multiply' as GlobalCompositeOperation,
-            letterSpacing: 1,
+            letterSpacing: -1, // -0.02em approx
             lineHeight: 1.4,
             stamp: 'wax_seal_red',
-            visuals: (ctx: CanvasRenderingContext2D) => {
-                ctx.globalAlpha = 0.9;
+            visuals: (ctx: CanvasRenderingContext2D, params: any) => {
+                ctx.globalAlpha = 0.85;
+                // Stoic: Ink Density / Vignette Blur handled in container style
             }
         },
         alchemist: {
+            name: "Philosophy",
             bg: '#1a120b',
             bgImage: '/assets/mirror/alchemist.png',
-            font: "'Cinzel', serif",
+            font: "'Cinzel', 'Spectral', serif",
             align: 'center' as const,
             color: '#EAD6A8',
             blend: 'color-dodge' as GlobalCompositeOperation,
-            letterSpacing: 6,
+            letterSpacing: 8, // 0.2em approx
             lineHeight: 2.0,
             stamp: 'sacred_geometry_gold',
-            visuals: (ctx: CanvasRenderingContext2D) => {
+            visuals: (ctx: CanvasRenderingContext2D, params: any) => {
                 ctx.shadowColor = '#CCA352';
-                ctx.shadowBlur = 8;
+                ctx.shadowBlur = 5;
+                // Alchemist: Gold Tint / Shadow Depth handled in container style
             }
         },
         cinematic_grit: {
+            name: "Cinematic Grit",
             bg: '#121212',
             bgImage: '/assets/mirror/cinematic_grit.jpg',
-            font: "'Oswald', sans-serif",
+            font: "'Oswald', 'Barlow Condensed', sans-serif",
             align: 'left' as const,
             color: '#D1D1D1',
             blend: 'hard-light' as GlobalCompositeOperation,
-            letterSpacing: 2,
+            letterSpacing: 2, // 0.05em approx
             lineHeight: 1.2,
             stamp: 'industrial_stencil_white',
-            visuals: (ctx: CanvasRenderingContext2D) => {
-                ctx.filter = 'contrast(1.4) brightness(0.8)';
+            visuals: (ctx: CanvasRenderingContext2D, params: any) => {
+                // Cinematic Grit: Exposure / Shake handled in container style
             }
         }
     };
@@ -138,6 +145,13 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const recordedChunksRef = useRef<Blob[]>([]);
     const bgImageRef = useRef<HTMLImageElement | null>(null);
+    const cumulativeParams = useRef({
+        inkDensity: 0,
+        lastV: 0,
+        stability: 0,
+        shake: 0
+    });
+    const [dynamicStyles, setDynamicStyles] = useState<React.CSSProperties>({});
 
     useEffect(() => {
         loadRecapData();
@@ -312,8 +326,67 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
                 analyzerRef.current.getByteTimeDomainData(dataArray);
             }
 
-            ctx.clearRect(0, 0, width, height);
+            // 1. EXTRACT LIGHTWEIGHT AUDIO FEATURES ($V_t, $N_t, $S_t$)
+            let sumSq = 0;
+            let zcrCount = 0;
+            for (let i = 0; i < bufferLength; i++) {
+                const val = (dataArray[i] - 128) / 128;
+                sumSq += val * val;
+                if (i > 0 && ((dataArray[i] - 128) > 0 && (dataArray[i - 1] - 128) <= 0 || (dataArray[i] - 128) < 0 && (dataArray[i - 1] - 128) >= 0)) {
+                    zcrCount++;
+                }
+            }
+
+            const v_t = Math.sqrt(sumSq / bufferLength); // Volume (RMS)
+            const n_t = zcrCount / bufferLength;        // Noise (ZCR)
+            const s_t = 1.0 - Math.min(1, Math.abs(v_t - cumulativeParams.current.lastV) * 10); // Stability (inverse change)
+
+            // Normalize for visual mapping (0-1)
+            const v_norm = Math.min(1, v_t * 5);
+            const n_norm = Math.min(1, n_t * 5);
+
+            cumulativeParams.current.lastV = v_t;
+            cumulativeParams.current.inkDensity = Math.min(1, cumulativeParams.current.inkDensity + (v_norm * 0.001));
+
+            const z_score = (logs[currentIndex]?.alignmentScore || 85) / 100;
+
+            // 2. THEME-SPECIFIC DYNAMIC MAPPING
             const theme = THEMES[archetype] || THEMES.optimizer;
+            let containerStyles: React.CSSProperties = {};
+            let canvasFilter = 'none';
+
+            if (archetype === 'cinematic_grit') {
+                const exposure = 0.5 + (v_norm * 1.0);
+                const shake = v_norm > 0.8 ? (Math.random() - 0.5) * 10 : 0;
+                containerStyles = {
+                    filter: `brightness(${exposure}) contrast(1.2)`,
+                    transform: `translate(${shake}px, ${shake}px)`
+                };
+            } else if (archetype === 'stoic') {
+                const focus = 1.0 - (v_norm * 0.5);
+                containerStyles = {
+                    filter: `opacity(${cumulativeParams.current.inkDensity * 0.8 + 0.2}) blur(${focus * 2}px)`
+                };
+            } else if (archetype === 'alchemist') {
+                const goldTint = v_norm * z_score * 2.0;
+                const shadow = 1.0 + (v_norm * 0.5);
+                containerStyles = {
+                    filter: `saturate(${1.0 + goldTint}) drop-shadow(0 0 ${shadow * 10}px gold)`
+                };
+            } else if (archetype === 'optimizer') {
+                const rgbShift = n_norm * 15;
+                const warp = Math.sin(Date.now() / 1000) * v_norm * 5;
+                containerStyles = {
+                    filter: `contrast(1.5)`,
+                    transform: `skewX(${warp}deg)`,
+                    boxShadow: `${rgbShift}px 0 20px rgba(255,0,0,0.2), -${rgbShift}px 0 20px rgba(0,0,255,0.2)`
+                };
+            }
+
+            // Sync dynamic styles to React state (throttled conceptually by frame)
+            setDynamicStyles(containerStyles);
+
+            ctx.clearRect(0, 0, width, height);
 
             // Draw Background Image
             if (bgImageRef.current) {
@@ -347,7 +420,7 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
 
             ctx.lineTo(width, height / 2);
 
-            theme.visuals(ctx);
+            theme.visuals(ctx, { v_norm, n_norm, z_score });
             ctx.stroke();
 
             // Draw Identity Stamp
@@ -474,8 +547,12 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
                 </div>
 
                 {/* Main Visualizer Area */}
-                <div className="w-full aspect-video border rounded-lg shadow-inner relative flex flex-col items-center justify-center overflow-hidden"
-                    style={{ borderColor: theme.color + '30', backgroundColor: archetype === 'optimizer' ? 'rgba(255,255,255,0.05)' : 'transparent' }}>
+                <div className="w-full aspect-video border rounded-lg shadow-inner relative flex flex-col items-center justify-center overflow-hidden transition-all duration-75"
+                    style={{
+                        borderColor: theme.color + '30',
+                        backgroundColor: archetype === 'optimizer' ? 'rgba(255,255,255,0.05)' : 'transparent',
+                        ...dynamicStyles
+                    }}>
                     <canvas ref={canvasRef} width={800} height={450} className="w-full h-full" />
                 </div>
 
