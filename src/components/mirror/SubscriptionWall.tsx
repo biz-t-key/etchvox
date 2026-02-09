@@ -23,7 +23,7 @@ export default function SubscriptionWall({ userHash }: SubscriptionWallProps) {
             title: "2. Record Daily 12-Sec Reads",
             subtitle: "Active Mindfulness through Voice",
             desc: "Anchor your state with a guided narrative. Capture deep exhales, intentional pauses, and your authentic vocal pulse as high-fidelity biometric data.",
-            img: "/images/mirror_step2_reading.png"
+            img: "/images/mirror_step2_reading_v2.png"
         },
         {
             title: "3. Export Your Resonance Film",
