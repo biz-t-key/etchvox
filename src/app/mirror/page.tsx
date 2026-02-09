@@ -662,26 +662,26 @@ export default function MirrorPage() {
 
             <div className="space-y-8">
                 <div className="flex items-start gap-5">
-                    <div className="text-cyan-400 font-black text-xs pt-1 tracking-tighter shrink-0">01 / FEEL</div>
+                    <div className="text-cyan-400 font-black text-xs pt-1 tracking-tighter shrink-0">01 / SYNC</div>
                     <div className="space-y-1">
-                        <p className="text-white font-bold uppercase tracking-wider text-sm">Attune to the Narrative</p>
-                        <p className="text-gray-400 text-xs leading-relaxed">Immerse yourself in curated scenarios. Ground your emotions and connect deeply with the present moment.</p>
+                        <p className="text-white font-bold uppercase tracking-wider text-sm">Choose Your Story</p>
+                        <p className="text-gray-400 text-xs leading-relaxed">Select a narrative genre that anchors your 7-day resonance path. This choice locks in your visual archetype.</p>
                     </div>
                 </div>
 
                 <div className="flex items-start gap-5">
                     <div className="text-cyan-400 font-black text-xs pt-1 tracking-tighter shrink-0">02 / ETCH</div>
                     <div className="space-y-1">
-                        <p className="text-white font-bold uppercase tracking-wider text-sm">Inscribe Your Pulse</p>
-                        <p className="text-gray-400 text-xs leading-relaxed">Every subtle nuance and tremor in your voice is captured as a high-fidelity biometric record of your inner state.</p>
+                        <p className="text-white font-bold uppercase tracking-wider text-sm">Daily 12-Sec Record</p>
+                        <p className="text-gray-400 text-xs leading-relaxed">Read the assigned narrative. Capture intentional pauses and biometric nuances as high-fidelity neural data.</p>
                     </div>
                 </div>
 
                 <div className="flex items-start gap-5">
-                    <div className="text-cyan-400 font-black text-xs pt-1 tracking-tighter shrink-0">03 / REFLECT</div>
+                    <div className="text-cyan-400 font-black text-xs pt-1 tracking-tighter shrink-0">03 / VOX</div>
                     <div className="space-y-1">
-                        <p className="text-white font-bold uppercase tracking-wider text-sm">Witness Your Evolution</p>
-                        <p className="text-gray-400 text-xs leading-relaxed">At the end of your 7-day cycle, receive a cinematic compilation that mirrors your emotional trajectory with total clarity.</p>
+                        <p className="text-white font-bold uppercase tracking-wider text-sm">Resonance Dossier</p>
+                        <p className="text-gray-400 text-xs leading-relaxed">After 7 days, receive a cinematic compilation of your vocal evolution, mapped through your chosen archetype.</p>
                     </div>
                 </div>
 

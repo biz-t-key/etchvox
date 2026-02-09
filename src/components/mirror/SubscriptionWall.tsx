@@ -14,21 +14,21 @@ export default function SubscriptionWall({ userHash }: SubscriptionWallProps) {
 
     const onboardingSteps = [
         {
-            title: "1. Choose Your Genre",
-            subtitle: "Lock in your vocal style for 7 days",
-            desc: "Select from Philosophy, Thriller, Poetic, or Cinematic Grit. Your choice defines the narrative structure and AI persona for the entire week.",
+            title: "1. Choose Your Story",
+            subtitle: "Lock in your resonance path for 7 days",
+            desc: "Select a Narrative Genre: Philosophy, Thriller, Poet, or Cinematic Grit. This choice anchors your 7-day focus and determines the visual archetype of your final record.",
             img: "/images/mirror_step1_genre.png"
         },
         {
-            title: "2. Record Daily 6-Sec Reads",
-            subtitle: "Capture your authentic state",
-            desc: "Select your energy level (High, Mid, Low) and read the assigned narrative text. The Voice Oracle analyzes your alignment in real-time.",
+            title: "2. Record Daily 12-Sec Reads",
+            subtitle: "Active Mindfulness through Voice",
+            desc: "Anchor your state with a guided narrative. Capture deep exhales, intentional pauses, and your authentic vocal pulse as high-fidelity biometric data.",
             img: "/images/mirror_step2_reading.png"
         },
         {
-            title: "3. Export Your Resonance Dossier",
-            subtitle: "7 days of data as a digital asset",
-            desc: "After 7 days, your vocal journey is synthesized into a beautiful video report with unique archetypal visuals (Stamps, Seals, and Grids).",
+            title: "3. Export Your Resonance Film",
+            subtitle: "Synchronized 7-Day Journey",
+            desc: "Synthesize your week into a cinematic dossier. Every tremor and shift is visually mapped using your chosen archetype's unique stamps, seals, and gridded overlays.",
             img: "/images/mirror_step3_dossier.png"
         }
     ];
@@ -128,7 +128,7 @@ export default function SubscriptionWall({ userHash }: SubscriptionWallProps) {
                                 key={activeStep}
                                 src={onboardingSteps[activeStep].img}
                                 alt={onboardingSteps[activeStep].title}
-                                className="w-full h-full object-cover animate-in fade-in zoom-in duration-500"
+                                className="w-full h-full object-contain p-4 animate-in fade-in zoom-in duration-500"
                                 onError={(e) => {
                                     console.error('Image failed to load:', onboardingSteps[activeStep].img);
                                     (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x450?text=Module+Preview';
