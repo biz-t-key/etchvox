@@ -79,8 +79,8 @@ export default function HomePage() {
     e.preventDefault();
     e.stopPropagation();
 
-    if (confirm('Archive this diagnostic record? it will be hidden from your active vault view. For permanent data deletion requests compliant with GDPR/CCPA, please contact support at info@etchvox.com.')) {
-      await removeFromHistory(id, false); // Remove from local view
+    if (confirm('Permanently delete this diagnostic record? This will remove all traces from our servers and your local vault. This action cannot be undone.')) {
+      await removeFromHistory(id, true); // Permanent server-side deletion
       await loadHistory();
     }
   };
