@@ -20,15 +20,15 @@ export default function SubscriptionWall({ userHash }: SubscriptionWallProps) {
             img: "/images/mirror_step1_genre.png"
         },
         {
-            title: "2. Record Daily 12-Sec Reads",
+            title: "2. Record Daily Guided Reads",
             subtitle: "Active Mindfulness through Voice",
-            desc: "Anchor your state with a guided narrative. Capture deep exhales, intentional pauses, and your authentic vocal pulse as high-fidelity biometric data.",
+            desc: "Anchor your state with a 30-second guided narrative. Capture deep exhales, intentional pauses, and your authentic vocal pulse as high-fidelity biometric data.",
             img: "/images/mirror_step2_reading_v2.png"
         },
         {
             title: "3. Export Your Resonance Film",
             subtitle: "Synchronized 7-Day Journey",
-            desc: "Synthesize your week into a cinematic dossier. Every tremor and shift is visually mapped using your chosen archetype's unique stamps, seals, and gridded overlays.",
+            desc: "Synthesize your week into a cinematic dossier. Every tremor and shift is visually mapped using your chosen archetype's unique textures, cinematic filters, and biometric markers.",
             img: "/images/mirror_step3_dossier.png"
         }
     ];
