@@ -11,30 +11,29 @@ export const FEATURE_FLAGS = {
 };
 
 /**
- * Lemon Squeezy Configuration
- * Subscription settings for Voice Mirror
+ * Polar.sh Configuration
  */
-export const LEMONSQUEEZY_CONFIG = {
-    // Store ID from Lemon Squeezy dashboard
-    STORE_ID: process.env.NEXT_PUBLIC_LEMONSQUEEZY_STORE_ID || '',
+export const POLAR_CONFIG = {
+    // API Access Token (server-side only)
+    ACCESS_TOKEN: process.env.POLAR_ACCESS_TOKEN || '',
 
-    // Product variant IDs (create these in Lemon Squeezy dashboard)
-    WEEKLY_VARIANT_ID: process.env.NEXT_PUBLIC_LEMONSQUEEZY_WEEKLY_VARIANT_ID || '',
-    MONTHLY_VARIANT_ID: process.env.NEXT_PUBLIC_LEMONSQUEEZY_MONTHLY_VARIANT_ID || '',
-    SOLO_VARIANT_ID: process.env.NEXT_PUBLIC_LEMONSQUEEZY_SOLO_VARIANT_ID || '',
-    COUPLE_VARIANT_ID: process.env.NEXT_PUBLIC_LEMONSQUEEZY_COUPLE_VARIANT_ID || '',
-    SPY_VARIANT_ID: process.env.NEXT_PUBLIC_LEMONSQUEEZY_SPY_VARIANT_ID || '',
+    // Organization ID (found in Polar dashboard)
+    ORGANIZATION_ID: process.env.POLAR_ORGANIZATION_ID || '',
 
-    // Pricing
+    // Webhook secret for verification
+    WEBHOOK_SECRET: process.env.POLAR_WEBHOOK_SECRET || '',
+
+    // Product IDs
+    WEEKLY_PRODUCT_ID: process.env.NEXT_PUBLIC_POLAR_WEEKLY_PRODUCT_ID || '',
+    MONTHLY_PRODUCT_ID: process.env.NEXT_PUBLIC_POLAR_MONTHLY_PRODUCT_ID || '',
+    SOLO_PRODUCT_ID: process.env.NEXT_PUBLIC_POLAR_SOLO_PRODUCT_ID || '',
+    COUPLE_PRODUCT_ID: process.env.NEXT_PUBLIC_POLAR_COUPLE_PRODUCT_ID || '',
+    SPY_PRODUCT_ID: process.env.NEXT_PUBLIC_POLAR_SPY_PRODUCT_ID || '',
+
+    // Display Pricing (consistent with UI)
     WEEKLY_PRICE: 7.00,
     MONTHLY_PRICE: 15.00,
     SOLO_PRICE: 10.00,
     COUPLE_PRICE: 15.00,
     SPY_PRICE: 10.00,
-
-    // API Key (server-side only)
-    API_KEY: process.env.LEMONSQUEEZY_API_KEY || '',
-
-    // Webhook secret for signature verification
-    WEBHOOK_SECRET: process.env.LEMONSQUEEZY_WEBHOOK_SECRET || '',
 };

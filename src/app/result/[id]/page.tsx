@@ -23,7 +23,7 @@ import { DriftAnalysis } from '@/lib/types';
 import VoiceTimelineGraph from '@/components/result/VoiceTimelineGraph';
 import SpyReportCard from '@/components/result/SpyReportCard';
 import { generateFinalReport } from '@/lib/analyzer';
-import { LEMONSQUEEZY_CONFIG } from '@/config/features';
+import { POLAR_CONFIG } from '@/config/features';
 import { checkSubscription } from '@/lib/subscription';
 
 
@@ -185,7 +185,7 @@ export default function ResultPage() {
             const plan = type;
             const userHash = localStorage.getItem('etchvox_user_hash') || '';
 
-            const response = await fetch('/api/checkout/lemonsqueezy', {
+            const response = await fetch('/api/checkout/polar', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userHash, resultId, plan })
@@ -196,16 +196,8 @@ export default function ResultPage() {
             }
 
             const data = await response.json();
-            const checkoutUrl = data.checkoutUrl + (data.checkoutUrl.includes('?') ? '&' : '?') + 'embed=1';
-
-            // Open Lemon Squeezy Overlay
-            if (window.LemonSqueezy) {
-                window.LemonSqueezy.Url.Open(checkoutUrl);
-                setCheckoutLoading(false);
-            } else {
-                // Fallback to direct link if script not loaded
-                window.location.href = checkoutUrl;
-            }
+            const checkoutUrl = data.checkoutUrl;
+            window.location.href = checkoutUrl;
 
         } catch (err) {
             console.error('Checkout error:', err);
@@ -334,7 +326,7 @@ export default function ResultPage() {
     const showSpyReport = true; // Always show the card, gating handled inside
 
     const diagnosticType = result.mode === 'spy' ? 'spy' : (isCouple ? 'couple' : 'solo');
-    const diagnosticPrice = diagnosticType === 'spy' ? LEMONSQUEEZY_CONFIG.SPY_PRICE : (isCouple ? LEMONSQUEEZY_CONFIG.COUPLE_PRICE : LEMONSQUEEZY_CONFIG.SOLO_PRICE);
+    const diagnosticPrice = diagnosticType === 'spy' ? POLAR_CONFIG.SPY_PRICE : (diagnosticType === 'couple' ? POLAR_CONFIG.COUPLE_PRICE : POLAR_CONFIG.SOLO_PRICE);
 
     return (
         <main className="min-h-screen bg-black text-white selection:bg-cyan-500/30 font-sans flex flex-col items-center overflow-x-hidden w-full relative">

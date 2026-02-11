@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { LEMONSQUEEZY_CONFIG } from '@/config/features';
+import { POLAR_CONFIG } from '@/config/features';
 
 interface SubscriptionWallProps {
     userHash: string;
@@ -38,7 +38,7 @@ export default function SubscriptionWall({ userHash }: SubscriptionWallProps) {
         setError(null);
 
         try {
-            const response = await fetch('/api/checkout/lemonsqueezy', {
+            const response = await fetch('/api/checkout/polar', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userHash, plan })
@@ -162,7 +162,7 @@ export default function SubscriptionWall({ userHash }: SubscriptionWallProps) {
                                 </div>
                                 <div className="text-right">
                                     <div className="text-3xl font-black text-white">
-                                        ${LEMONSQUEEZY_CONFIG.WEEKLY_PRICE}
+                                        ${POLAR_CONFIG.WEEKLY_PRICE}
                                     </div>
                                     <p className="text-gray-600 text-[10px] mt-1 font-bold">ONE-TIME</p>
                                 </div>
@@ -205,7 +205,7 @@ export default function SubscriptionWall({ userHash }: SubscriptionWallProps) {
                                 </div>
                                 <div className="text-right">
                                     <div className="text-3xl font-black text-white">
-                                        ${LEMONSQUEEZY_CONFIG.MONTHLY_PRICE}
+                                        ${POLAR_CONFIG.MONTHLY_PRICE}
                                     </div>
                                     <p className="text-cyan-600 text-[10px] mt-1 font-black">ONE-TIME</p>
                                 </div>

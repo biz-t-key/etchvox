@@ -9,6 +9,7 @@ export interface SubscriptionStatus {
     plan?: 'weekly' | 'monthly';
     expiresAt?: Date;
     lemonSqueezyId?: string;
+    polarId?: string;
     customerEmail?: string;
 }
 
@@ -41,6 +42,7 @@ export async function checkSubscription(userHash: string): Promise<SubscriptionS
             plan: data.plan,
             expiresAt,
             lemonSqueezyId: data.lemonSqueezyId,
+            polarId: data.polarId,
             customerEmail: data.customerEmail
         };
     } catch (error) {
@@ -57,7 +59,8 @@ export async function updateSubscription(
     data: {
         plan: 'weekly' | 'monthly';
         expiresAt: Date;
-        lemonSqueezyId: string;
+        lemonSqueezyId?: string;
+        polarId?: string;
         customerEmail?: string;
         status: 'active' | 'cancelled' | 'expired';
     }
@@ -73,7 +76,8 @@ export async function updateSubscription(
         await setDoc(subRef, {
             plan: data.plan,
             expiresAt: Timestamp.fromDate(data.expiresAt),
-            lemonSqueezyId: data.lemonSqueezyId,
+            lemonSqueezyId: data.lemonSqueezyId || null,
+            polarId: data.polarId || null,
             customerEmail: data.customerEmail,
             status: data.status,
             updatedAt: Timestamp.now()

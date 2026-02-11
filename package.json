@@ -12,6 +12,7 @@
     "@aws-sdk/client-s3": "^3.971.0",
     "@aws-sdk/s3-request-presigner": "^3.971.0",
     "@google/generative-ai": "^0.24.1",
+    "@polar-sh/sdk": "^0.43.0",
     "@remotion/player": "^4.0.406",
     "@types/bip39": "^2.4.2",
     "@vercel/og": "^0.8.6",
