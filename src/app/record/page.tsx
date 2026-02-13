@@ -442,7 +442,7 @@ function RecordPageContent() {
                     <div className="fade-in space-y-20">
                         <div className="space-y-10">
                             <h1 className="text-4xl md:text-5xl font-bold leading-tight">
-                                <span className="neon-text-cyan">Voice Analysis</span>
+                                <span className="neon-text-cyan">{mode === 'spy' ? 'Spy Analysis' : 'Voice Analysis'}</span>
                             </h1>
                             <p className="text-gray-300 text-xl md:text-2xl leading-relaxed max-w-xl mx-auto">
                                 Read the prompts aloud. Takes about 30 seconds.
@@ -455,8 +455,15 @@ function RecordPageContent() {
                                 <li className="pl-2">Find a quiet place</li>
                                 <li className="pl-2">Hold device 30cm from mouth</li>
                                 <li className="pl-2">Read naturally (don't act)</li>
-                                <li className="pl-2">3 different prompts</li>
+                                <li className="pl-2">
+                                    {mode === 'spy' ? '6 missions' : mode === 'solo' ? '4 biometric scripts' : '3 levels'}
+                                </li>
                             </ul>
+                            {mode === 'spy' && (
+                                <p className="mt-4 text-[10px] text-gray-500 font-bold uppercase tracking-widest italic animate-pulse">
+                                    Disclaimer: This is for entertainment purposes only (It's a joke).
+                                </p>
+                            )}
                         </div>
 
                         {/* Spy Metadata moved to post-recording */}
