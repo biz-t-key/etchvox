@@ -41,11 +41,12 @@ export default function SubscriptionWall({ userHash }: SubscriptionWallProps) {
             const response = await fetch('/api/checkout/polar', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userHash, plan })
+                body: JSON.stringify({ userHash, plan, resultId: 'mirror' })
             });
 
             if (!response.ok) {
-                throw new Error('Failed to create checkout');
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.details || errorData.error || 'Failed to create checkout');
             }
 
             const data = await response.json();

@@ -54,10 +54,14 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        const successUrl = resultId === 'mirror'
+            ? `${request.nextUrl.origin}/mirror?status=success`
+            : `${request.nextUrl.origin}/result/${resultId}?status=success`;
+
         // Create Checkout Session via Polar SDK
         const checkout = await polar.checkouts.create({
             products: [productId],
-            successUrl: `${request.nextUrl.origin}/result/${resultId}?status=success`,
+            successUrl,
             metadata: {
                 user_hash: userHash || '',
                 result_id: resultId || '',
