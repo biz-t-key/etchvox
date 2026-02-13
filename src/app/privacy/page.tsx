@@ -40,7 +40,7 @@ export default function PrivacyPage() {
                                     <span className="text-cyan-500 font-mono text-xs mt-1">[03]</span>
                                     <div>
                                         <strong>Payment & Subscription Data:</strong>
-                                        <p className="text-gray-400 mt-1">Transaction records, subscription status, and billing information processed through Lemon Squeezy (our payment processor). We do not store credit card information on our servers.</p>
+                                        <p className="text-gray-400 mt-1">Transaction records, subscription status, and billing information processed through Polar.sh (our payment processor). We do not store credit card information on our servers.</p>
                                     </div>
                                 </li>
                                 <li className="flex items-start gap-4">
@@ -86,7 +86,7 @@ export default function PrivacyPage() {
                         <ul className="text-gray-400 text-sm space-y-2 list-disc list-inside marker:text-cyan-500">
                             <li>To generate your personality analysis, compatibility reports, or Voice Mirror training feedback.</li>
                             <li>To improve the accuracy of AI models and archetypal frameworks.</li>
-                            <li>To process payments and manage subscriptions through Lemon Squeezy.</li>
+                            <li>To process payments and manage subscriptions through Polar.sh.</li>
                             <li>To research correlations between vocal patterns and personality traits for R&D purposes (aggregated data only).</li>
                             <li>To prevent fraud and ensure service security.</li>
                         </ul>
@@ -98,7 +98,7 @@ export default function PrivacyPage() {
                             We do not sell your personal data to advertisers or data brokers. However, we share limited data with the following third parties for operational purposes:
                         </p>
                         <ul className="text-gray-400 text-sm space-y-2 list-disc list-inside marker:text-cyan-500">
-                            <li><strong className="text-white">Lemon Squeezy</strong> - Payment processing, subscription management</li>
+                            <li><strong className="text-white">Polar.sh</strong> - Payment processing, subscription management</li>
                             <li><strong className="text-white">Firebase (Google)</strong> - Cloud database for Solo/Couple analysis results (optional fallback)</li>
                             <li><strong className="text-white">Vercel</strong> - Hosting infrastructure</li>
                         </ul>
@@ -116,7 +116,7 @@ export default function PrivacyPage() {
                     <section className="space-y-6">
                         <h2 className="text-2xl font-bold text-white uppercase tracking-wider border-b border-white/10 pb-2">7. Cross-Border Data Processing</h2>
                         <p className="text-gray-300 text-sm leading-relaxed">
-                            Your data is processed and stored on secure infrastructure in the United States and Japan (Vercel, Firebase, Lemon Squeezy). By using the service, you consent to this global data residence.
+                            Your data is processed and stored on secure infrastructure in the United States, Europe, and Japan (Vercel, Firebase, Polar.sh). By using the service, you consent to this global data residence.
                         </p>
                     </section>
 
@@ -144,7 +144,7 @@ export default function PrivacyPage() {
                         <ul className="text-gray-400 text-sm space-y-2 list-disc list-inside marker:text-cyan-500">
                             <li><strong className="text-white">Voice Mirror:</strong> Indefinite (browser-local, user-controlled)</li>
                             <li><strong className="text-white">Solo/Couple Results:</strong> 2 years from last access (Firebase)</li>
-                            <li><strong className="text-white">Payment Records:</strong> 7 years (legal compliance, Lemon Squeezy)</li>
+                            <li><strong className="text-white">Payment Records:</strong> 7 years (legal compliance, Polar.sh)</li>
                             <li><strong className="text-white">Aggregated Analytics:</strong> Indefinite (anonymized, research purposes)</li>
                         </ul>
                     </section>
@@ -152,7 +152,7 @@ export default function PrivacyPage() {
                     <section className="space-y-6">
                         <h2 className="text-2xl font-bold text-white uppercase tracking-wider border-b border-white/10 pb-2">10. Security Measures</h2>
                         <p className="text-gray-300 text-sm leading-relaxed">
-                            We employ industry-standard security practices including HTTPS encryption, SHA-256 hashing for device identifiers, secure payment processing (PCI DSS compliant via Lemon Squeezy), and regular security audits. However, no method of transmission over the internet is 100% secure, and we cannot guarantee absolute security.
+                            We employ industry-standard security practices including HTTPS encryption, SHA-256 hashing for device identifiers, secure payment processing (PCI DSS compliant via Polar.sh), and regular security audits. However, no method of transmission over the internet is 100% secure, and we cannot guarantee absolute security.
                         </p>
                     </section>
 

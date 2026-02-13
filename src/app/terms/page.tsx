@@ -9,7 +9,7 @@ export default function TermsPage() {
                 </Link>
 
                 <h1 className="text-4xl font-black neon-text-cyan mb-2 uppercase tracking-tighter">Terms of Service</h1>
-                <p className="text-gray-500 font-mono text-xs mb-12 uppercase tracking-[0.3em]">Last Protocol Update: February 2026</p>
+                <p className="text-gray-500 font-mono text-xs mb-12 uppercase tracking-[0.3em]">Last Protocol Update: February 12, 2026</p>
 
                 <div className="prose prose-invert max-w-none space-y-12">
                     <section>
@@ -74,13 +74,13 @@ export default function TermsPage() {
                             <div className="space-y-2">
                                 <strong className="text-white text-base">3.1 Subscription Plans</strong>
                                 <ul className="list-disc list-inside marker:text-cyan-500 space-y-1 ml-4">
-                                    <li>Weekly Plan: $10 USD per week, auto-renews every 7 days</li>
-                                    <li>Monthly Plan: $30 USD per month, auto-renews every 30 days</li>
+                                    <li>Weekly Plan: $7 USD per week (One-Time / Recurring)</li>
+                                    <li>Monthly Plan: $15 USD per month (Optimized Value)</li>
                                 </ul>
                             </div>
                             <div className="space-y-2">
                                 <strong className="text-white text-base">3.2 Auto-Renewal</strong>
-                                <p>Subscriptions automatically renew unless canceled at least 24 hours before the end of the current billing period. You may cancel at any time through the Lemon Squeezy customer portal.</p>
+                                <p>Subscriptions automatically renew unless canceled at least 24 hours before the end of the current billing period. You may cancel at any time through the Polar.sh customer portal.</p>
                             </div>
                             <div className="space-y-2">
                                 <strong className="text-white text-base">3.3 Refund Policy</strong>

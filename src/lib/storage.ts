@@ -51,6 +51,7 @@ export interface VoiceResult {
     logV3?: import('./types').VoiceLogV3; // New Schema 2.0.0
     spyMetadata?: { origin: string; target: string };
     spyAnalysis?: { score: number; reason: string; isGhost: boolean; stamp?: string };
+    postReading?: import('./types').PostReadingInsight;
 }
 
 // Generate a SHA-256 hash of the consent record for audit traceability

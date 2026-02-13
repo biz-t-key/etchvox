@@ -19,10 +19,10 @@ type Phase = 'ready' | 'recording' | 'analyzing' | 'spy-metadata' | 'calibration
 
 const SCRIPTS: Record<string, Record<RecordingStep, { ui: string, script: string, duration: number, context?: string, direction?: string, icon?: string }>> = {
     solo: {
-        1: { ui: 'Calibrating Location Data...', script: 'I parked my car in the garage to drink a bottle of water. I am definitely not a robot.', duration: 10 },
-        2: { ui: 'Testing Vocal Stress Levels...', script: 'Warning! System failure! Shut it down NOW!', duration: 8 },
-        3: { ui: 'Analyzing Processing Speed...', script: 'Six systems synthesized sixty-six signals simultaneously.', duration: 8 },
-        4: { ui: 'N/A', script: '', duration: 0 },
+        1: { ui: 'Step 1: Baseline', script: '"Testing my voice in a neutral state."', duration: 6 },
+        2: { ui: 'Step 2: Conviction', script: '"I know exactly what I\'m doing."', duration: 6 },
+        3: { ui: 'Step 3: Vulnerability', script: '"I\'m terrified of being wrong."', duration: 6 },
+        4: { ui: 'Step 4: Acceptance', script: '"I\'m fine just the way I am."', duration: 7 },
         5: { ui: 'N/A', script: '', duration: 0 },
         6: { ui: 'N/A', script: '', duration: 0 },
     },
@@ -30,7 +30,7 @@ const SCRIPTS: Record<string, Record<RecordingStep, { ui: string, script: string
         1: {
             ui: 'Level 1: The Exploding Visionary',
             script: 'I think it is... [pause] ...very important that we... [stutter] ...become a multi-planetary species. Otherwise... consciousness as we know it... might just disappear.',
-            duration: 12,
+            duration: 18,
             context: 'You are on stage. Your [REDACTED] rocket just turned into $400 million worth of fireworks 4 seconds after launch. The shareholders of [CENSORED CORP] are screaming. Convince them this is actually a victory.',
             direction: 'Look at the horizon, not the audience. Stutter confidently. You are not making excuses; you are seeing a future on M***s.',
             icon: '💥'
@@ -38,7 +38,7 @@ const SCRIPTS: Record<string, Record<RecordingStep, { ui: string, script: string
         2: {
             ui: 'Level 2: The Advertiser War',
             script: 'If somebody is going to try to blackmail me with advertising... blackmail me with money? ...Go. F**k. Yourself. ...Go. F**k. Yourself. Is that clear?',
-            duration: 10,
+            duration: 14,
             context: "You bought a certain 'Bird App' for $[REDACTED] Billion. Now, the CEO of [MOUSE COMPANY] is blackmailing you with money. You don't care about revenue. You care about sending a message.",
             direction: 'Dead eyes. No blinking. Do not shout; whisper the insult like it\'s a fact of nature. Treat the interviewer like a buggy line of code.',
             icon: '🖕'
@@ -46,7 +46,7 @@ const SCRIPTS: Record<string, Record<RecordingStep, { ui: string, script: string
         3: {
             ui: 'Level 3: The 3AM Physicist',
             script: 'Well, I operate on the physics approach to analysis. You boil things down to the first principles or fundamental truths in a particular area and then you reason up from there.',
-            duration: 12,
+            duration: 18,
             context: 'It is 3:00 AM at the factory. Your lead engineer wants to go home to see his family. You want to explain why this [$5 SCREW] should cost $0.03 based on atomic weight.',
             direction: 'Speed up, then slow down. Mumble. You are not talking to a human; you are downloading the laws of the universe directly from the cloud.',
             icon: '🧪'
@@ -99,6 +99,8 @@ function RecordPageContent() {
     const [spyOrigin, setSpyOrigin] = useState<string>('UNKNOWN');
     const [spyTarget, setSpyTarget] = useState<string>('MI6_LONDON');
     const [stepVectors, setStepVectors] = useState<Record<string, number[]>>({});
+    const lastSpeakingTimeRef = useRef<number>(0);
+    const finishedTimestampRef = useRef<number | null>(null);
 
     const analyzerRef = useRef<VoiceAnalyzer | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -190,6 +192,12 @@ function RecordPageContent() {
             const collectLoop = () => {
                 if (analyzerRef.current && phase === 'recording') {
                     analyzerRef.current.collectSample();
+
+                    // Basic VAD for 'Magical 5 Seconds'
+                    const latestRMS = analyzerRef.current.getLatestRMS();
+                    if (latestRMS > 0.01) {
+                        lastSpeakingTimeRef.current = Date.now();
+                    }
                 }
                 const frameId = requestAnimationFrame(collectLoop);
                 animationFrameRef.current = frameId;
@@ -221,14 +229,17 @@ function RecordPageContent() {
                             analyzerRef.current.reset();
                         }
 
-                        const totalSteps = mode === 'spy' ? 6 : 3;
-                        if (currentStep < totalSteps) {
+                        // VAD End Detection logic for last step
+                        const totalSteps = mode === 'elon' ? 6 : (mode === 'solo' ? 4 : 3);
+
+                        if (currentStep === totalSteps) {
+                            // Recording finished
+                            finishRecording();
+                            return currentStep;
+                        } else {
                             const nextStep = (currentStep + 1) as RecordingStep;
                             setTimeLeft(activeScripts[nextStep].duration * 1000);
                             return nextStep;
-                        } else {
-                            finishRecording();
-                            return currentStep;
                         }
                     });
                     return 0;
@@ -260,7 +271,16 @@ function RecordPageContent() {
 
         if (analyzerRef.current) {
             const spyMd = mode === 'spy' ? { origin: spyOrigin, target: spyTarget } : null;
+            const recordingEndMs = Date.now();
             const analysisResult = analyzerRef.current.analyze(mode, spyMd);
+
+            // Magical 5 Seconds Analysis
+            const postReading = analyzerRef.current.classifyPostReading(
+                lastSpeakingTimeRef.current || (recordingEndMs - 25000),
+                recordingEndMs,
+                mode
+            );
+            analysisResult.postReading = postReading;
 
             let spyAnalysisResult = null;
             if (mode === 'spy') {
@@ -363,6 +383,7 @@ function RecordPageContent() {
                 logV2: logV2 as any,
                 logV3: logV3 as any,
                 spyAnalysis: spyAnalysisResult || undefined,
+                postReading: analysisResult.postReading,
                 mode: mode as any
             };
 
@@ -449,73 +470,55 @@ function RecordPageContent() {
                         <div className="glass rounded-xl p-8 border-2 border-cyan-500/20 bg-white/5 max-w-xl mx-auto space-y-6">
                             <h3 className="text-xs font-black uppercase tracking-[0.2em] text-cyan-400">Security Clearance & Bio-Vault</h3>
                             <div className="space-y-4 text-left">
-                                <label className="flex items-start gap-4 p-4 rounded-lg bg-black/40 hover:bg-black/60 transition-colors cursor-pointer group">
-                                    <input
-                                        type="checkbox"
-                                        checked={termsAccepted}
-                                        onChange={(e) => setTermsAccepted(e.target.checked)}
-                                        className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-cyan-500"
-                                    />
-                                    <span className="text-sm text-gray-300 leading-relaxed select-none block font-bold transition-colors group-hover:text-white">
-                                        I agree to the Terms of Service.
-                                    </span>
-                                </label>
-
-                                <label className="flex items-start gap-4 p-4 rounded-lg bg-black/40 hover:bg-black/60 transition-colors cursor-pointer group">
-                                    <input
-                                        type="checkbox"
-                                        checked={privacyAccepted}
-                                        onChange={(e) => setPrivacyAccepted(e.target.checked)}
-                                        className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-cyan-500"
-                                    />
-                                    <span className="text-sm text-gray-300 leading-relaxed select-none block font-bold transition-colors group-hover:text-white">
-                                        I agree to the Privacy Policy.
-                                    </span>
-                                </label>
-
-                                <label className="flex items-start gap-4 p-4 rounded-lg bg-red-500/5 border border-red-500/10 hover:bg-red-500/10 transition-colors cursor-pointer group">
-                                    <input
-                                        type="checkbox"
-                                        checked={researchConsentAgreed}
-                                        onChange={(e) => setResearchConsentAgreed(e.target.checked)}
-                                        className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-red-500"
-                                    />
-                                    <div className="space-y-1">
-                                        <span className="text-sm text-red-500/90 leading-relaxed select-none block font-black transition-colors group-hover:text-red-400">
-                                            [Optional] Allow use of anonymous voice vectors for AI safety research.
+                                {/* Mandatory Legal Group */}
+                                <div className="space-y-2 p-4 rounded-xl border border-white/5 bg-black/20">
+                                    <label className="flex items-start gap-3 cursor-pointer group">
+                                        <input
+                                            type="checkbox"
+                                            checked={termsAccepted && privacyAccepted && isOver13 && wellnessAccepted}
+                                            onChange={(e) => {
+                                                const val = e.target.checked;
+                                                setTermsAccepted(val);
+                                                setPrivacyAccepted(val);
+                                                setIsOver13(val);
+                                                setWellnessAccepted(val);
+                                            }}
+                                            className="mt-1 w-5 h-5 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-cyan-500"
+                                        />
+                                        <span className="text-xs text-gray-400 leading-relaxed select-none block font-bold transition-colors group-hover:text-white uppercase tracking-wider">
+                                            I accept the <Link href="/terms" className="text-cyan-400 hover:underline">Terms</Link> & <Link href="/privacy" className="text-cyan-400 hover:underline">Privacy Policy</Link>.
+                                            I confirm I am 13+ and consent to wellness analysis.
                                         </span>
-                                        <span className="text-[11px] text-gray-500 block leading-normal">
-                                            Allow use of anonymous voice vectors for AI safety research. Raw audio is never stored.
-                                        </span>
-                                    </div>
-                                </label>
+                                    </label>
+                                </div>
 
-                                <label className="flex items-start gap-4 p-4 rounded-lg bg-black/40 hover:bg-black/60 transition-colors cursor-pointer group opacity-60">
-                                    <input
-                                        type="checkbox"
-                                        checked={isOver13}
-                                        onChange={(e) => setIsOver13(e.target.checked)}
-                                        className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-gray-500"
-                                    />
-                                    <span className="text-xs text-gray-400 leading-relaxed select-none block transition-colors group-hover:text-gray-300 font-medium">
-                                        Confirm 13+ years of age
-                                    </span>
-                                </label>
-
-                                <label className="flex items-start gap-4 p-4 rounded-lg bg-cyan-500/5 border border-cyan-500/10 hover:bg-cyan-500/10 transition-colors cursor-pointer group">
-                                    <input
-                                        type="checkbox"
-                                        checked={wellnessAccepted}
-                                        onChange={(e) => setWellnessAccepted(e.target.checked)}
-                                        className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-cyan-400"
-                                    />
-                                    <span className="text-sm text-gray-300 leading-relaxed select-none block font-bold transition-colors group-hover:text-white">
-                                        I consent to the anonymous processing of my acoustic features for wellness analysis. I understand this is not a medical diagnosis.
-                                    </span>
-                                </label>
-                            </div>
-                            <div className="text-[10px] text-gray-500 uppercase tracking-widest font-mono">
-                                Read our <Link href="/privacy" className="text-cyan-500 hover:underline">Privacy Policy</Link> for details.
+                                {/* Optional Cinematic Research Consent */}
+                                <div className="bg-cyan-500/5 backdrop-blur-sm rounded-xl p-5 border border-cyan-500/10 hover:bg-cyan-500/10 transition-colors">
+                                    <label className="flex items-start gap-4 cursor-pointer group">
+                                        <input
+                                            type="checkbox"
+                                            checked={researchConsentAgreed}
+                                            onChange={(e) => setResearchConsentAgreed(e.target.checked)}
+                                            className="mt-1 w-6 h-6 rounded border-cyan-500/30 bg-black/50 cursor-pointer flex-shrink-0 accent-cyan-500"
+                                        />
+                                        <div className="space-y-1">
+                                            <span className="text-[10px] text-cyan-400/80 font-black uppercase tracking-[0.2em] block mb-1">
+                                                Optional: {
+                                                    mode === 'spy' ? "Transmit Intel" :
+                                                        mode === 'elon' ? "Upload Entropy" :
+                                                            "Archive My Soul"
+                                                }
+                                            </span>
+                                            <span className="text-xs text-gray-400 leading-relaxed select-none block italic transition-colors group-hover:text-gray-200">
+                                                {
+                                                    mode === 'spy' ? "Authorized storage for AI research and tactical statistical telemetry. Data is stripped of PII and used for global behavioral indexing." :
+                                                        mode === 'elon' ? "Agreement covers anonymized audio capture for neural grid training and commercial entropy research. Identity is disregarded by the protocol." :
+                                                            "Your signal is utilized for neural synthesis, distributed node indexing, and statistical personality forecasting. No ID linked."
+                                                }
+                                            </span>
+                                        </div>
+                                    </label>
+                                </div>
                             </div>
                         </div>
 
@@ -541,7 +544,7 @@ function RecordPageContent() {
                     <div className={`fade-in space-y-16 ${mode === 'spy' ? 'fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center p-8' : ''}`}>
                         {mode !== 'spy' && (
                             <div className="flex justify-center gap-3">
-                                {[1, 2, 3].map((s) => (
+                                {[1, 2, 3, 4].filter(s => SCRIPTS[mode][s as RecordingStep]?.duration > 0).map((s) => (
                                     <div
                                         key={s}
                                         className={`w-3 h-3 rounded-full transition-colors ${s === step ? 'bg-cyan-400' : s < step ? 'bg-cyan-600' : 'bg-gray-700'
@@ -611,7 +614,7 @@ function RecordPageContent() {
                                 </div>
                             )}
 
-                            {mode !== 'spy' && (
+                            {mode !== 'spy' && mode !== 'solo' && (
                                 <button
                                     onClick={skipToResult}
                                     className="text-gray-500 hover:text-gray-300 text-base transition-colors"

@@ -711,6 +711,115 @@ export class VoiceAnalyzer {
         return Math.sqrt(sum / buffer.length);
     }
 
+    // Expose latest RMS for real-time VAD in UI
+    getLatestRMS(): number {
+        if (this.volumeSamples.length === 0) return 0;
+        return this.volumeSamples[this.volumeSamples.length - 1];
+    }
+
+    /**
+     * classifyPostReading: Analyzes the silence/noise after the script is finished reading.
+     * @param finishedTimestamp The timestamp when reading was detected to stop (ms)
+     * @param recordingEndTime The timestamp when recording actually stopped (ms)
+     */
+    classifyPostReading(finishedTimestamp: number, recordingEndTime: number, mode: string = 'solo'): import('./types').PostReadingInsight {
+        const totalDuration = recordingEndTime - finishedTimestamp; // duration of the "Magical 5 Seconds"
+
+        // Find samples that occurred after finishedTimestamp
+        const postIndices = this.timestampSamples.map((t, i) => t > finishedTimestamp ? i : -1).filter(i => i !== -1);
+
+        if (postIndices.length === 0) {
+            return {
+                category: 'Statue',
+                score: 1.0,
+                description: "Perfect vacuum. Absolute stillness.",
+                descriptionJa: "完璧な真空。微動だにしない静寂。",
+                timestamp: finishedTimestamp
+            };
+        }
+
+        const postVols = postIndices.map(i => this.volumeSamples[i]);
+        const postPitches = postIndices.map(i => this.pitchSamples[i]).filter(p => p > 0);
+        const avgVol = postVols.reduce((a, b) => a + b, 0) / postVols.length;
+        const maxVol = Math.max(...postVols);
+
+        // C02: Synchronized Relief (Unison Laughter)
+        const isLaughterCandidate = postPitches.length > 5 && avgVol > 0.05; // Pitch detected + high volume
+
+        // C03: Immediate Disconnect (Fidget spikes)
+        const isFidgetCandidate = maxVol > 0.1 && postPitches.length < 3; // Loud noise but no pitch
+
+        if (mode === 'couple') {
+            if (isLaughterCandidate) {
+                return {
+                    category: 'Laughter',
+                    score: 0.9,
+                    description: "Synchronized relief. Laughter detected.",
+                    descriptionJa: "共鳴する安堵。笑い声が検知されました。",
+                    timestamp: finishedTimestamp
+                };
+            }
+            if (isFidgetCandidate) {
+                return {
+                    category: 'Disconnect',
+                    score: 0.8,
+                    description: "Immediate disconnect. Movement detected right after reading.",
+                    descriptionJa: "即時の切断。読み上げ直後の物理的な動きが検知されました。",
+                    timestamp: finishedTimestamp
+                };
+            }
+            // Check-in (Mumbling turns)
+            if (postPitches.length > 5) {
+                return {
+                    category: 'Check-in',
+                    score: 0.7,
+                    description: "Feedback loop. Inter-turn behavior detected.",
+                    descriptionJa: "フィードバックループ。二人の間の確認作業が検知されました。",
+                    timestamp: finishedTimestamp
+                };
+            }
+        } else {
+            // Solo Mode
+            if (isLaughterCandidate || postPitches.length > 5) {
+                return {
+                    category: 'Mumble',
+                    score: 0.8,
+                    description: "Self-commentary. Mumbling detected after reading.",
+                    descriptionJa: "独り言。読み上げ後の余計な発話が検知されました。",
+                    timestamp: finishedTimestamp
+                };
+            }
+            // Sigh Detection: sustained low volume noise
+            const lowVolCount = postVols.filter(v => v > 0.01 && v < 0.04).length;
+            if (lowVolCount > 10 && postPitches.length < 3) {
+                return {
+                    category: 'Sigh',
+                    score: 0.8,
+                    description: "Deep release. A sigh was detected.",
+                    descriptionJa: "深いため息。リリース（解放）の兆候を検知。",
+                    timestamp: finishedTimestamp
+                };
+            }
+            if (isFidgetCandidate) {
+                return {
+                    category: 'Fidget',
+                    score: 0.7,
+                    description: "Impatience detected. Fidgeting or movement noise detected.",
+                    descriptionJa: "焦燥。貧乏ゆすりや雑音が検知されました。",
+                    timestamp: finishedTimestamp
+                };
+            }
+        }
+
+        return {
+            category: 'Statue',
+            score: avgVol < 0.005 ? 1.0 : 0.5,
+            description: "The Statue. No significant post-reading action.",
+            descriptionJa: "静止。読み上げ後に一切の動きがありません。",
+            timestamp: finishedTimestamp
+        };
+    }
+
     // Calculate spectral centroid for tone brightness
     private calculateSpectralCentroid(frequencyData: Uint8Array): number {
         let numerator = 0;

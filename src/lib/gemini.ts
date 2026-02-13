@@ -16,11 +16,16 @@ export async function generateContent(systemPrompt: string, userPayload: string)
 
     try {
         // Use Gemini 2.5 Flash Lite for maximum speed and intelligence balance
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
+        const model = genAI.getGenerativeModel({
+            model: 'gemini-2.5-flash-lite',
+            generationConfig: {
+                responseMimeType: 'application/json'
+            }
+        });
 
         const result = await model.generateContent([
-            systemPrompt, // System instructions as first part of prompt
-            `Analysis Data:\n${userPayload}` // The actual data
+            systemPrompt,
+            userPayload
         ]);
 
         const response = await result.response;

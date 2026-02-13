@@ -49,16 +49,10 @@ export default function SubscriptionWall({ userHash }: SubscriptionWallProps) {
             }
 
             const data = await response.json();
-            const checkoutUrl = data.checkoutUrl + (data.checkoutUrl.includes('?') ? '&' : '?') + 'embed=1';
+            const checkoutUrl = data.checkoutUrl;
 
-            // Open Lemon Squeezy Overlay
-            if (window.LemonSqueezy) {
-                window.LemonSqueezy.Url.Open(checkoutUrl);
-                setIsLoading(false);
-            } else {
-                // Fallback to direct link if script not loaded
-                window.location.href = checkoutUrl;
-            }
+            // Direct redirect to Polar.sh checkout
+            window.location.href = checkoutUrl;
 
         } catch (err) {
             console.error('Checkout error:', err);

@@ -25,6 +25,7 @@ interface MirrorDashboardProps {
     };
     userHash: string;
     wellnessConsentAgreed: boolean;
+    postReadingInsight?: import('@/lib/types').PostReadingInsight;
 }
 
 interface OracleResponse {
@@ -47,7 +48,8 @@ export default function MirrorDashboard({
     onClose,
     context,
     userHash,
-    wellnessConsentAgreed
+    wellnessConsentAgreed,
+    postReadingInsight
 }: MirrorDashboardProps) {
     const [zScoreResult, setZScoreResult] = useState<ZScoreResult | null>(null);
     const [oracleResponse, setOracleResponse] = useState<OracleResponse | null>(null);
@@ -120,18 +122,34 @@ export default function MirrorDashboard({
         const dayCategory = getDayCategory(now);
 
         // Get last 5 tags for context
-        const tagHistory = history.filter(h => h.annotationTag).slice(-5).map(h => h.annotationTag);
+        const tagHistory = history.filter(h => h.annotationTag).map(h => h.annotationTag).slice(-5);
+
+        // Context Calculation
+        const userStatus = history.length === 0 ? 'new' : (history.length < 30 ? 'returning' : 'long_term');
+        const identity = context?.archetype || 'Optimizer';
+
+        // Delta Calculation (Yesterday)
+        let deltaYesterday = null;
+        if (history.length > 0) {
+            const lastLog = history[history.length - 1];
+            // Simple delta calculation for jitter if it exists in the 30 vectors
+            // Note: In a full implementation, we'd compare all dimensions
+            deltaYesterday = {
+                jitter: (calibrationVector[0] - lastLog.calibrationVector[0]).toFixed(2)
+            };
+        }
 
         const oracleInput = {
-            reading_vector: readingVector,
-            calibration_z_scores: zScores.zScores,
+            user_status: userStatus,
+            identity: identity,
+            current_metrics: calibrationVector,
+            delta_yesterday: deltaYesterday,
             context: {
                 time_category: timeCategory,
                 day_category: dayCategory,
                 genre: context?.genre,
                 mood: context?.mood,
                 day_index: context?.dayIndex,
-                archetype: context?.archetype,
                 tag_history: tagHistory
             },
             anomalies: zScores.anomalies.map(a => ({
@@ -143,7 +161,10 @@ export default function MirrorDashboard({
 
         try {
             // Call Gemini with Voice Oracle prompt
-            const prompt = MIRROR_ORACLE_SYSTEM_PROMPT.replace('{{time_cat}}', timeCategory)
+            const prompt = MIRROR_ORACLE_SYSTEM_PROMPT
+                .replace('{{user_status}}', userStatus)
+                .replace('{{identity}}', identity)
+                .replace('{{time_cat}}', timeCategory)
                 .replace('{{day_cat}}', dayCategory)
                 .replace('{{JSON_INPUT}}', JSON.stringify(oracleInput, null, 2));
 
@@ -192,8 +213,8 @@ export default function MirrorDashboard({
         };
         saveVoiceLog(log);
 
-        // 2. Asset-ization: Sync to Firestore
-        if (oracleResponse) {
+        // 2. Asset-ization: Sync to Firestore (only if research consent given)
+        if (oracleResponse && wellnessConsentAgreed) {
             saveMirrorLog(log, {
                 mirror_analysis: oracleResponse.mirror_analysis,
                 oracle_prediction: oracleResponse.oracle_prediction
@@ -291,6 +312,36 @@ export default function MirrorDashboard({
                         <h3 className="text-xs font-black uppercase tracking-widest text-cyan-400 mb-3">Actionable Guidance</h3>
                         <p className="text-gray-200 leading-relaxed font-medium">{oracleResponse.actionable_guidance}</p>
                     </div>
+
+                    {postReadingInsight && postReadingInsight.category !== 'Statue' && (
+                        <div className="border-t border-white/10 pt-6">
+                            <h3 className="text-xs font-black uppercase tracking-widest text-pink-400 mb-4 flex items-center gap-2">
+                                <span className="w-2 h-2 bg-pink-500 rounded-full animate-pulse" />
+                                Invisible Artifact (5s Post-Reading)
+                            </h3>
+                            <div className="bg-pink-500/10 rounded-2xl p-6 border border-pink-500/20">
+                                <div className="flex items-start gap-5">
+                                    <div className="w-12 h-12 bg-pink-500/20 rounded-xl flex items-center justify-center text-2xl shrink-0">
+                                        {postReadingInsight.category === 'Sigh' ? '💨' :
+                                            postReadingInsight.category === 'Laughter' ? '✨' :
+                                                postReadingInsight.category === 'Mumble' ? '🌫️' :
+                                                    postReadingInsight.category === 'Fidget' ? '🫨' : '🗿'}
+                                    </div>
+                                    <div className="space-y-1">
+                                        <h4 className="text-pink-400 font-bold uppercase tracking-widest text-sm">
+                                            Detected: {postReadingInsight.category}
+                                        </h4>
+                                        <p className="text-gray-300 text-sm leading-relaxed">
+                                            {postReadingInsight.description}
+                                        </p>
+                                        <div className="pt-2 flex items-center gap-4 text-[10px] font-mono text-gray-500 uppercase">
+                                            <span>Intensity: {Math.round(postReadingInsight.score * 100)}%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* ARCHETYPE PROGRESS & RESET */}

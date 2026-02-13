@@ -18,72 +18,74 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
     const [isRecording, setIsRecording] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
+    const [audioBuffers, setAudioBuffers] = useState<AudioBuffer[]>([]);
     const [exportUrl, setExportUrl] = useState<string | null>(null);
+    const [exportMode, setExportMode] = useState<'full' | 'sns'>('full');
 
     const THEMES: Record<string, any> = {
         optimizer: {
             name: "Thriller",
-            bg: '#0a0a0a',
+            bg: '#00050A',
             bgImage: '/assets/mirror/optimizer.png',
             font: "'Inter', 'SF Pro Display', sans-serif",
             align: 'left' as const,
             color: '#FFFFFF',
             blend: 'overlay' as GlobalCompositeOperation,
-            letterSpacing: 4, // 0.1em approx
+            letterSpacing: 4,
             lineHeight: 1.6,
             stamp: 'barcode_cyan',
+            snsLabel: ["LOG_ID: 01", "SYNC_POINT: 04", "ENTITY_FINAL"],
             visuals: (ctx: CanvasRenderingContext2D, params: any) => {
-                ctx.shadowColor = 'rgba(255,255,255,0.4)';
+                ctx.shadowColor = 'rgba(34,211,238,0.4)';
                 ctx.shadowBlur = 10;
-                // Optimizer: Glass Warp / Skew logic handled in container style
             }
         },
         stoic: {
             name: "Poet",
-            bg: '#f4f1ea',
-            bgImage: '/assets/mirror/stoic.png',
+            bg: '#121214',
+            bgImage: '/assets/mirror/stoic.jpg',
             font: "'EB Garamond', 'Lora', serif",
             align: 'center' as const,
-            color: '#2C2C2C',
-            blend: 'multiply' as GlobalCompositeOperation,
-            letterSpacing: -1, // -0.02em approx
+            color: '#FFFFFF',
+            blend: 'screen' as GlobalCompositeOperation,
+            letterSpacing: -1,
             lineHeight: 1.4,
             stamp: 'wax_seal_red',
+            snsLabel: ["STANZA 1", "CAESURA 4", "CODA 7"],
             visuals: (ctx: CanvasRenderingContext2D, params: any) => {
                 ctx.globalAlpha = 0.85;
-                // Stoic: Ink Density / Vignette Blur handled in container style
             }
         },
         alchemist: {
             name: "Philosophy",
-            bg: '#1a120b',
+            bg: '#100F0D',
             bgImage: '/assets/mirror/alchemist.png',
             font: "'Cinzel', 'Spectral', serif",
             align: 'center' as const,
             color: '#EAD6A8',
             blend: 'color-dodge' as GlobalCompositeOperation,
-            letterSpacing: 8, // 0.2em approx
+            letterSpacing: 8,
             lineHeight: 2.0,
             stamp: 'sacred_geometry_gold',
+            snsLabel: ["AXIOM I", "CAESURA 4", "CODA 7"],
             visuals: (ctx: CanvasRenderingContext2D, params: any) => {
                 ctx.shadowColor = '#CCA352';
                 ctx.shadowBlur = 5;
-                // Alchemist: Gold Tint / Shadow Depth handled in container style
             }
         },
-        cinematic_grit: {
-            name: "Cinematic Grit",
-            bg: '#121212',
-            bgImage: '/assets/mirror/cinematic_grit.jpg',
+        maverick: {
+            name: "The Maverick",
+            bg: '#0D0D0D',
+            bgImage: '/assets/mirror/cinematic_grit.png',
             font: "'Oswald', 'Barlow Condensed', sans-serif",
             align: 'left' as const,
             color: '#D1D1D1',
             blend: 'hard-light' as GlobalCompositeOperation,
-            letterSpacing: 2, // 0.05em approx
+            letterSpacing: 2,
             lineHeight: 1.2,
             stamp: 'industrial_stencil_white',
+            snsLabel: ["DAY 01", "FRICTION", "THE PROOF"],
             visuals: (ctx: CanvasRenderingContext2D, params: any) => {
-                // Cinematic Grit: Exposure / Shake handled in container style
             }
         }
     };
@@ -142,6 +144,8 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
     const animationRef = useRef<number | null>(null);
     const analyzerRef = useRef<AnalyserNode | null>(null);
     const audioContextRef = useRef<AudioContext | null>(null);
+    const masterGainRef = useRef<GainNode | null>(null);
+    const masterCompressorRef = useRef<DynamicsCompressorNode | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const recordedChunksRef = useRef<Blob[]>([]);
     const bgImageRef = useRef<HTMLImageElement | null>(null);
@@ -157,10 +161,46 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
         loadRecapData();
         return () => {
             if (animationRef.current) cancelAnimationFrame(animationRef.current);
-            audioUrls.forEach(url => URL.revokeObjectURL(url));
-            if (exportUrl) URL.revokeObjectURL(exportUrl);
+            // Cleanup: Revoke blobs only on unmount
+            audioUrls.forEach(url => {
+                if (url.startsWith('blob:')) URL.revokeObjectURL(url);
+            });
+            if (exportUrl && exportUrl.startsWith('blob:')) URL.revokeObjectURL(exportUrl);
         };
-    }, []);
+    }, []); // Only run once on mount
+
+    async function stopRecording() {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+            mediaRecorderRef.current.stop();
+        }
+        setIsRecording(false);
+    }
+
+    async function handleEnded() {
+        if (exportMode === 'sns') {
+            // SNS Flow: 0 -> 3 -> 6 (Day 1, 4, 7)
+            if (currentIndex === 0 && audioUrls.length > 3) {
+                setCurrentIndex(3);
+                playTrack(3, isRecording);
+            } else if (currentIndex === 3 && audioUrls.length > 6) {
+                setCurrentIndex(6);
+                playTrack(6, isRecording);
+            } else {
+                if (isRecording) stopRecording();
+                setIsPlaying(false);
+            }
+        } else {
+            // Full Flow: 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> 6
+            if (currentIndex < audioUrls.length - 1) {
+                const nextIndex = currentIndex + 1;
+                setCurrentIndex(nextIndex);
+                playTrack(nextIndex, isRecording);
+            } else {
+                if (isRecording) stopRecording();
+                setIsPlaying(false);
+            }
+        }
+    }
 
     // Load background image when archetype changes
     useEffect(() => {
@@ -171,6 +211,12 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
             img.onload = () => {
                 bgImageRef.current = img;
             };
+            img.onerror = () => {
+                console.warn(`Failed to load background image: ${theme.bgImage}. Falling back to solid color.`);
+                bgImageRef.current = null;
+            };
+        } else {
+            bgImageRef.current = null;
         }
     }, [archetype]);
 
@@ -185,8 +231,18 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
                     dayCategory: 'Weekday',
                     dayIndex: i + 1,
                     readingText: `This is a demo playback for day ${i + 1}. The voice of the future is being synthesized.`,
+                    mood: i % 2 === 0 ? 'high' : 'low',
+                    genre: 'maverick'
                 },
-                alignmentScore: 85 + (i * 2)
+                alignmentScore: 85 + (i * 2),
+                oracle_feedback: {
+                    headline: [
+                        "Architectural Stability", "Spectral Variance Detected", "Resonance Peak",
+                        "Subtle Frequency Shift", "Vocal Mirroring Active", "Neural Synthesis Complete",
+                        "Final Resonance Dossier"
+                    ][i],
+                    observation: `Day ${i + 1}: Your acoustic footprint shows ${85 + i}% alignment with the ${archetype} protocol. No significant latency detected.`
+                }
             } as any)));
             setAudioUrls(new Array(7).fill(''));
             setIsLoading(false);
@@ -207,7 +263,16 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
                 return allLogs.find(l => l.context.dayIndex === b.dayIndex) || allLogs[allLogs.length - 1];
             });
 
+            // Pre-decode buffers for luxury cross-fade
+            const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const decodedBuffers = await Promise.all(blobs.map(async (b) => {
+                const arrayBuffer = await b.blob.arrayBuffer();
+                return await ctx.decodeAudioData(arrayBuffer);
+            }));
+            ctx.close();
+
             setAudioUrls(urls);
+            setAudioBuffers(decodedBuffers);
             setLogs(matchedLogs);
             setIsLoading(false);
         } catch (e) {
@@ -216,13 +281,16 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
         }
     }
 
-    const startExport = () => {
+    const startExport = (mode: 'full' | 'sns' = 'full') => {
         if (audioUrls.length === 0) return;
+        setExportMode(mode);
         setIsRecording(true);
         setIsPlaying(true);
-        setCurrentIndex(0);
         recordedChunksRef.current = [];
-        playTrack(0, true);
+
+        const firstIndex = mode === 'sns' ? 0 : 0; // In SNS mode, we start at 0 (Day 1)
+        setCurrentIndex(firstIndex);
+        playTrack(firstIndex, true);
     };
 
     const startPlayback = () => {
@@ -233,59 +301,83 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
     };
 
     const playTrack = (index: number, recording: boolean) => {
-        if (!audioRef.current || (!audioUrls[index] && !demoMode)) {
+        const ctx = audioContextRef.current || new (window.AudioContext || (window as any).webkitAudioContext)();
+        audioContextRef.current = ctx;
+
+        if ((!audioBuffers[index] && !demoMode)) {
             if (recording) stopRecording();
             setIsPlaying(false);
             return;
         }
 
         if (demoMode) {
-            setupVisualizer(recording);
+            setupVisualizerChain(ctx.createGain(), recording);
             setTimeout(() => {
                 if (isPlaying) handleEnded();
             }, 8000);
             return;
         }
 
-        audioRef.current.src = audioUrls[index];
-        audioRef.current.play();
-        setupVisualizer(recording);
+        // Luxury Cross-fade Playback Logic
+        const buffer = audioBuffers[index];
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+
+        const gain = ctx.createGain();
+        // Start Fade (0.5s)
+        gain.gain.setValueAtTime(0, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(1.0, ctx.currentTime + 0.5);
+
+        source.connect(gain);
+        setupVisualizerChain(gain, recording);
+
+        source.start(0);
+
+        // Schedule next track with overlap
+        const fadeOutStart = buffer.duration - 1.0;
+        if (fadeOutStart > 0) {
+            // Schedule finish fade
+            gain.gain.setValueAtTime(1.0, ctx.currentTime + fadeOutStart);
+            gain.gain.linearRampToValueAtTime(0, ctx.currentTime + buffer.duration);
+
+            // Trigger next track crossover
+            setTimeout(() => {
+                if (isPlaying) handleEnded();
+            }, fadeOutStart * 1000);
+        } else {
+            source.onended = () => {
+                if (isPlaying) handleEnded();
+            };
+        }
     };
 
-    const setupVisualizer = (recording: boolean) => {
-        if (!audioRef.current || !canvasRef.current) return;
-
-        if (!audioContextRef.current) {
-            audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-        }
-
-        // We re-connect for each track to ensure consistent normalization
+    const setupVisualizerChain = (trackGain: GainNode, recording: boolean) => {
+        if (!canvasRef.current || !audioContextRef.current) return;
         const ctx = audioContextRef.current;
-        if (analyzerRef.current) {
-            // Already connected? For robustness in track transitions, we can keep the chain
-        } else {
-            analyzerRef.current = ctx.createAnalyser();
-            const source = ctx.createMediaElementSource(audioRef.current);
 
-            // AUDIO NORMALIZATION CHAIN
+        // Singleton Master Chain Initialization
+        if (!masterCompressorRef.current) {
+            analyzerRef.current = ctx.createAnalyser();
+
             const compressor = ctx.createDynamicsCompressor();
             compressor.threshold.setValueAtTime(-24, ctx.currentTime);
             compressor.knee.setValueAtTime(30, ctx.currentTime);
             compressor.ratio.setValueAtTime(12, ctx.currentTime);
             compressor.attack.setValueAtTime(0.003, ctx.currentTime);
             compressor.release.setValueAtTime(0.25, ctx.currentTime);
+            masterCompressorRef.current = compressor;
 
-            const gain = ctx.createGain();
-            gain.gain.value = 1.5; // Overall normalized boost
+            const masterGain = ctx.createGain();
+            masterGain.gain.value = 1.5;
+            masterGainRef.current = masterGain;
 
-            source.connect(compressor);
-            compressor.connect(gain);
-            gain.connect(analyzerRef.current);
+            compressor.connect(masterGain);
+            masterGain.connect(analyzerRef.current);
             analyzerRef.current.connect(ctx.destination);
 
             if (recording) {
                 const dest = ctx.createMediaStreamDestination();
-                gain.connect(dest);
+                masterGain.connect(dest);
 
                 // @ts-ignore
                 const canvasStream = canvasRef.current.captureStream(30);
@@ -294,212 +386,237 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
                     ...dest.stream.getAudioTracks()
                 ]);
 
-                mediaRecorderRef.current = new MediaRecorder(combinedStream, { mimeType: 'video/webm' });
+                mediaRecorderRef.current = new MediaRecorder(combinedStream, {
+                    mimeType: 'video/webm;codecs=vp9,opus'
+                });
+
                 mediaRecorderRef.current.ondataavailable = (e) => {
                     if (e.data.size > 0) recordedChunksRef.current.push(e.data);
                 };
+
                 mediaRecorderRef.current.onstop = () => {
                     const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
                     const url = URL.createObjectURL(blob);
                     setExportUrl(url);
                 };
-                mediaRecorderRef.current.start();
+
+                mediaRecorderRef.current.start(100);
             }
         }
 
-        const bufferLength = 128;
-        const dataArray = new Uint8Array(bufferLength);
-
-        const draw = () => {
-            if (!canvasRef.current || !analyzerRef.current) return;
-            const ctx = canvasRef.current.getContext('2d')!;
-            const width = canvasRef.current.width;
-            const height = canvasRef.current.height;
-
-            animationRef.current = requestAnimationFrame(draw);
-
-            if (demoMode && isPlaying && !analyzerRef.current) {
-                for (let i = 0; i < bufferLength; i++) {
-                    dataArray[i] = 128 + Math.sin(i * 0.2 + Date.now() * 0.01) * 30 + (Math.random() * 10);
-                }
-            } else if (analyzerRef.current) {
-                analyzerRef.current.getByteTimeDomainData(dataArray);
-            }
-
-            // 1. EXTRACT LIGHTWEIGHT AUDIO FEATURES ($V_t, $N_t, $S_t$)
-            let sumSq = 0;
-            let zcrCount = 0;
-            for (let i = 0; i < bufferLength; i++) {
-                const val = (dataArray[i] - 128) / 128;
-                sumSq += val * val;
-                if (i > 0 && ((dataArray[i] - 128) > 0 && (dataArray[i - 1] - 128) <= 0 || (dataArray[i] - 128) < 0 && (dataArray[i - 1] - 128) >= 0)) {
-                    zcrCount++;
-                }
-            }
-
-            const v_t = Math.sqrt(sumSq / bufferLength); // Volume (RMS)
-            const n_t = zcrCount / bufferLength;        // Noise (ZCR)
-            const s_t = 1.0 - Math.min(1, Math.abs(v_t - cumulativeParams.current.lastV) * 10); // Stability (inverse change)
-
-            // Normalize for visual mapping (0-1)
-            const v_norm = Math.min(1, v_t * 5);
-            const n_norm = Math.min(1, n_t * 5);
-
-            cumulativeParams.current.lastV = v_t;
-            cumulativeParams.current.inkDensity = Math.min(1, cumulativeParams.current.inkDensity + (v_norm * 0.001));
-
-            const z_score = (logs[currentIndex]?.alignmentScore || 85) / 100;
-
-            // 2. THEME-SPECIFIC DYNAMIC MAPPING
-            const theme = THEMES[archetype] || THEMES.optimizer;
-            let containerStyles: React.CSSProperties = {};
-            let canvasFilter = 'none';
-
-            if (archetype === 'cinematic_grit') {
-                const exposure = 0.5 + (v_norm * 1.0);
-                const shake = v_norm > 0.8 ? (Math.random() - 0.5) * 10 : 0;
-                containerStyles = {
-                    filter: `brightness(${exposure}) contrast(1.2)`,
-                    transform: `translate(${shake}px, ${shake}px)`
-                };
-            } else if (archetype === 'stoic') {
-                const focus = 1.0 - (v_norm * 0.5);
-                containerStyles = {
-                    filter: `opacity(${cumulativeParams.current.inkDensity * 0.8 + 0.2}) blur(${focus * 2}px)`
-                };
-            } else if (archetype === 'alchemist') {
-                const goldTint = v_norm * z_score * 2.0;
-                const shadow = 1.0 + (v_norm * 0.5);
-                containerStyles = {
-                    filter: `saturate(${1.0 + goldTint}) drop-shadow(0 0 ${shadow * 10}px gold)`
-                };
-            } else if (archetype === 'optimizer') {
-                const rgbShift = n_norm * 15;
-                const warp = Math.sin(Date.now() / 1000) * v_norm * 5;
-                containerStyles = {
-                    filter: `contrast(1.5)`,
-                    transform: `skewX(${warp}deg)`,
-                    boxShadow: `${rgbShift}px 0 20px rgba(255,0,0,0.2), -${rgbShift}px 0 20px rgba(0,0,255,0.2)`
-                };
-            }
-
-            // Sync dynamic styles to React state (throttled conceptually by frame)
-            setDynamicStyles(containerStyles);
-
-            ctx.clearRect(0, 0, width, height);
-
-            // Draw Background Image
-            if (bgImageRef.current) {
-                ctx.drawImage(bgImageRef.current, 0, 0, width, height);
-                // Apply a dimming overlay to ensure text readability
-                ctx.fillStyle = 'rgba(0,0,0,0.3)';
-                ctx.fillRect(0, 0, width, height);
-            } else {
-                ctx.fillStyle = theme.bg;
-                ctx.fillRect(0, 0, width, height);
-            }
-
-            // Draw Visualizer
-            ctx.lineWidth = 4;
-            ctx.strokeStyle = theme.color;
-            ctx.globalCompositeOperation = theme.blend;
-            ctx.beginPath();
-
-            const sliceWidth = width / bufferLength;
-            let x = 0;
-
-            for (let i = 0; i < bufferLength; i++) {
-                const v = dataArray[i] / 128.0;
-                const y = (v * height) / 2;
-
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-
-                x += sliceWidth;
-            }
-
-            ctx.lineTo(width, height / 2);
-
-            theme.visuals(ctx, { v_norm, n_norm, z_score });
-            ctx.stroke();
-
-            // Draw Identity Stamp
-            drawStamp(ctx, theme.stamp, width - 170, 40);
-
-            // Reset for Text
-            ctx.shadowBlur = 0;
-            ctx.globalAlpha = 1;
-            ctx.globalCompositeOperation = 'source-over';
-            ctx.filter = 'none';
-
-            // Draw Text Overlay
-            if (isPlaying) {
-                const rawText = logs[currentIndex]?.context.readingText || `Day ${currentIndex + 1}`;
-                // Filter out instructions like [Instruction: ...]
-                const text = rawText.replace(/\[Instruction:[\s\S]*?\]/g, '').trim();
-                const displayText = archetype === 'cinematic_grit' ? text.toUpperCase() : text;
-
-                ctx.font = `italic 28px ${theme.font}`;
-                ctx.fillStyle = theme.color;
-                ctx.textAlign = theme.align;
-
-                // Native canvas letter spacing support
-                // @ts-ignore
-                if (ctx.letterSpacing !== undefined) {
-                    // @ts-ignore
-                    ctx.letterSpacing = `${theme.letterSpacing}px`;
-                }
-
-                const textX = theme.align === 'center' ? width / 2 : 50;
-                let lineY = height - 120;
-
-                const words = displayText.split(' ');
-                let line = '';
-                for (let n = 0; n < words.length; n++) {
-                    let testLine = line + words[n] + ' ';
-                    let metrics = ctx.measureText(testLine);
-                    let testWidth = metrics.width;
-                    if (testWidth > width - 100 && n > 0) {
-                        ctx.fillText(line.trim(), textX, lineY);
-                        line = words[n] + ' ';
-                        lineY += 40;
-                    } else {
-                        line = testLine;
-                    }
-                }
-                ctx.fillText(line.trim(), textX, lineY);
-
-                if (logs[currentIndex]?.alignmentScore) {
-                    ctx.font = `12px monospace`;
-                    // @ts-ignore
-                    if (ctx.letterSpacing !== undefined) ctx.letterSpacing = '1px';
-                    ctx.globalAlpha = 0.5;
-                    ctx.fillText(`ETCHVOX RESONANCE: ${logs[currentIndex].alignmentScore}%`, textX, lineY + 35);
-                    ctx.globalAlpha = 1;
-                }
-            }
-        };
-
-        draw();
-    };
-
-    const stopRecording = () => {
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-            mediaRecorderRef.current.stop();
+        // Connect specific track to the master normalization chain
+        if (masterCompressorRef.current) {
+            trackGain.connect(masterCompressorRef.current);
         }
-        setIsRecording(false);
     };
 
-    const handleEnded = () => {
-        if (currentIndex < audioUrls.length - 1) {
-            const nextIndex = currentIndex + 1;
-            setCurrentIndex(nextIndex);
-            playTrack(nextIndex, isRecording);
+    const bufferLength = 128;
+    const dataArray = new Uint8Array(bufferLength);
+
+    const draw = () => {
+        if (!canvasRef.current || !analyzerRef.current) return;
+        const ctx = canvasRef.current.getContext('2d')!;
+        const width = canvasRef.current.width;
+        const height = canvasRef.current.height;
+
+        animationRef.current = requestAnimationFrame(draw);
+
+        if (demoMode && isPlaying && !analyzerRef.current) {
+            for (let i = 0; i < bufferLength; i++) {
+                dataArray[i] = 128 + Math.sin(i * 0.2 + Date.now() * 0.01) * 30 + (Math.random() * 10);
+            }
+        } else if (analyzerRef.current) {
+            analyzerRef.current.getByteTimeDomainData(dataArray);
+        }
+
+        // 1. EXTRACT LIGHTWEIGHT AUDIO FEATURES ($V_t, $N_t, $S_t$)
+        let sumSq = 0;
+        let zcrCount = 0;
+        for (let i = 0; i < bufferLength; i++) {
+            const val = (dataArray[i] - 128) / 128;
+            sumSq += val * val;
+            if (i > 0 && ((dataArray[i] - 128) > 0 && (dataArray[i - 1] - 128) <= 0 || (dataArray[i] - 128) < 0 && (dataArray[i - 1] - 128) >= 0)) {
+                zcrCount++;
+            }
+        }
+
+        const v_t = Math.sqrt(sumSq / bufferLength); // Volume (RMS)
+        const n_t = zcrCount / bufferLength;        // Noise (ZCR)
+        const s_t = 1.0 - Math.min(1, Math.abs(v_t - cumulativeParams.current.lastV) * 10); // Stability (inverse change)
+
+        // Normalize for visual mapping (0-1)
+        const v_norm = Math.min(1, v_t * 5);
+        const n_norm = Math.min(1, n_t * 5);
+
+        cumulativeParams.current.lastV = v_t;
+        cumulativeParams.current.inkDensity = Math.min(1, cumulativeParams.current.inkDensity + (v_norm * 0.001));
+
+        const z_score = (logs[currentIndex]?.alignmentScore || 85) / 100;
+
+        // 2. THEME-SPECIFIC DYNAMIC MAPPING
+        const theme = THEMES[archetype] || THEMES.optimizer;
+        let containerStyles: React.CSSProperties = {};
+        let canvasFilter = 'none';
+
+        if (archetype === 'maverick') {
+            const exposure = 0.5 + (v_norm * 1.0);
+            const shake = v_norm > 0.8 ? (Math.random() - 0.5) * 10 : 0;
+            containerStyles = {
+                filter: `brightness(${exposure}) contrast(1.2)`,
+                transform: `translate(${shake}px, ${shake}px)`
+            };
+        } else if (archetype === 'stoic') {
+            const focus = 1.0 - (v_norm * 0.5);
+            containerStyles = {
+                filter: `opacity(${cumulativeParams.current.inkDensity * 0.8 + 0.2}) blur(${focus * 2}px)`
+            };
+        } else if (archetype === 'alchemist') {
+            const goldTint = v_norm * z_score * 2.0;
+            const shadow = 1.0 + (v_norm * 0.5);
+            containerStyles = {
+                filter: `saturate(${1.0 + goldTint}) drop-shadow(0 0 ${shadow * 10}px gold)`
+            };
+        } else if (archetype === 'optimizer') {
+            const rgbShift = n_norm * 15;
+            const warp = Math.sin(Date.now() / 1000) * v_norm * 5;
+            containerStyles = {
+                filter: `contrast(1.5)`,
+                transform: `skewX(${warp}deg)`,
+                boxShadow: `${rgbShift}px 0 20px rgba(255,0,0,0.2), -${rgbShift}px 0 20px rgba(0,0,255,0.2)`
+            };
+        }
+
+        // Sync dynamic styles to React state (throttled conceptually by frame)
+        setDynamicStyles(containerStyles);
+
+        ctx.clearRect(0, 0, width, height);
+
+        // Draw Background Image
+        if (bgImageRef.current) {
+            ctx.drawImage(bgImageRef.current, 0, 0, width, height);
+            // Apply a dimming overlay to ensure text readability
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.fillRect(0, 0, width, height);
         } else {
-            if (isRecording) stopRecording();
-            setIsPlaying(false);
+            ctx.fillStyle = theme.bg;
+            ctx.fillRect(0, 0, width, height);
+        }
+
+        // Draw Visualizer
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = theme.color;
+        ctx.globalCompositeOperation = theme.blend;
+        ctx.beginPath();
+
+        const sliceWidth = width / bufferLength;
+        let x = 0;
+
+        for (let i = 0; i < bufferLength; i++) {
+            const v = dataArray[i] / 128.0;
+            const y = (v * height) / 2;
+
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+
+            x += sliceWidth;
+        }
+
+        ctx.lineTo(width, height / 2);
+
+        theme.visuals(ctx, { v_norm, n_norm, z_score });
+        ctx.stroke();
+
+        // Draw Identity Stamp
+        drawStamp(ctx, theme.stamp, width - 170, 40);
+
+        // Reset for Text
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.filter = 'none';
+
+        // Draw Text Overlay
+        if (isPlaying) {
+            const rawText = logs[currentIndex]?.context.readingText || `Day ${currentIndex + 1}`;
+            // Filter out instructions like [Instruction: ...]
+            const text = rawText.replace(/\[Instruction:[\s\S]*?\]/g, '').trim();
+            const displayText = archetype === 'maverick' ? text.toUpperCase() : text;
+
+            ctx.font = `italic 28px ${theme.font}`;
+            ctx.fillStyle = theme.color;
+            ctx.textAlign = theme.align;
+
+            // Native canvas letter spacing support
+            // @ts-ignore
+            if (ctx.letterSpacing !== undefined) {
+                // @ts-ignore
+                ctx.letterSpacing = `${theme.letterSpacing}px`;
+            }
+
+            const textX = theme.align === 'center' ? width / 2 : 50;
+            let lineY = height - 120;
+
+            const words = displayText.split(' ');
+            let line = '';
+            for (let n = 0; n < words.length; n++) {
+                let testLine = line + words[n] + ' ';
+                let metrics = ctx.measureText(testLine);
+                let testWidth = metrics.width;
+                if (testWidth > width - 100 && n > 0) {
+                    ctx.fillText(line.trim(), textX, lineY);
+                    line = words[n] + ' ';
+                    lineY += 40;
+                } else {
+                    line = testLine;
+                }
+            }
+            ctx.fillText(line.trim(), textX, lineY);
+
+            if (logs[currentIndex]?.alignmentScore) {
+                ctx.font = `12px monospace`;
+                // @ts-ignore
+                if (ctx.letterSpacing !== undefined) ctx.letterSpacing = '1px';
+                ctx.globalAlpha = 0.5;
+                ctx.fillText(`ETCHVOX RESONANCE: ${logs[currentIndex].alignmentScore}%`, textX, lineY + 35);
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        // 3. SNS EXCLUSIVE OVERLAYS (Labels & Noise)
+        if (exportMode === 'sns') {
+            // FILM NOISE
+            ctx.save();
+            ctx.globalAlpha = 0.05;
+            ctx.fillStyle = '#ffffff';
+            for (let i = 0; i < 500; i++) {
+                ctx.fillRect(Math.random() * width, Math.random() * height, 1, 1);
+            }
+            ctx.restore();
+
+            // GENRE LABELS
+            const currentTheme = THEMES[archetype] || THEMES.optimizer;
+            if (currentTheme.snsLabel) {
+                ctx.save();
+                ctx.font = 'black 10px monospace';
+                ctx.fillStyle = currentTheme.color;
+                ctx.globalAlpha = 0.6;
+                // @ts-ignore
+                if (ctx.letterSpacing !== undefined) ctx.letterSpacing = '2px';
+
+                const labelIdx = currentIndex === 0 ? 0 : currentIndex === 3 ? 1 : 2;
+                const label = currentTheme.snsLabel[labelIdx] || currentTheme.snsLabel[0];
+
+                ctx.textAlign = 'right';
+                ctx.fillText(label, width - 50, height - 50);
+
+                // Add a small divider
+                ctx.fillRect(width - 150, height - 42, 100, 1);
+                ctx.restore();
+            }
         }
     };
+
+    draw();
 
     const downloadVideo = () => {
         if (!exportUrl) return;
@@ -518,7 +635,7 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
             localStorage.removeItem('mirror_genre_selection');
             onClose();
         }
-    }
+    };
 
     if (isLoading) {
         return (
@@ -528,10 +645,10 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
         );
     }
 
-    const theme = THEMES[archetype] || THEMES.optimizer;
+    const pageTheme = THEMES[archetype] || THEMES.optimizer;
 
     return (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-8 text-slate-900 overflow-hidden" style={{ backgroundColor: theme.bg }}>
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-8 text-slate-900 overflow-hidden" style={{ backgroundColor: pageTheme.bg }}>
             {/* Texture Overlay */}
             {archetype === 'stoic' && (
                 <div className="absolute inset-0 opacity-10 pointer-events-none mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')]" />
@@ -542,14 +659,14 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
 
             <div className="max-w-4xl w-full flex flex-col items-center space-y-12 relative z-10">
                 <div className="text-center space-y-4">
-                    <h2 className="text-sm font-black uppercase tracking-[0.3em]" style={{ color: theme.color + '80' }}>The Seven Day Resonance</h2>
-                    <h1 className="text-5xl" style={{ fontFamily: theme.font, color: theme.color }}>Dossier: {archetype.replace('_', ' ').toUpperCase()}</h1>
+                    <h2 className="text-sm font-black uppercase tracking-[0.3em]" style={{ color: pageTheme.color + '80' }}>The Seven Day Resonance</h2>
+                    <h1 className="text-5xl" style={{ fontFamily: pageTheme.font, color: pageTheme.color }}>Dossier: {archetype.replace('_', ' ').toUpperCase()}</h1>
                 </div>
 
                 {/* Main Visualizer Area */}
                 <div className="w-full aspect-video border rounded-lg shadow-inner relative flex flex-col items-center justify-center overflow-hidden transition-all duration-75"
                     style={{
-                        borderColor: theme.color + '30',
+                        borderColor: pageTheme.color + '30',
                         backgroundColor: archetype === 'optimizer' ? 'rgba(255,255,255,0.05)' : 'transparent',
                         ...dynamicStyles
                     }}>
@@ -562,11 +679,11 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
                         <div key={i} className="space-y-2 text-center">
                             <div className="h-1 w-full rounded-full transition-all duration-500"
                                 style={{
-                                    backgroundColor: i === currentIndex && isPlaying ? theme.color :
-                                        i < currentIndex ? theme.color + '80' : theme.color + '20',
+                                    backgroundColor: i === currentIndex && isPlaying ? pageTheme.color :
+                                        i < currentIndex ? pageTheme.color + '80' : pageTheme.color + '20',
                                     transform: i === currentIndex && isPlaying ? 'scaleY(1.5)' : 'none'
                                 }} />
-                            <span className="text-[10px] font-mono" style={{ color: theme.color + '60' }}>DAY {i + 1}</span>
+                            <span className="text-[10px] font-mono" style={{ color: pageTheme.color + '60' }}>DAY {i + 1}</span>
                         </div>
                     ))}
                 </div>
@@ -575,45 +692,55 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
                     {!isPlaying && !isRecording ? (
                         <div className="flex flex-col items-center gap-4">
                             {!exportUrl ? (
-                                <button
-                                    onClick={startExport}
-                                    className="px-8 py-3 rounded-full font-serif italic text-sm transition shadow-lg flex items-center gap-3"
-                                    style={{ backgroundColor: theme.color, color: theme.bg }}
-                                >
-                                    <span>🎥</span> Export As Video
-                                </button>
+                                <div className="flex flex-col sm:flex-row items-center gap-4">
+                                    <button
+                                        onClick={() => startExport('sns')}
+                                        className="px-8 py-3 bg-gradient-to-r from-cyan-600 to-blue-700 text-white rounded-full font-serif italic text-sm transition shadow-lg flex items-center gap-3 border border-white/10 hover:shadow-cyan-500/20"
+                                    >
+                                        <span>📱</span> Generate 90s SNS Highlight
+                                    </button>
+                                    <button
+                                        onClick={() => startExport('full')}
+                                        className="px-8 py-3 rounded-full font-serif italic text-sm transition shadow-lg flex items-center gap-3"
+                                        style={{ backgroundColor: pageTheme.color, color: pageTheme.bg }}
+                                    >
+                                        <span>🎞️</span> Export Full 7-Day Journey
+                                    </button>
+                                </div>
                             ) : (
                                 <button
                                     onClick={downloadVideo}
-                                    className="px-8 py-3 bg-green-600 text-white rounded-full font-serif italic text-sm hover:bg-green-700 transition shadow-lg flex items-center gap-3"
+                                    className="px-10 py-5 bg-green-600 text-white rounded-full font-serif italic text-lg hover:bg-green-700 transition shadow-2xl flex items-center gap-4 animate-bounce"
                                 >
-                                    <span>💾</span> Download Your Movie
+                                    <span>💾</span> Download {exportMode === 'sns' ? 'SNS Recap' : 'Full Movie'}
                                 </button>
                             )}
 
-                            <button
-                                onClick={startPlayback}
-                                className="px-12 py-4 rounded-full font-serif italic text-lg transition shadow-lg flex items-center gap-3"
-                                style={{ backgroundColor: theme.color, color: theme.bg }}
-                            >
-                                <span>▶</span> Start The Playback
-                            </button>
+                            {!exportUrl && (
+                                <button
+                                    onClick={startPlayback}
+                                    className="px-12 py-4 rounded-full font-serif italic text-lg transition shadow-lg flex items-center gap-3 opacity-60 hover:opacity-100"
+                                    style={{ backgroundColor: pageTheme.color, color: pageTheme.bg }}
+                                >
+                                    <span>▶</span> Quick Review
+                                </button>
+                            )}
                         </div>
                     ) : (
                         <div className="flex items-center gap-4">
-                            <span className={`w-2 h-2 rounded-full animate-pulse`} style={{ backgroundColor: isRecording ? '#ef4444' : theme.color }} />
-                            <span className="font-mono text-sm uppercase tracking-widest" style={{ color: theme.color + '80' }}>
+                            <span className={`w-2 h-2 rounded-full animate-pulse`} style={{ backgroundColor: isRecording ? '#ef4444' : pageTheme.color }} />
+                            <span className="font-mono text-sm uppercase tracking-widest" style={{ color: pageTheme.color + '80' }}>
                                 {isRecording ? 'Encoding Visual History...' : 'Playing Historical Echoes'}
                             </span>
                         </div>
                     )}
 
                     {!isPlaying && !isRecording && (
-                        <div className="flex items-center gap-8 border-t pt-6" style={{ borderColor: theme.color + '20' }}>
+                        <div className="flex items-center gap-8 border-t pt-6" style={{ borderColor: pageTheme.color + '20' }}>
                             <button
                                 onClick={onClose}
                                 className="text-sm font-mono transition"
-                                style={{ color: theme.color + '60' }}
+                                style={{ color: pageTheme.color + '60' }}
                             >
                                 Finish Journey
                             </button>

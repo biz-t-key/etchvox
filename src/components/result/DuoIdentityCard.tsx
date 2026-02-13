@@ -123,8 +123,15 @@ export default function DuoIdentityCard({ userA, userB, resultId }: DuoIdentityC
             <div
                 ref={cardRef}
                 data-capture-target="duo-card"
-                className="relative w-full aspect-[4/5] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col p-8 md:p-12 border border-white/10 font-sans"
-                style={{ backgroundColor: '#050505', color: '#ffffff', position: 'relative' }}
+                className="relative w-full aspect-[4/5] rounded-[3rem] shadow-2xl overflow-hidden flex flex-col p-12 md:p-16 border border-white/10 font-sans"
+                style={{
+                    backgroundColor: '#050505',
+                    color: '#ffffff',
+                    position: 'relative',
+                    width: '100%',
+                    maxWidth: '550px',
+                    margin: '0 auto'
+                }}
             >
                 {/* SAFE BACKGROUND FOR CAPTURE */}
                 <div className="absolute inset-0 z-0" style={{ backgroundColor: '#050505' }} />
@@ -135,20 +142,15 @@ export default function DuoIdentityCard({ userA, userB, resultId }: DuoIdentityC
                 <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full pointer-events-none z-0"
                     style={{ background: 'radial-gradient(circle, rgba(6, 182, 212, 0.15) 0%, rgba(6, 182, 212, 0) 70%)' }} />
 
-                {/* SILHOUETTE ASSETS - Pair silhouettes for Duo mode */}
-                <div className="absolute inset-0 flex items-center justify-around opacity-[0.07] pointer-events-none z-0">
-                    <img src="/assets/silhouettes/silhouette_hat_man.png" alt="" className="w-1/2 h-full object-contain p-10 transform -scale-x-100" />
-                    <img src="/assets/silhouettes/silhouette_elegant_woman.png" alt="" className="w-1/2 h-full object-contain p-10" />
-                </div>
 
                 {/* NOISE OVERLAY */}
                 <div
-                    className="absolute inset-0 opacity-[0.05] pointer-events-none mix-blend-overlay z-0"
-                    style={{ backgroundImage: `url("${NOISE_DATA_URL}")`, backgroundRepeat: 'repeat' }}
+                    className="absolute inset-0 opacity-[0.08] pointer-events-none mix-blend-overlay z-0"
+                    style={{ backgroundImage: `url("${NOISE_DATA_URL}")`, backgroundRepeat: 'repeat', backgroundSize: '200px' }}
                 />
 
-                {/* HEADER - Increased horizontal padding for safe zone */}
-                <div className="relative z-10 flex items-center justify-between px-6 pt-6">
+                {/* HEADER - Increased horizontal padding for safe zone (Fixed clipping) */}
+                <div className="relative z-10 flex items-center justify-between px-10 pt-8">
                     <div className="text-[10px] md:text-[12px] font-black text-white/40 uppercase tracking-[0.4em]">
                         Duo Matrix Analysis
                     </div>
@@ -158,7 +160,7 @@ export default function DuoIdentityCard({ userA, userB, resultId }: DuoIdentityC
                 </div>
 
                 {/* TWO USERS SECTION - SPLIT UI */}
-                <div className="relative z-10 flex flex-col gap-8 md:gap-12 mt-6 md:mt-10">
+                <div className="relative z-10 flex flex-col gap-8 md:gap-12 mt-8 md:mt-12 px-6">
                     <div className="flex justify-between items-start gap-4">
                         {/* User A */}
                         <div className="flex-1 flex flex-col items-center">
@@ -200,7 +202,7 @@ export default function DuoIdentityCard({ userA, userB, resultId }: DuoIdentityC
                     </div>
 
                     {/* COMPARISON CHART */}
-                    <div className="rounded-2xl p-6 md:p-8 border space-y-6" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.05)' }}>
+                    <div className="rounded-3xl p-6 md:p-8 border space-y-6" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.05)' }}>
                         <div className="space-y-3">
                             <div className="flex justify-between text-[8px] md:text-[10px] font-black uppercase tracking-widest text-white/30 px-1">
                                 <span>Frequency</span>
@@ -230,7 +232,7 @@ export default function DuoIdentityCard({ userA, userB, resultId }: DuoIdentityC
                         </div>
 
                         {/* DOMINANCE SCALE */}
-                        <div className="relative pt-4">
+                        <div className="relative pt-4 px-4">
                             <div className="flex justify-between items-center mb-2">
                                 <span className="text-[8px] md:text-[10px] font-black text-pink-400/50 uppercase tracking-widest">Active</span>
                                 <span className="text-[8px] md:text-[10px] font-black text-white/20 uppercase tracking-widest italic">Dominance Scale</span>
@@ -254,15 +256,15 @@ export default function DuoIdentityCard({ userA, userB, resultId }: DuoIdentityC
                     </div>
                 </div>
 
-                {/* ROAST BOX */}
-                <div className="rounded-[1.5rem] p-6 border mt-auto" style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)', borderColor: 'rgba(255, 255, 255, 0.1)' }}>
-                    <p className="text-[11px] md:text-[13px] text-gray-400 leading-relaxed text-center font-medium italic opacity-90 px-2 line-clamp-3">
+                {/* ROAST BOX (Fixed clipping by increasing internal margins) */}
+                <div className="rounded-[2rem] p-8 border mt-auto mx-6 mb-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)', borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+                    <p className="text-[11px] md:text-[13px] text-gray-400 leading-relaxed text-center font-medium italic opacity-90 px-4 line-clamp-3">
                         {identityData?.roast || 'Calculating resonance dynamics...'}
                     </p>
                 </div>
 
-                {/* FOOTER - Increased padding and bottom margin */}
-                <div className="relative z-10 flex justify-between items-center opacity-30 mt-auto px-6 pb-6">
+                {/* FOOTER - Increased items spacing and bounds (Fixed clipping) */}
+                <div className="relative z-10 flex justify-between items-center opacity-30 mt-auto px-10 pb-10">
                     <div className="text-[9px] font-black tracking-widest uppercase">Bio-Auth Matrix</div>
                     <div className="text-[9px] font-mono text-white">etchvox.com</div>
                 </div>
@@ -297,11 +299,6 @@ export default function DuoIdentityCard({ userA, userB, resultId }: DuoIdentityC
                     )}
                 </button>
 
-                {/* SCREENSHOT HINT */}
-                <div className="flex items-center gap-2 text-[10px] text-red-500/70 uppercase tracking-widest font-black animate-pulse">
-                    <span className="w-2 h-2 rounded-full bg-red-500" />
-                    Screenshot to Save
-                </div>
             </div>
 
             {/* 3. INVISIBLE OVERLAY FOR MOBILE SAVE */}

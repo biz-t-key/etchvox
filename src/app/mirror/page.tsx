@@ -53,15 +53,19 @@ export default function MirrorPage() {
     const [readingVector, setReadingVector] = useState<number[] | null>(null);
     const [progressLevel, setProgressLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner');
     const [capturedBlob, setCapturedBlob] = useState<Blob | null>(null);
-    const [wellnessAccepted, setWellnessAccepted] = useState(false);
+    const [legalAccepted, setLegalAccepted] = useState(false);
+    const [researchAccepted, setResearchAccepted] = useState(false);
 
     // Recorder refs
     const chunksRef = useRef<Blob[]>([]);
 
     const analyzerRef = useRef<VoiceAnalyzer | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const audioCtxRef = useRef<AudioContext | null>(null);
+    const gainNodeRef = useRef<GainNode | null>(null);
     const animationFrameRef = useRef<number | null>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const lastSpeakingTimeRef = useRef<number>(0);
 
     useEffect(() => {
         checkAuth();
@@ -75,7 +79,8 @@ export default function MirrorPage() {
             setUserHash(auth.userHash);
             setMnemonic(auth.mnemonic);
             setIsNewUser(auth.isNew);
-            setWellnessAccepted(auth.isNew ? false : true); // Assume accepted if returning
+            setLegalAccepted(auth.isNew ? false : true); // Assume accepted if returning
+            setResearchAccepted(auth.isNew ? false : true);
 
             // Check subscription status
             const subStatus = await checkSubscription(auth.userHash);
@@ -164,7 +169,22 @@ export default function MirrorPage() {
             await analyzerRef.current.initialize();
             analyzerRef.current.connectStream(stream);
 
-            mediaRecorderRef.current = new MediaRecorder(stream);
+            // Setup Audio Graph for Luxury Transitions
+            const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
+            audioCtxRef.current = new AudioContextClass();
+            const source = audioCtxRef.current!.createMediaStreamSource(stream);
+            gainNodeRef.current = audioCtxRef.current!.createGain();
+            const destination = audioCtxRef.current!.createMediaStreamDestination();
+
+            // Initial state: silent
+            gainNodeRef.current.gain.setValueAtTime(0, audioCtxRef.current!.currentTime);
+            // Start Fade: 0.5s ramp to 1.0
+            gainNodeRef.current.gain.linearRampToValueAtTime(1.0, audioCtxRef.current!.currentTime + 0.5);
+
+            source.connect(gainNodeRef.current);
+            gainNodeRef.current.connect(destination);
+
+            mediaRecorderRef.current = new MediaRecorder(destination.stream);
             mediaRecorderRef.current.ondataavailable = (e) => {
                 if (e.data.size > 0) chunksRef.current.push(e.data);
             };
@@ -174,13 +194,19 @@ export default function MirrorPage() {
             const collectLoop = () => {
                 if (analyzerRef.current) {
                     analyzerRef.current.collectSample();
+
+                    // VAD End-point detection
+                    const rms = analyzerRef.current.getLatestRMS();
+                    if (rms > 0.01) { // Threshold for speech
+                        lastSpeakingTimeRef.current = Date.now();
+                    }
                 }
                 animationFrameRef.current = requestAnimationFrame(collectLoop);
             };
             collectLoop();
 
             // Start timer
-            const duration = isCalibration ? 3 : 12;
+            const duration = isCalibration ? 3 : 30; // 30s for reading
             setTimeLeft(duration);
             timerRef.current = setInterval(() => {
                 setTimeLeft((prev) => {
@@ -205,9 +231,32 @@ export default function MirrorPage() {
             cancelAnimationFrame(animationFrameRef.current);
         }
 
+        // Luxury Fade-out (1.0s)
+        if (!isCalibration && gainNodeRef.current && audioCtxRef.current) {
+            const now = audioCtxRef.current.currentTime;
+            gainNodeRef.current.gain.cancelScheduledValues(now);
+            gainNodeRef.current.gain.setValueAtTime(gainNodeRef.current.gain.value, now);
+            gainNodeRef.current.gain.linearRampToValueAtTime(0, now + 1.0);
+
+            // Wait for fade to complete before stopping recorder
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
             mediaRecorderRef.current.stop();
-            mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+            // Stop raw stream
+            if (analyzerRef.current) {
+                // @ts-ignore - access internal stream if needed or just stop all tracks
+                const stream = (mediaRecorderRef.current as any).stream;
+                if (stream) stream.getTracks().forEach((track: any) => track.stop());
+            }
+            // Ensure all tracks from original stream are stopped
+            const tracks = mediaRecorderRef.current.stream.getTracks();
+            tracks.forEach(track => track.stop());
+        }
+
+        if (audioCtxRef.current) {
+            audioCtxRef.current.close().catch(console.error);
         }
 
         setPhase('analyzing');
@@ -243,7 +292,18 @@ export default function MirrorPage() {
                         }
                     }
 
+                    // Magical 5 Seconds Analysis for Mirror
+                    const recordingEndMs = Date.now();
+                    const postReading = analyzerRef.current.classifyPostReading(
+                        lastSpeakingTimeRef.current || (recordingEndMs - 30000),
+                        recordingEndMs,
+                        'mirror'
+                    );
+
                     setPhase('result');
+                    // We'll need to pass this postReading to the dashboard
+                    // For now, let's store it in a state or pass it through ref
+                    (window as any).__lastMirrorPostReading = postReading;
                 }
             }
         }, 1500);
@@ -398,7 +458,8 @@ export default function MirrorPage() {
                     sampleRate: 48000
                 }}
                 userHash={userHash || ''}
-                wellnessConsentAgreed={wellnessAccepted}
+                wellnessConsentAgreed={researchAccepted}
+                postReadingInsight={(window as any).__lastMirrorPostReading}
             />
         );
     }
@@ -467,9 +528,20 @@ export default function MirrorPage() {
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-center gap-3">
-                        <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-                        <span className="text-red-400 font-mono text-sm">RECORDING</span>
+                    <div className="flex flex-col items-center justify-center gap-6">
+                        <div className="flex items-center justify-center gap-3">
+                            <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                            <span className="text-red-400 font-mono text-sm">RECORDING</span>
+                        </div>
+
+                        {!isCalibration && (
+                            <button
+                                onClick={() => finishRecording(false)}
+                                className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white text-xs font-black uppercase tracking-[0.2em] rounded-full border border-white/20 transition-all active:scale-95"
+                            >
+                                Finish Recording & Analyze →
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -478,38 +550,62 @@ export default function MirrorPage() {
 
     // Archetype selection phase
     if (phase === 'archetype') {
-        const archetypes: { id: Archetype; name: string; icon: string; desc: string; colors: string }[] = [
-            { id: 'optimizer', name: 'The Optimizer', icon: '⚡', desc: 'Efficiency and High-Output. Reframes drift as system latency.', colors: 'hover:border-cyan-500/50 hover:shadow-[0_0_30px_rgba(34,211,238,0.3)]' },
-            { id: 'stoic', name: 'The Stoic', icon: '🏛️', desc: 'Equilibrium and Stillness. Reframes drift as external turbulence.', colors: 'hover:border-slate-500/50 hover:shadow-[0_0_30px_rgba(100,116,139,0.3)]' },
-            { id: 'alchemist', name: 'The Alchemist', icon: '🔮', desc: 'Creative Energy and Flow. Reframes drift as primal resonance.', colors: 'hover:border-purple-500/50 hover:shadow-[0_0_30px_rgba(168,85,247,0.3)]' }
+        const archetypes: { id: Archetype; name: string; icon: string; lens: string; desc: string; bg: string; colors: string }[] = [
+            { id: 'optimizer', name: 'The Optimizer', icon: '⚡', lens: 'Efficiency', desc: 'Maximizing resonance and cognitive output.', bg: '/images/bg_optimizer.png', colors: 'from-cyan-500/20 to-blue-500/20' },
+            { id: 'stoic', name: 'The Stoic', icon: '🏛️', lens: 'Equilibrium', desc: 'Finding stillness amidst external turbulence.', bg: '/images/bg_stoic.jpg', colors: 'from-slate-500/20 to-zinc-500/20' },
+            { id: 'alchemist', name: 'The Alchemist', icon: '🧪', lens: 'Flow', desc: 'Transmuting raw emotion into creative heat.', bg: '/images/bg_alchemist.png', colors: 'from-amber-500/20 to-orange-500/20' },
+            { id: 'maverick', name: 'The Maverick', icon: '🔥', lens: 'Ambition', desc: 'Hard-won truth and power in the high-stakes void.', bg: '/images/bg_cinematic_grit.png', colors: 'from-orange-500/20 to-red-600/20' },
+            { id: 'sanctuary', name: 'The Sanctuary', icon: '🌿', lens: 'Restoration', desc: 'Compassionate stillness and sacred fragility.', bg: '/images/bg_sanctuary.png', colors: 'from-emerald-500/20 to-teal-600/20' }
         ];
 
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
-                <div className="max-w-3xl w-full space-y-12">
+            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6 py-12">
+                <div className="max-w-5xl w-full space-y-12">
                     <div className="text-center space-y-4">
-                        <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                            Choose Your Mirror Archetype
+                        <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 uppercase tracking-tighter">
+                            Select Your Mirror Lens
                         </h1>
-                        <p className="text-gray-400">How should the Oracle interpret your vocal signature today?</p>
+                        <p className="text-gray-400 text-sm max-w-lg mx-auto leading-relaxed">
+                            How should the Oracle interpret your voice today? This choice defines your visual archive aesthetic and the "Lens" of your biometric analysis.
+                        </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {archetypes.map((arch) => (
                             <button
                                 key={arch.id}
                                 onClick={() => handleArchetypeSelect(arch.id)}
-                                className={`group relative bg-white/5 backdrop-blur-sm hover:bg-white/10 border border-white/10 rounded-2xl p-8 transition-all ${arch.colors}`}
+                                className={`group relative h-[450px] bg-slate-900/40 border border-white/10 rounded-3xl p-8 transition-all overflow-hidden text-left flex flex-col justify-end ${arch.colors}`}
                             >
-                                <div className="text-6xl mb-4 grayscale group-hover:grayscale-0 transition-all">{arch.icon}</div>
-                                <h3 className="text-xl font-bold text-white mb-2">{arch.name}</h3>
-                                <p className="text-gray-400 text-sm leading-relaxed">{arch.desc}</p>
+                                {/* Background Preview */}
+                                <div className="absolute inset-0 z-0 opacity-40 group-hover:opacity-70 transition-opacity duration-500">
+                                    <img src={arch.bg} alt="" className="w-full h-full object-cover" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+                                </div>
+
+                                <div className="relative z-10 space-y-4">
+                                    <div className="text-5xl drop-shadow-2xl">{arch.icon}</div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-white mb-1">{arch.name}</h3>
+                                        <div className="inline-block px-2 py-0.5 bg-white/10 rounded text-[9px] font-black uppercase tracking-widest text-white/70 border border-white/5 mb-3">
+                                            {arch.lens}
+                                        </div>
+                                        <p className="text-gray-400 text-xs leading-relaxed line-clamp-3">
+                                            {arch.desc}
+                                        </p>
+                                    </div>
+                                    <div className="pt-4 border-t border-white/10">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-cyan-500 group-hover:translate-x-1 transition-transform inline-block">
+                                            Select Archetype →
+                                        </span>
+                                    </div>
+                                </div>
                             </button>
                         ))}
                     </div>
 
                     <div className="text-center">
-                        <button onClick={() => setPhase('calibration')} className="text-gray-500 hover:text-gray-300 text-sm transition">
+                        <button onClick={() => setPhase('calibration')} className="text-gray-500 hover:text-white text-[10px] font-black uppercase tracking-[0.3em] transition">
                             ← Back to Calibration
                         </button>
                     </div>
@@ -524,7 +620,7 @@ export default function MirrorPage() {
             { id: 'philosophy', name: 'Philosophy', icon: '🏛️', desc: 'Stoic wisdom and resilience' },
             { id: 'thriller', name: 'Thriller', icon: '🌊', desc: 'Survival and tension' },
             { id: 'poetic', name: 'Poetic', icon: '🌙', desc: 'Ethereal and introspective' },
-            { id: 'cinematic_grit', name: 'Cinematic Grit', icon: '🥃', desc: 'Hard-won truth and stillness' }
+            { id: 'maverick', name: 'The Maverick', icon: '🥃', desc: 'Hard-won truth and stillness' }
         ];
 
         return (
@@ -715,26 +811,60 @@ export default function MirrorPage() {
                 {renderOnboarding()}
 
                 {!alreadyRecordedToday && (
-                    <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-                        <label className="flex items-start gap-4 cursor-pointer group">
-                            <input
-                                type="checkbox"
-                                checked={wellnessAccepted}
-                                onChange={(e) => setWellnessAccepted(e.target.checked)}
-                                className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-cyan-500"
-                            />
-                            <div className="space-y-1 text-left">
-                                <span className="text-xs text-gray-400 leading-relaxed select-none block font-bold transition-colors group-hover:text-white uppercase tracking-wider">
-                                    I consent to the anonymous processing of my acoustic features for wellness analysis. I understand this is not a medical diagnosis.
-                                </span>
-                            </div>
-                        </label>
+                    <div className="space-y-4">
+                        {/* Mandatory Legal Consent */}
+                        <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+                            <label className="flex items-start gap-4 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    checked={legalAccepted}
+                                    onChange={(e) => setLegalAccepted(e.target.checked)}
+                                    className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-cyan-500"
+                                />
+                                <div className="space-y-1 text-left">
+                                    <span className="text-xs text-gray-400 leading-relaxed select-none block font-bold transition-colors group-hover:text-white uppercase tracking-wider">
+                                        I accept the <Link href="/terms" className="text-cyan-400 hover:underline">Terms of Service</Link> and <Link href="/privacy" className="text-cyan-400 hover:underline">Privacy Policy</Link>.
+                                        I understand this system is for mindfulness and not a medical diagnosis.
+                                    </span>
+                                </div>
+                            </label>
+                        </div>
+
+                        {/* Optional Cinematic Research Consent */}
+                        <div className="bg-cyan-500/5 backdrop-blur-sm rounded-2xl p-6 border border-cyan-500/10">
+                            <label className="flex items-start gap-4 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    checked={researchAccepted}
+                                    onChange={(e) => setResearchAccepted(e.target.checked)}
+                                    className="mt-1 w-6 h-6 rounded border-cyan-500/30 bg-black/50 cursor-pointer flex-shrink-0 accent-cyan-500"
+                                />
+                                <div className="space-y-1 text-left">
+                                    <span className="text-[10px] text-cyan-400/60 font-black uppercase tracking-[0.2em] block mb-1">
+                                        Optional: {
+                                            selectedGenre === 'maverick' ? "Transmit Intel" :
+                                                selectedGenre === 'philosophy' ? "Archive My Soul" :
+                                                    selectedGenre === 'thriller' ? "Upload Entropy" :
+                                                        "Donate Our Friction"
+                                        }
+                                    </span>
+                                    <span className="text-xs text-gray-400 leading-relaxed select-none block italic transition-colors group-hover:text-gray-200">
+                                        {
+                                            selectedGenre === 'maverick' ? "Authorized storage for AI research and tactical statistical telemetry. Data is stripped of PII and used for global behavioral indexing." :
+                                                selectedGenre === 'philosophy' ? "Your signal is utilized for neural synthesis, distributed node indexing, and statistical personality forecasting. No ID linked." :
+                                                    selectedGenre === 'thriller' ? "Agreement covers anonymized audio capture for neural grid training and commercial entropy research. Identity is disregarded by the protocol." :
+                                                        "Capture mutual resonance for relationship AI modeling, commercial biometric modeling, and statistical resonance audits. De-identified at source."
+                                        }
+                                    </span>
+                                </div>
+                            </label>
+                        </div>
                     </div>
                 )}
 
                 <button
                     onClick={() => startRecording(true)}
-                    disabled={!wellnessAccepted || alreadyRecordedToday}
+                    disabled={!legalAccepted || alreadyRecordedToday}
                     className="w-full py-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xl font-black uppercase tracking-widest rounded-3xl hover:shadow-[0_0_40px_rgba(34,211,238,0.4)] transition-all disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed transform active:scale-95"
                 >
                     <span className="mr-3">🎤</span>

@@ -1,11 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import SoloIdentityCard from '@/components/result/SoloIdentityCard';
 import DuoIdentityCard from '@/components/result/DuoIdentityCard';
 import SpyReportCard from '@/components/result/SpyReportCard';
+import MirrorRecap from '@/components/mirror/MirrorRecap';
 import { TypeCode, AnalysisMetrics } from '@/lib/types';
 
 // Mock Data
@@ -82,6 +83,8 @@ Issue Badge #009. Report to Training Site Gamma for immediate conditioning.
 `;
 
 export default function SamplePage() {
+    const [showRecapDemo, setShowRecapDemo] = useState(false);
+
     return (
         <div className="min-h-screen bg-black text-white selection:bg-cyan-500/30">
             {/* Header */}
@@ -183,7 +186,84 @@ export default function SamplePage() {
                         />
                     </div>
                 </section>
+
+                {/* Mirror Section */}
+                <section className="space-y-12">
+                    <div className="flex items-center gap-4">
+                        <div className="w-2 h-8 bg-yellow-500 rounded-full" />
+                        <h2 className="text-2xl font-black uppercase tracking-widest">04 // Voice Mirror Resonance Dossier</h2>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+                        <div className="space-y-8">
+                            <div className="glass p-10 rounded-3xl border border-yellow-500/20 space-y-8 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-4 opacity-10 text-6xl">🪞</div>
+                                <div className="space-y-2">
+                                    <h3 className="text-sm font-black text-yellow-500 uppercase tracking-widest">Neural Summary: Day 07</h3>
+                                    <h2 className="text-3xl font-black italic text-white">The Harmonic Architect</h2>
+                                </div>
+
+                                <div className="space-y-6 text-zinc-400 text-sm leading-relaxed">
+                                    <p>
+                                        Your 7-day resonance cycle reveals a significant shift from <span className="text-white italic">"Static Turbulence"</span> to <span className="text-yellow-500 italic">"Architectural Clarity."</span> By Day 4, the jitter modulation in your lower frequencies stabilized by 18%, correlating with the "Maverick" protocol.
+                                    </p>
+                                    <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                                        <p className="font-mono text-[10px] uppercase text-zinc-500 mb-2">Oracle Prediction:</p>
+                                        <p className="text-white italic">"The clarity attained this week is not a fluke; it is a structural reinforcement. In high-stakes negotiation, this tone will be your primary shield."</p>
+                                    </div>
+                                </div>
+
+                                <div className="pt-4">
+                                    <button
+                                        onClick={() => setShowRecapDemo(true)}
+                                        className="w-full py-4 bg-yellow-500 text-black font-black uppercase text-xs rounded-xl hover:bg-yellow-400 transition-all shadow-lg shadow-yellow-500/10"
+                                    >
+                                        Play 7-Day Cinematic Recap →
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div className="flex flex-col gap-4">
+                                <h3 className="text-xs font-black text-zinc-500 uppercase tracking-widest">Biometric Trend (Sample)</h3>
+                                <div className="h-48 glass rounded-2xl border border-white/5 flex items-end justify-between p-8 gap-2">
+                                    {[65, 72, 68, 85, 82, 89, 94].map((v, i) => (
+                                        <div key={i} className="flex-1 flex flex-col items-center gap-2">
+                                            <div
+                                                className="w-full bg-gradient-to-t from-yellow-600 to-yellow-400 rounded-t-sm transition-all duration-1000"
+                                                style={{ height: `${v}%` }}
+                                            />
+                                            <span className="text-[8px] font-mono text-zinc-600">D{i + 1}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                                    <div className="text-[10px] text-zinc-500 uppercase font-bold mb-1">Average Alignment</div>
+                                    <div className="text-2xl font-black text-yellow-500 italic">82.4%</div>
+                                </div>
+                                <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                                    <div className="text-[10px] text-zinc-500 uppercase font-bold mb-1">Stability Gain</div>
+                                    <div className="text-2xl font-black text-cyan-500 italic">+18.2%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </main>
+
+            {showRecapDemo && (
+                <div className="fixed inset-0 z-[100] bg-black">
+                    <MirrorRecap
+                        userHash="DUMMY_USER"
+                        onClose={() => setShowRecapDemo(false)}
+                        demoMode={true}
+                        archetype="maverick"
+                    />
+                </div>
+            )}
 
             {/* Footer */}
             <footer className="border-t border-white/5 py-20 text-center">

@@ -1,9 +1,9 @@
 // Voice Mirror Content - Complete database
 // Due to file size, full content is in a separate data file
 
-export type Genre = 'philosophy' | 'thriller' | 'poetic' | 'cinematic_grit';
+export type Genre = 'philosophy' | 'thriller' | 'poetic' | 'maverick';
 export type Mood = 'high' | 'mid' | 'low';
-export type Archetype = 'optimizer' | 'stoic' | 'alchemist' | 'cinematic_grit';
+export type Archetype = 'optimizer' | 'stoic' | 'alchemist' | 'maverick' | 'sanctuary';
 
 export interface DayContent {
     day_index: number;
@@ -40,10 +40,10 @@ export const SCENARIO_CATALOG: Scenario[] = [
     { id: 'archive_1994', title: 'Archive 1994', genre: 'poetic', tone_instruction: 'Nostalgic Lo-fi', description: 'Fading memories and yellowing polaroids' },
     { id: 'cloud_train', title: 'Cloud Train', genre: 'poetic', tone_instruction: 'Weightless and Ethereal', description: 'Ascending beyond the edge of the world' },
 
-    // Cinematic Grit
-    { id: 'iron_contract', title: 'The Iron Contract', genre: 'cinematic_grit', tone_instruction: 'Hard-won truth, power in stillness', description: 'A solitary mountain ascent fueled by internal fire' },
-    { id: 'titanium_navy', title: 'Titanium and Navy', genre: 'cinematic_grit', tone_instruction: 'Smooth, low-register, intimate', description: 'Navigating power and victory in the high-stakes city' },
-    { id: 'copper_dust', title: 'Copper Dust', genre: 'cinematic_grit', tone_instruction: 'Steady, grounded authority', description: 'A founder\'s journey from the void to a new home' }
+    // Maverick (formerly Cinematic Grit)
+    { id: 'iron_contract', title: 'The Iron Contract', genre: 'maverick', tone_instruction: 'Hard-won truth, power in stillness', description: 'A solitary mountain ascent fueled by internal fire' },
+    { id: 'titanium_navy', title: 'Titanium and Navy', genre: 'maverick', tone_instruction: 'Smooth, low-register, intimate', description: 'Navigating power and victory in the high-stakes city' },
+    { id: 'copper_dust', title: 'Copper Dust', genre: 'maverick', tone_instruction: 'Steady, grounded authority', description: 'A founder\'s journey from the void to a new home' }
 ];
 
 // Full content data (imported from user's JSON structure)

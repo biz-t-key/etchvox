@@ -213,9 +213,18 @@ export interface VoiceLogV3 {
     };
 }
 
+export interface PostReadingInsight {
+    category: 'Sigh' | 'Mumble' | 'Check-in' | 'Fidget' | 'Statue' | 'Laughter' | 'Disconnect';
+    score: number; // intensity 0-1
+    description: string;
+    descriptionJa: string;
+    timestamp: number; // Seconds since recording start
+}
+
 export interface AnalysisResult {
     typeCode: TypeCode;
     metrics: AnalysisMetrics;
+    postReading?: PostReadingInsight;
 }
 
 // Color palettes by group

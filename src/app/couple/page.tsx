@@ -8,7 +8,7 @@ import { generateResultId } from '@/lib/permalink';
 import { saveResult, getSessionId, VoiceResult } from '@/lib/storage';
 import ParticleVisualizer from '@/components/recording/ParticleVisualizer';
 
-type Phase = 'intro' | 'names' | 'step1' | 'step2' | 'step3' | 'details' | 'analyzing';
+type Phase = 'intro' | 'names' | 'step1' | 'step2' | 'step3' | 'step4' | 'details' | 'analyzing';
 
 const JOBS = [
     'Lawyer', 'Executive', 'Engineer', 'Doctor', 'Founder',
@@ -17,7 +17,7 @@ const JOBS = [
 ];
 
 type StepConfig = {
-    id: 'step1' | 'step2' | 'step3';
+    id: 'step1' | 'step2' | 'step3' | 'step4';
     title: string;
     subtitle: string;
     instruction: string;
@@ -64,6 +64,7 @@ export default function CouplePage() {
     const chunksRef = useRef<Blob[]>([]);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const animationFrameRef = useRef<number | null>(null);
+    const lastSpeakingTimeRef = useRef<number>(0);
 
     // Cleanup
     useEffect(() => {
@@ -77,50 +78,43 @@ export default function CouplePage() {
     const STEPS: Record<string, StepConfig> = {
         step1: {
             id: 'step1',
-            title: "Synchronizing Biometric Resonance...",
-            subtitle: "The Bio-Sync",
-            instruction: "Read together in unison. One single take.",
-            duration: 12,
+            title: "Step 1: Identity Sync",
+            subtitle: "The Binary Check",
+            instruction: "Call and response. Verify your Presence.",
+            duration: 6,
             color: 'text-cyan-400',
             script: (
-                <div className="space-y-8">
-                    <div className="flex justify-center">
-                        <span className="px-4 py-1 rounded-full bg-white/10 text-white text-[10px] font-black uppercase tracking-[0.3em] border border-white/20">
-                            Both Read Together
-                        </span>
+                <div className="space-y-4">
+                    <div className="flex flex-col md:flex-row items-center justify-center gap-8">
+                        <div className="p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-center">
+                            <span className="text-[10px] font-black text-cyan-500 uppercase block mb-1">Alpha (A)</span>
+                            <p className="text-xl font-bold italic">"I'm {names.A || 'Person A'}."</p>
+                        </div>
+                        <div className="p-4 rounded-xl bg-magenta-500/10 border border-magenta-500/30 text-center">
+                            <span className="text-[10px] font-black text-magenta-500 uppercase block mb-1">Beta (B)</span>
+                            <p className="text-xl font-bold italic">"And I'm {names.B || 'Person B'}."</p>
+                        </div>
                     </div>
-                    <p className="text-2xl md:text-4xl font-black leading-tight italic text-white drop-shadow-sm">
-                        "We parked our car in the garage to share a bottle of water. We are certainly not robots."
-                    </p>
                 </div>
             )
         },
         step2: {
             id: 'step2',
-            title: "Simulating Relational Stress Levels...",
-            subtitle: "The Stress Conflict",
-            instruction: "Act out the conflict! A: Warn, B: Panic.",
-            duration: 10,
-            color: 'text-red-500',
+            title: "Step 2: Team Calibration",
+            subtitle: "Structural Integrity",
+            instruction: "Test your collective stability.",
+            duration: 6,
+            color: 'text-cyan-400',
             script: (
-                <div className="space-y-10 text-left max-w-xl mx-auto">
-                    <div className="space-y-2 group">
-                        <div className="flex items-center gap-3">
-                            <span className="w-8 h-8 rounded-full bg-cyan-500 flex items-center justify-center text-black font-black text-xs">A</span>
-                            <span className="text-cyan-400 font-black uppercase text-xs tracking-widest">{names.A || 'Partner A'}</span>
+                <div className="space-y-4">
+                    <div className="flex flex-col md:flex-row items-center justify-center gap-8">
+                        <div className="p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-center">
+                            <span className="text-[10px] font-black text-cyan-500 uppercase block mb-1">Alpha (A)</span>
+                            <p className="text-xl font-bold italic">"We’re a perfect team."</p>
                         </div>
-                        <div className="pl-11">
-                            <p className="text-2xl md:text-3xl font-bold text-white leading-tight">"System failure! It's going down!"</p>
-                        </div>
-                    </div>
-
-                    <div className="space-y-2 group">
-                        <div className="flex items-center gap-3 justify-end">
-                            <span className="text-pink-500 font-black uppercase text-xs tracking-widest">{names.B || 'Partner B'}</span>
-                            <span className="w-8 h-8 rounded-full bg-pink-500 flex items-center justify-center text-black font-black text-xs">B</span>
-                        </div>
-                        <div className="pr-11 text-right">
-                            <p className="text-3xl md:text-4xl font-black text-pink-400 leading-tight">"No! Shut it down! SHUT IT DOWN NOW!"</p>
+                        <div className="p-4 rounded-xl bg-magenta-500/10 border border-magenta-500/30 text-center">
+                            <span className="text-[10px] font-black text-magenta-500 uppercase block mb-1">Beta (B)</span>
+                            <p className="text-xl font-bold italic">"Most of the time."</p>
                         </div>
                     </div>
                 </div>
@@ -128,39 +122,49 @@ export default function CouplePage() {
         },
         step3: {
             id: 'step3',
-            title: "Analyzing Neural Processing Speed...",
-            subtitle: "The Neural Flow",
-            instruction: "Alternate words FAST. Don't stumble.",
-            duration: 10,
-            color: 'text-green-400',
+            title: "Step 3: Transparency Audit",
+            subtitle: "Internal Flow",
+            instruction: "Voice your hidden signals.",
+            duration: 6,
+            color: 'text-cyan-400',
             script: (
-                <div className="flex flex-wrap justify-center gap-4 text-2xl md:text-4xl font-bold leading-relaxed max-w-2xl mx-auto">
-                    <div className="flex flex-col items-center">
-                        <span className="text-[10px] text-cyan-500 font-black mb-1">{names.A}</span>
-                        <span className="bg-cyan-500/20 text-white px-4 py-2 rounded-xl border border-cyan-500/30">Six</span>
+                <div className="space-y-4">
+                    <div className="flex flex-col md:flex-row items-center justify-center gap-8">
+                        <div className="p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-center">
+                            <span className="text-[10px] font-black text-cyan-500 uppercase block mb-1">Alpha (A)</span>
+                            <p className="text-xl font-bold italic">"I have no secrets."</p>
+                        </div>
+                        <div className="p-4 rounded-xl bg-magenta-500/10 border border-magenta-500/30 text-center">
+                            <span className="text-[10px] font-black text-magenta-500 uppercase block mb-1">Beta (B)</span>
+                            <p className="text-xl font-bold italic">"I totally believe you."</p>
+                        </div>
                     </div>
-                    <div className="flex flex-col items-center">
-                        <span className="text-[10px] text-pink-500 font-black mb-1">{names.B}</span>
-                        <span className="bg-pink-500/20 text-white px-4 py-2 rounded-xl border border-pink-500/30">systems</span>
+                </div>
+            )
+        },
+        step4: {
+            id: 'step4',
+            title: "Step 4: Final Truth Signal",
+            subtitle: "The Oracle Threshold",
+            instruction: "Speak the command in unison.",
+            duration: 7,
+            color: 'text-amber-400',
+            script: (
+                <div className="space-y-4">
+                    <div className="flex justify-center">
+                        <span className="px-4 py-1 rounded-full bg-white/10 text-white text-[10px] font-black uppercase tracking-[0.3em] border border-white/20">
+                            Both Read Together
+                        </span>
                     </div>
-                    <div className="flex flex-col items-center">
-                        <span className="text-[10px] text-cyan-500 font-black mb-1">{names.A}</span>
-                        <span className="bg-cyan-500/20 text-white px-4 py-2 rounded-xl border border-cyan-500/30">synthesized</span>
-                    </div>
-                    <div className="flex flex-col items-center">
-                        <span className="text-[10px] text-pink-500 font-black mb-1">{names.B}</span>
-                        <span className="bg-pink-500/20 text-white px-4 py-2 rounded-xl border border-pink-500/30">sixty-six</span>
-                    </div>
-                    <div className="flex flex-col items-center w-full mt-4">
-                        <span className="text-[10px] text-white font-black mb-1 opacity-60">TOGETHER</span>
-                        <span className="bg-white/10 text-white px-8 py-3 rounded-2xl border border-white/20 italic">signals simultaneously!</span>
-                    </div>
+                    <p className="text-2xl md:text-4xl font-black leading-tight italic text-white drop-shadow-sm">
+                        "Now, tell us the truth."
+                    </p>
                 </div>
             )
         }
     };
 
-    const startRecording = async (currentStep: 'step1' | 'step2' | 'step3') => {
+    const startRecording = async (currentStep: 'step1' | 'step2' | 'step3' | 'step4') => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
                 audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
@@ -183,22 +187,21 @@ export default function CouplePage() {
             setIsRecording(true);
             setTimeLeft(STEPS[currentStep].duration);
 
-            // Visualizer Loop
             const collectLoop = () => {
                 if (analyzerRef.current && isRecording) {
                     // Logic to switch tags during recording for resonance
-                    let tag = 'default';
-                    if (currentStep === 'step1') {
-                        tag = 'Both';
-                    } else if (currentStep === 'step2') {
-                        // Split Step 2 into A then B (50/50) for conflict analysis
-                        tag = timeLeft > (STEPS['step2'].duration / 2) ? 'A' : 'B';
-                    } else if (currentStep === 'step3') {
-                        // Neural flow is fast, tag as both/mixed or alternate rapidly
-                        tag = 'Both';
-                    }
+                    let tag = 'Both';
+                    if (currentStep === 'step1') tag = 'Both';
+                    else if (currentStep === 'step2' || currentStep === 'step3') tag = 'Both'; // Mixed signals
+                    else tag = 'Both';
 
                     analyzerRef.current.collectSample(tag);
+
+                    // VAD for 'Magical 5 Seconds'
+                    const latestRMS = analyzerRef.current.getLatestRMS();
+                    if (latestRMS > 0.01) {
+                        lastSpeakingTimeRef.current = Date.now();
+                    }
                 }
                 animationFrameRef.current = requestAnimationFrame(collectLoop);
             };
@@ -221,7 +224,7 @@ export default function CouplePage() {
         }
     };
 
-    const finishRecording = async (currentStep: 'step1' | 'step2' | 'step3') => {
+    const finishRecording = async (currentStep: 'step1' | 'step2' | 'step3' | 'step4') => {
         if (timerRef.current) clearInterval(timerRef.current);
         if (mediaRecorderRef.current) mediaRecorderRef.current.stop();
 
@@ -229,8 +232,6 @@ export default function CouplePage() {
         if (analyzerRef.current) {
             const vector = analyzerRef.current.get30DVector();
             setStepVectors(prev => ({ ...prev, [currentStep]: vector }));
-            // We don't reset here anymore because we need all samples for Resonance at the end
-            // analyzerRef.current.reset(); 
         }
 
         const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
@@ -242,8 +243,10 @@ export default function CouplePage() {
             setTimeout(() => setPhase('step2'), 1500);
         } else if (currentStep === 'step2') {
             setTimeout(() => setPhase('step3'), 1500);
+        } else if (currentStep === 'step3') {
+            setTimeout(() => setPhase('step4'), 1500);
         } else {
-            // Final Step
+            // Final Step (Step 4)
             setTimeout(() => setPhase('details'), 1500);
         }
 
@@ -264,7 +267,16 @@ export default function CouplePage() {
         setPhase('analyzing');
         const coupleResultId = generateResultId();
 
-        const unionTypeCode = classifyTypeCode(mainMetrics);
+        const recordingEndMs = Date.now();
+        const mainMetricsProcessed = mainMetrics || (analyzerRef.current?.analyze('couple').metrics);
+        const unionTypeCode = classifyTypeCode(mainMetricsProcessed);
+
+        // Magical 5 Seconds Analysis
+        const postReading = analyzerRef.current?.classifyPostReading(
+            lastSpeakingTimeRef.current || (recordingEndMs - 25000),
+            recordingEndMs,
+            'couple'
+        );
 
         // Calculate Resonance (Stream B)
         const resonance = analyzerRef.current?.calculateCoupleResonance();
@@ -273,7 +285,8 @@ export default function CouplePage() {
             id: coupleResultId,
             sessionId: getSessionId(),
             typeCode: 'COUPLE_MIX' as any,
-            metrics: mainMetrics, // Using Step 1 metrics
+            metrics: mainMetricsProcessed, // Using Step 1 metrics
+            postReading,
             accentOrigin: 'Couple',
             createdAt: new Date().toISOString(),
             locale: 'en-US',
@@ -369,26 +382,46 @@ export default function CouplePage() {
                     <div className="space-y-6">
                         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-400 border-b border-cyan-500/20 pb-2">Partner Alpha Consent</h3>
                         <div className="space-y-4">
-                            <label className="flex items-start gap-4 p-4 rounded-xl bg-black/40 hover:bg-black/60 transition-colors cursor-pointer group">
-                                <input type="checkbox" checked={isOver13A} onChange={e => setIsOver13A(e.target.checked)} className="mt-1 w-5 h-5 accent-cyan-500" />
-                                <span className="text-xs text-gray-400 group-hover:text-white transition-colors">Confirm 13+ years (Alpha)</span>
-                            </label>
-                            <label className="flex items-start gap-4 p-4 rounded-xl bg-black/40 hover:bg-black/60 transition-colors cursor-pointer group">
-                                <input type="checkbox" checked={termsA} onChange={e => setTermsA(e.target.checked)} className="mt-1 w-5 h-5 accent-cyan-500" />
-                                <span className="text-xs text-gray-400 group-hover:text-white transition-colors">I agree to the Terms of Service.</span>
-                            </label>
-                            <label className="flex items-start gap-4 p-4 rounded-xl bg-black/40 hover:bg-black/60 transition-colors cursor-pointer group">
-                                <input type="checkbox" checked={privacyA} onChange={e => setPrivacyA(e.target.checked)} className="mt-1 w-5 h-5 accent-cyan-500" />
-                                <span className="text-xs text-gray-400 group-hover:text-white transition-colors">I agree to the Privacy Policy.</span>
-                            </label>
-                            <label className="flex items-start gap-4 p-4 rounded-xl bg-cyan-500/5 border border-cyan-500/10 hover:bg-cyan-500/10 transition-colors cursor-pointer group">
-                                <input type="checkbox" checked={wellnessA} onChange={e => setWellnessA(e.target.checked)} className="mt-1 w-5 h-5 accent-cyan-500" />
-                                <span className="text-[10px] text-cyan-500 font-bold group-hover:text-cyan-400 transition-colors">I consent to the anonymous processing of my acoustic features for wellness analysis. (Alpha)</span>
-                            </label>
-                            <label className="flex items-start gap-4 p-4 rounded-xl bg-cyan-500/5 border border-cyan-500/10 hover:bg-cyan-500/10 transition-colors cursor-pointer group opacity-60">
-                                <input type="checkbox" checked={researchA} onChange={e => setResearchA(e.target.checked)} className="mt-1 w-5 h-5 accent-cyan-500" />
-                                <span className="text-[10px] text-cyan-500 font-bold group-hover:text-cyan-400 transition-colors">[OPTIONAL] Biological Research Consent</span>
-                            </label>
+                            {/* Mandatory Legal Group */}
+                            <div className="space-y-2 p-3 rounded-xl border border-white/5 bg-black/20">
+                                <label className="flex items-start gap-3 cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        checked={isOver13A && termsA && privacyA && wellnessA}
+                                        onChange={e => {
+                                            const val = e.target.checked;
+                                            setIsOver13A(val);
+                                            setTermsA(val);
+                                            setPrivacyA(val);
+                                            setWellnessA(val);
+                                        }}
+                                        className="mt-1 w-5 h-5 accent-cyan-500"
+                                    />
+                                    <span className="text-[10px] text-gray-500 group-hover:text-white transition-colors uppercase font-bold tracking-tighter">
+                                        Accept Terms, Privacy, & Wellness Audit (Alpha)
+                                    </span>
+                                </label>
+                            </div>
+
+                            {/* Optional Cinematic Research Consent */}
+                            <div className="bg-cyan-500/5 backdrop-blur-sm rounded-xl p-4 border border-cyan-500/10 hover:bg-cyan-500/10 transition-colors">
+                                <label className="flex items-start gap-4 cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        checked={researchA}
+                                        onChange={e => setResearchA(e.target.checked)}
+                                        className="mt-1 w-5 h-5 accent-cyan-500"
+                                    />
+                                    <div className="space-y-1">
+                                        <span className="text-[10px] text-cyan-400 font-black uppercase tracking-[0.2em] block">
+                                            "I donate my voice to the future."
+                                        </span>
+                                        <span className="text-[9px] text-gray-500 leading-tight block italic">
+                                            Authorize capture of resonance for neutral statistical modeling. Identity remains unidentified.
+                                        </span>
+                                    </div>
+                                </label>
+                            </div>
                         </div>
                     </div>
 
@@ -396,26 +429,46 @@ export default function CouplePage() {
                     <div className="space-y-6">
                         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-pink-500 border-b border-pink-500/20 pb-2">Partner Beta Consent</h3>
                         <div className="space-y-4">
-                            <label className="flex items-start gap-4 p-4 rounded-xl bg-black/40 hover:bg-black/60 transition-colors cursor-pointer group">
-                                <input type="checkbox" checked={isOver13B} onChange={e => setIsOver13B(e.target.checked)} className="mt-1 w-5 h-5 accent-pink-500" />
-                                <span className="text-xs text-gray-400 group-hover:text-white transition-colors">Confirm 13+ years (Beta)</span>
-                            </label>
-                            <label className="flex items-start gap-4 p-4 rounded-xl bg-black/40 hover:bg-black/60 transition-colors cursor-pointer group">
-                                <input type="checkbox" checked={termsB} onChange={e => setTermsB(e.target.checked)} className="mt-1 w-5 h-5 accent-pink-500" />
-                                <span className="text-xs text-gray-400 group-hover:text-white transition-colors">I agree to the Terms of Service.</span>
-                            </label>
-                            <label className="flex items-start gap-4 p-4 rounded-xl bg-black/40 hover:bg-black/60 transition-colors cursor-pointer group">
-                                <input type="checkbox" checked={privacyB} onChange={e => setPrivacyB(e.target.checked)} className="mt-1 w-5 h-5 accent-pink-500" />
-                                <span className="text-xs text-gray-400 group-hover:text-white transition-colors">I agree to the Privacy Policy.</span>
-                            </label>
-                            <label className="flex items-start gap-4 p-4 rounded-xl bg-pink-500/5 border border-pink-500/10 hover:bg-pink-500/10 transition-colors cursor-pointer group">
-                                <input type="checkbox" checked={wellnessB} onChange={e => setWellnessB(e.target.checked)} className="mt-1 w-5 h-5 accent-pink-500" />
-                                <span className="text-[10px] text-pink-500 font-bold group-hover:text-pink-400 transition-colors">I consent to the anonymous processing of my acoustic features for wellness analysis. (Beta)</span>
-                            </label>
-                            <label className="flex items-start gap-4 p-4 rounded-xl bg-pink-500/5 border border-pink-500/10 hover:bg-pink-500/10 transition-colors cursor-pointer group opacity-60">
-                                <input type="checkbox" checked={researchB} onChange={e => setResearchB(e.target.checked)} className="mt-1 w-5 h-5 accent-pink-500" />
-                                <span className="text-[10px] text-pink-500 font-bold group-hover:text-pink-400 transition-colors">[OPTIONAL] Biological Research Consent</span>
-                            </label>
+                            {/* Mandatory Legal Group */}
+                            <div className="space-y-2 p-3 rounded-xl border border-white/5 bg-black/20">
+                                <label className="flex items-start gap-3 cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        checked={isOver13B && termsB && privacyB && wellnessB}
+                                        onChange={e => {
+                                            const val = e.target.checked;
+                                            setIsOver13B(val);
+                                            setTermsB(val);
+                                            setPrivacyB(val);
+                                            setWellnessB(val);
+                                        }}
+                                        className="mt-1 w-5 h-5 accent-pink-500"
+                                    />
+                                    <span className="text-[10px] text-gray-500 group-hover:text-white transition-colors uppercase font-bold tracking-tighter">
+                                        Accept Terms, Privacy, & Wellness Audit (Beta)
+                                    </span>
+                                </label>
+                            </div>
+
+                            {/* Optional Cinematic Research Consent */}
+                            <div className="bg-pink-500/5 backdrop-blur-sm rounded-xl p-4 border border-pink-500/10 hover:bg-pink-500/10 transition-colors">
+                                <label className="flex items-start gap-4 cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        checked={researchB}
+                                        onChange={e => setResearchB(e.target.checked)}
+                                        className="mt-1 w-5 h-5 accent-pink-500"
+                                    />
+                                    <div className="space-y-1">
+                                        <span className="text-[10px] text-pink-500 font-black uppercase tracking-[0.2em] block">
+                                            "I'm with them. Archive us."
+                                        </span>
+                                        <span className="text-[9px] text-gray-500 leading-tight block italic">
+                                            Signals are stripped of identifiers and stored as pure statistical friction. Collective anonymity is guaranteed.
+                                        </span>
+                                    </div>
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -448,7 +501,7 @@ export default function CouplePage() {
     );
 
     // 3. RECORDING STEPS
-    if (phase === 'step1' || phase === 'step2' || phase === 'step3') {
+    if (phase === 'step1' || phase === 'step2' || phase === 'step3' || phase === 'step4') {
         const step = STEPS[phase];
 
         return (
@@ -458,7 +511,16 @@ export default function CouplePage() {
 
                 <div className="z-10 w-full max-w-2xl mx-auto text-center space-y-8">
                     {/* Header */}
-                    <div className="space-y-2">
+                    <div className="space-y-4">
+                        <div className="flex justify-center gap-3 mb-8">
+                            {['step1', 'step2', 'step3', 'step4'].map((s) => (
+                                <div
+                                    key={s}
+                                    className={`w-3 h-3 rounded-full transition-colors ${phase === s ? 'bg-cyan-400' : 'bg-gray-700'
+                                        }`}
+                                />
+                            ))}
+                        </div>
                         <div className={`text-xs font-bold uppercase tracking-[0.3em] ${step.color} animate-pulse`}>
                             {isRecording ? step.title : `Preparing: ${step.subtitle}`}
                         </div>
@@ -524,7 +586,7 @@ export default function CouplePage() {
                 </div>
                 <div className="space-y-2">
                     <div className="text-xl font-bold uppercase tracking-widest">Processing Data</div>
-                    <div className="text-xs text-gray-500">Compiling 3-Stage Analysis...</div>
+                    <div className="text-xs text-gray-500">Compiling 4-Stage Analysis...</div>
                 </div>
             </div>
         </main>

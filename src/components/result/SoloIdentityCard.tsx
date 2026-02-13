@@ -137,12 +137,14 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
             <div
                 ref={cardRef}
                 data-capture-target="solo-card"
-                className="relative w-full aspect-[4/5] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col p-10 md:p-14 border border-white/10 font-sans select-none"
+                className="relative w-full aspect-[4/5] rounded-[3rem] shadow-2xl overflow-hidden flex flex-col p-12 md:p-16 border border-white/10 font-sans select-none"
                 style={{
                     width: '100%',
+                    maxWidth: '480px',
                     backgroundColor: '#050505',
                     color: '#ffffff',
-                    position: 'relative'
+                    position: 'relative',
+                    margin: '0 auto'
                 }}
             >
                 {/* SAFE BACKGROUND FOR CAPTURE */}
@@ -162,31 +164,15 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                             : `radial-gradient(circle, ${mbtiInfo.color}33 0%, rgba(0, 0, 0, 0) 70%)`
                     }} />
 
-                {/* SILHOUETTE ASSET - Using provided images (Hidden for ELON) */}
-                {voiceTypeCode !== 'ELON' && (
-                    <div className="absolute inset-0 flex items-center justify-center opacity-[0.07] pointer-events-none z-0">
-                        <img
-                            src={voiceInfo.group === 'special' ? '/assets/silhouettes/silhouette_robot.png' :
-                                mbti.startsWith('I') ? '/assets/silhouettes/silhouette_hat_man.png' : '/assets/silhouettes/silhouette_elegant_woman.png'}
-                            alt=""
-                            className="w-full h-full object-contain p-20"
-                        />
-                    </div>
-                )}
 
-                {/* SAND TEXTURE (ELON Mode Only) */}
-                {voiceTypeCode === 'ELON' && (
-                    <div className="absolute inset-0 opacity-[0.15] pointer-events-none mix-blend-overlay z-0 bg-[url('https://www.transparenttextures.com/patterns/sandpaper.png')]" />
-                )}
-
-                {/* NOISE OVERLAY */}
+                {/* RAW NOISE OVERLAY (REPLACES EXTERNAL SANDPAPER FOR CORS/DOWNLOAD SAFETY) */}
                 <div
-                    className="absolute inset-0 opacity-[0.05] pointer-events-none mix-blend-overlay z-0"
-                    style={{ backgroundImage: `url("${NOISE_DATA_URL}")`, backgroundRepeat: 'repeat' }}
+                    className="absolute inset-0 opacity-[0.08] pointer-events-none mix-blend-overlay z-0"
+                    style={{ backgroundImage: `url("${NOISE_DATA_URL}")`, backgroundRepeat: 'repeat', backgroundSize: '200px' }}
                 />
 
-                {/* HEADER - Increased padding to clear rounded corners */}
-                <div className="relative z-10 flex items-center justify-between mb-4 md:mb-6 px-4 md:px-6">
+                {/* HEADER - Increased padding to clear rounded corners (Fixed clipping) */}
+                <div className="relative z-10 flex items-center justify-between mb-6 md:mb-8 px-8 md:px-12">
                     <div className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.4em]"
                         style={{ color: voiceTypeCode === 'ELON' ? '#cbd5e1' : '#ffffff99' }}>
                         Truth Card
@@ -198,7 +184,7 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                 </div>
 
                 {/* MAIN PROFILE AREA */}
-                <div className="relative flex-grow flex flex-col justify-center space-y-6 md:space-y-10 z-10 px-4">
+                <div className="relative flex-grow flex flex-col justify-center space-y-6 md:space-y-10 z-10 px-6">
 
                     {/* PSYCHOLOGICAL BLUEPRINT - Skip for special modes like ELON */}
                     {voiceInfo.group !== 'special' && (
@@ -219,7 +205,7 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                     )}
 
                     {/* GAP INDICATOR */}
-                    <div className="relative py-2 px-6 md:px-12">
+                    <div className="relative py-2 px-8 md:px-16">
                         <div className="flex justify-between items-center mb-2">
                             <span className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.3em]"
                                 style={{ color: voiceTypeCode === 'ELON' ? 'rgba(148, 163, 184, 0.5)' : 'rgba(255, 255, 255, 0.3)' }}>Identity Gap</span>
@@ -272,17 +258,17 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                 </div>
 
                 {/* IDENTITY ARCHETYPE BOX */}
-                <div className="relative z-10 rounded-[1.5rem] p-6 md:p-8 border shadow-2xl mt-6 mx-2 md:mx-4"
+                <div className="relative z-10 rounded-[2rem] p-8 md:p-10 border shadow-2xl mt-6 mx-4 md:mx-6"
                     style={{
                         backgroundColor: voiceTypeCode === 'ELON' ? 'rgba(127, 29, 29, 0.4)' : 'rgba(0, 0, 0, 0.6)',
                         borderColor: voiceTypeCode === 'ELON' ? 'rgba(226, 232, 240, 0.3)' : 'rgba(255, 255, 255, 0.1)',
                         boxShadow: voiceTypeCode === 'ELON' ? '0 10px 30px rgba(0,0,0,0.5)' : 'none'
                     }}>
-                    <div className="text-[9px] md:text-[11px] font-black uppercase tracking-[0.3em] mb-3 text-center"
+                    <div className="text-[9px] md:text-[11px] font-black uppercase tracking-[0.3em] mb-4 text-center"
                         style={{ color: voiceTypeCode === 'ELON' ? '#cbd5e1' : '#22d3ee' }}>
                         Identity Result
                     </div>
-                    <div className="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-center leading-[1] mb-4"
+                    <div className="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-center leading-[1] mb-5"
                         style={{
                             color: voiceTypeCode === 'ELON' ? '#f8fafc' : '#ffffff',
                             background: voiceTypeCode === 'ELON'
@@ -294,7 +280,7 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                         }}>
                         "{identityData?.brandName || 'PROCESSING...'}"
                     </div>
-                    <p className="text-[11px] md:text-[13px] font-medium italic leading-relaxed text-center px-4"
+                    <p className="text-[11px] md:text-[13px] font-medium italic leading-relaxed text-center px-6"
                         style={{ color: voiceTypeCode === 'ELON' ? '#cbd5e1' : '#9ca3af' }}>
                         {identityData?.roast || 'Decoding vocal signature...'}
                     </p>
@@ -304,8 +290,8 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                     </div>
                 </div>
 
-                {/* FOOTER - Increased padding and added margin from bottom edge */}
-                <div className="relative z-10 mt-auto flex justify-between items-center px-6 pb-2"
+                {/* FOOTER - Increased items spacing and bounds (Fixed clipping) */}
+                <div className="relative z-10 mt-auto flex justify-between items-center px-10 pb-6"
                     style={{ opacity: voiceTypeCode === 'ELON' ? 0.7 : 0.5 }}>
                     <div className="text-[8px] font-black tracking-[0.2em] uppercase"
                         style={{ color: voiceTypeCode === 'ELON' ? '#cbd5e1' : '#ffffff' }}>Auth: Bio-Metric</div>
@@ -337,11 +323,6 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                     )}
                 </button>
 
-                {/* SCREENSHOT HINT */}
-                <div className="flex items-center gap-2 text-[10px] text-red-500/70 uppercase tracking-widest font-black animate-pulse">
-                    <span className="w-2 h-2 rounded-full bg-red-500" />
-                    Screenshot to Save
-                </div>
             </div>
 
             {/* 3. INVISIBLE OVERLAY FOR MOBILE SAVE */}

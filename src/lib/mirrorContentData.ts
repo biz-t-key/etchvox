@@ -617,7 +617,7 @@ export const FULL_CONTENT_DATA: Record<string, any> = {
         ]
     },
 
-    // ===== CINEMATIC GRIT SCENARIOS =====
+    // ===== MAVERICK SCENARIOS =====
     iron_contract: {
         days: [
             {
