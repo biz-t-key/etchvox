@@ -9,15 +9,21 @@ const polar = new Polar({
 
 export async function POST(request: NextRequest) {
     try {
+        // Config Verification
+        if (!POLAR_CONFIG.ACCESS_TOKEN) {
+            console.error('[Polar API] Missing POLAR_ACCESS_TOKEN');
+            return NextResponse.json({ error: 'Polar API configuration missing (Token)' }, { status: 500 });
+        }
+
         const { userHash, resultId, plan } = await request.json();
 
         if (!plan) {
-            return NextResponse.json({ error: 'Missing plan' }, { status: 400 });
+            return NextResponse.json({ error: 'Missing plan selection' }, { status: 400 });
         }
 
         const validPlans = ['weekly', 'monthly', 'solo', 'couple', 'spy'];
         if (!validPlans.includes(plan)) {
-            return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
+            return NextResponse.json({ error: `Invalid plan: ${plan}` }, { status: 400 });
         }
 
         // Select Product ID based on plan
@@ -41,8 +47,9 @@ export async function POST(request: NextRequest) {
         }
 
         if (!productId) {
+            console.error(`[Polar API] Product ID missing for plan: ${plan}. Check environment variables.`);
             return NextResponse.json(
-                { error: 'Product ID not configured' },
+                { error: `Product configuration missing for ${plan}` },
                 { status: 500 }
             );
         }
@@ -50,7 +57,7 @@ export async function POST(request: NextRequest) {
         // Create Checkout Session via Polar SDK
         const checkout = await polar.checkouts.create({
             products: [productId],
-            successUrl: `${request.nextUrl.origin}/status/success?resultId=${resultId}`,
+            successUrl: `${request.nextUrl.origin}/result/${resultId}?status=success`,
             metadata: {
                 user_hash: userHash || '',
                 result_id: resultId || '',
@@ -62,7 +69,11 @@ export async function POST(request: NextRequest) {
     } catch (error: any) {
         console.error('Polar Checkout error:', error);
         return NextResponse.json(
-            { error: error.message || 'Failed to create checkout' },
+            {
+                error: 'Failed to create checkout',
+                details: error.message || 'Unknown error',
+                code: error.status || 500
+            },
             { status: 500 }
         );
     }

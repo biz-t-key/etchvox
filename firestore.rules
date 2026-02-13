@@ -14,6 +14,12 @@ service cloud.firestore {
       allow update, delete: if false; 
     }
 
+    // 3. 【サブスクリプション】ユーザーハッシュに基づくステータス確認
+    match /subscriptions/{userHash} {
+      allow read: if true;
+      allow write: if false; // 書き込みはサーバー（Webhook）側からのみ実行
+    }
+
     // デフォルトはすべて禁止
     match /{document=**} {
       allow read, write: if false;
