@@ -516,7 +516,20 @@ export default function ResultPage() {
                                                     Authorized Personnel Only
                                                 </div>
                                             </button>
-                                            <div className="mt-12 text-[9px] text-gray-500 uppercase tracking-widest font-black">
+                                            <button
+                                                onClick={async () => {
+                                                    setCheckoutLoading(true);
+                                                    const data = await getResult(resultId);
+                                                    if (data?.isPremium) {
+                                                        setResult(data);
+                                                    }
+                                                    setCheckoutLoading(false);
+                                                }}
+                                                className="mt-4 text-[9px] text-gray-400 hover:text-white uppercase tracking-widest font-black transition-colors"
+                                            >
+                                                Already purchased? Refresh status
+                                            </button>
+                                            <div className="mt-8 text-[9px] text-gray-500 uppercase tracking-widest font-black">
                                                 Scroll for Acoustic Metrics
                                             </div>
                                         </div>

@@ -11,6 +11,8 @@ import { polishAudio } from '@/lib/audioPolisher';
 import MirrorDashboard from '@/components/mirror/MirrorDashboard';
 import SubscriptionWall from '@/components/mirror/SubscriptionWall';
 import { checkSubscription } from '@/lib/subscription';
+import { isFirebaseConfigured, getDb } from '@/lib/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
 import Link from 'next/link';
 
 type Phase = 'auth' | 'calibration' | 'archetype' | 'genre' | 'scenario' | 'mood' | 'reading' | 'analyzing' | 'polishing' | 'result' | 'recap';
@@ -97,6 +99,41 @@ export default function MirrorPage() {
             setCheckingSubscription(false);
         }
     }
+
+    // ✅ Real-time Subscription Listener for Mirror
+    useEffect(() => {
+        if (!isFirebaseConfigured() || !userHash) return;
+
+        const db = getDb();
+        const subRef = doc(db, 'subscriptions', userHash);
+
+        const unsubscribe = onSnapshot(subRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const subData = snapshot.data();
+                const now = new Date();
+                const expiresAt = subData.expiresAt?.toDate ? subData.expiresAt.toDate() : new Date(subData.expiresAt);
+                const isActive = subData.status === 'active' && expiresAt > now;
+
+                setHasSubscription(isActive);
+                if (isActive && phase === 'auth') {
+                    setPhase('calibration');
+                }
+
+                // Sync to localStorage
+                localStorage.setItem('etchvox_subscription', JSON.stringify({
+                    isActive,
+                    expiresAt: expiresAt.toISOString(),
+                    plan: subData.plan
+                }));
+
+                console.log(`[Mirror Sync] Subscription: ${isActive ? 'ACTIVE' : 'INACTIVE'}`);
+            }
+        }, (error) => {
+            console.error('Firestore Mirror Sub listener error:', error);
+        });
+
+        return () => unsubscribe();
+    }, [userHash, phase]);
 
     function loadMirrorPreference() {
         if (typeof window === 'undefined') return;
@@ -383,7 +420,7 @@ export default function MirrorPage() {
 
     // Show subscription wall if not subscribed
     if (!checkingSubscription && hasSubscription === false && userHash) {
-        return <SubscriptionWall userHash={userHash} />;
+        return <SubscriptionWall userHash={userHash} setHasSubscription={setHasSubscription} />;
     }
 
     // Auth phase

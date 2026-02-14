@@ -1,10 +1,10 @@
-'use client';
-
 import { useState } from 'react';
 import { POLAR_CONFIG } from '@/config/features';
+import { checkSubscription } from '@/lib/subscription';
 
 interface SubscriptionWallProps {
     userHash: string;
+    setHasSubscription: (val: boolean | null) => void;
 }
 
 export default function SubscriptionWall({ userHash }: SubscriptionWallProps) {
@@ -233,6 +233,20 @@ export default function SubscriptionWall({ userHash }: SubscriptionWallProps) {
                                 {isLoading ? 'INITIALIZING...' : 'Acquire 30-Day Pass'}
                             </button>
                         </div>
+                    </div>
+
+                    <div className="text-center">
+                        <button
+                            onClick={async () => {
+                                setIsLoading(true);
+                                const subStatus = await checkSubscription(userHash);
+                                setHasSubscription(subStatus.isActive);
+                                setIsLoading(false);
+                            }}
+                            className="text-[10px] text-gray-500 hover:text-white uppercase tracking-widest font-black transition-colors"
+                        >
+                            Already purchased? Refresh status
+                        </button>
                     </div>
                 </div>
 
