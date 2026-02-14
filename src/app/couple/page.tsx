@@ -431,7 +431,7 @@ export default function CouplePage() {
                         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-pink-500 border-b border-pink-500/20 pb-2">Partner Beta Consent</h3>
                         <div className="space-y-4">
                             {/* Mandatory Legal Group */}
-                            <div className="space-y-2 p-3 rounded-xl border border-white/5 bg-black/20">
+                            <div className="space-y-2 p-4 rounded-xl border border-white/5 bg-black/20">
                                 <label className="flex items-start gap-3 cursor-pointer group">
                                     <input
                                         type="checkbox"
@@ -443,10 +443,11 @@ export default function CouplePage() {
                                             setPrivacyB(val);
                                             setWellnessB(val);
                                         }}
-                                        className="mt-1 w-5 h-5 accent-pink-500"
+                                        className="mt-1 w-5 h-5 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-pink-500"
                                     />
-                                    <span className="text-[10px] text-gray-500 group-hover:text-white transition-colors uppercase font-bold tracking-tighter">
-                                        Accept Terms, Privacy, & Wellness Audit (Beta)
+                                    <span className="text-[10px] text-gray-400 leading-relaxed select-none block font-bold transition-colors group-hover:text-white uppercase tracking-wider">
+                                        Accept Terms, Privacy, & Wellness Audit (Beta).
+                                        <span className="block text-[9px] opacity-70 mt-1">I confirm I am 13+.</span>
                                     </span>
                                 </label>
                             </div>
@@ -458,14 +459,14 @@ export default function CouplePage() {
                                         type="checkbox"
                                         checked={researchB}
                                         onChange={e => setResearchB(e.target.checked)}
-                                        className="mt-1 w-5 h-5 accent-pink-500"
+                                        className="mt-1 w-5 h-5 rounded border-pink-500/30 bg-black/50 cursor-pointer flex-shrink-0 accent-pink-500"
                                     />
                                     <div className="space-y-1">
-                                        <span className="text-[10px] text-pink-500 font-black uppercase tracking-[0.2em] block">
-                                            "I'm with them. Archive us."
+                                        <span className="text-[10px] text-pink-500 font-black uppercase tracking-[0.2em] block mb-1">
+                                            Optional: Archive My Soul
                                         </span>
-                                        <span className="text-[9px] text-gray-500 leading-tight block italic">
-                                            Signals are stripped of identifiers and stored as pure statistical friction. Collective anonymity is guaranteed.
+                                        <span className="text-[9px] text-gray-500 leading-tight block italic transition-colors group-hover:text-gray-200">
+                                            Authorize capture of resonance for neutral statistical modeling. Data is unidentified.
                                         </span>
                                     </div>
                                 </label>
