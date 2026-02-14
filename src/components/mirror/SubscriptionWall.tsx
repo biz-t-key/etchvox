@@ -243,7 +243,7 @@ export default function SubscriptionWall({ userHash, setHasSubscription }: Subsc
                                 setHasSubscription(subStatus.isActive);
                                 setIsLoading(false);
                             }}
-                            className="text-[10px] text-gray-500 hover:text-white uppercase tracking-widest font-black transition-colors"
+                            className="text-xs text-gray-400 hover:text-white underline uppercase tracking-widest font-black transition-colors"
                         >
                             Already purchased? Refresh status
                         </button>

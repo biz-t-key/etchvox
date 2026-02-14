@@ -525,7 +525,7 @@ export default function ResultPage() {
                                                     }
                                                     setCheckoutLoading(false);
                                                 }}
-                                                className="mt-4 text-[9px] text-gray-400 hover:text-white uppercase tracking-widest font-black transition-colors"
+                                                className="mt-4 text-xs text-gray-400 hover:text-white underline uppercase tracking-widest font-black transition-colors"
                                             >
                                                 Already purchased? Refresh status
                                             </button>

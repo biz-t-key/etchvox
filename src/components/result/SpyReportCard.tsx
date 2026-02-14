@@ -212,8 +212,42 @@ const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, re
             </div>
 
             <div className="message-box border-t border-dashed border-zinc-300 pt-6 min-h-[140px] text-sm leading-relaxed text-zinc-800 relative z-10">
-                <span className="whitespace-pre-wrap">{isScrambling ? scrambleText(displayedMessage) : displayedMessage}</span>
+                <span className="whitespace-pre-wrap">
+                    {!isPremium ? scrambleText(displayedMessage) : displayedMessage}
+                </span>
                 {isTyping && <span className="cursor inline-block w-2 h-4 bg-zinc-800 ml-1 animate-pulse" />}
+
+                {/* PREMIUM GATE OVERLAY */}
+                {!isPremium && !isTyping && (
+                    <div className="absolute inset-x-0 bottom-0 top-6 bg-gradient-to-t from-white via-white/95 to-transparent flex flex-col items-center justify-end pb-4 space-y-4 z-40">
+                        <div className="text-[10px] font-black text-red-700 uppercase tracking-widest animate-pulse">
+                            [ INTEL_LOCKED: neural_signature_required ]
+                        </div>
+                        <button
+                            onClick={onUnlock}
+                            className="bg-zinc-900 text-white text-[10px] font-black px-6 py-3 rounded uppercase tracking-[0.2em] hover:bg-red-700 transition-all shadow-lg active:scale-95"
+                        >
+                            Unlock Intelligence Access
+                        </button>
+                        <button
+                            onClick={async () => {
+                                if (typeof window === 'undefined') return;
+                                const { getResult } = await import('@/lib/storage');
+                                const urlParts = window.location.pathname.split('/');
+                                const resultId = urlParts[urlParts.length - 1];
+                                if (resultId) {
+                                    const data = await getResult(resultId);
+                                    if (data?.isPremium) {
+                                        window.location.reload(); // Simplest way to re-propagate
+                                    }
+                                }
+                            }}
+                            className="text-[10px] text-zinc-400 hover:text-zinc-900 underline uppercase tracking-widest font-black transition-colors"
+                        >
+                            Already purchased? Refresh status
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Self-Destruct flow disabled per user request */}
