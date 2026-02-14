@@ -146,26 +146,40 @@ export default function ResultPage() {
         loadResult();
     }, [resultId]);
 
-    // ✅ Real-time updates: Listen for AI analysis completion
+    // ✅ Real-time updates: Listen for AI analysis completion & Payment Unlocks
     useEffect(() => {
         if (!isFirebaseConfigured() || !resultId) return;
 
         const db = getDb();
         const resultRef = doc(db, 'results', resultId);
+        const userHash = typeof window !== 'undefined' ? localStorage.getItem('etchvox_user_hash') : null;
 
-        const unsubscribe = onSnapshot(resultRef, (snapshot) => {
+        // 1. Listen to the Specific Result (for Single Purchase Unlocks)
+        const unsubscribeResult = onSnapshot(resultRef, (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.data();
+
+                // Track if premium status just flipped
                 setResult((prev) => {
                     if (!prev) return prev;
-                    return {
+
+                    const updated = {
                         ...prev,
                         aiAnalysis: data.aiAnalysis,
                         aiAnalysisError: data.aiAnalysisError,
-                        vaultEnabled: true, // Always enabled now
+                        vaultEnabled: true,
                         mbti: data.mbti,
                         metrics: data.metrics || prev.metrics,
+                        isPremium: data.isPremium || prev.isPremium,
+                        purchasedAt: data.purchasedAt || prev.purchasedAt
                     } as VoiceResult;
+
+                    // SYNC TO LOCAL STORAGE: Prevent stale data on refresh
+                    if (typeof window !== 'undefined') {
+                        localStorage.setItem(`etchvox_result_${resultId}`, JSON.stringify(updated));
+                    }
+
+                    return updated;
                 });
 
                 if (data.mbti && !selectedMBTI) {
@@ -173,10 +187,42 @@ export default function ResultPage() {
                 }
             }
         }, (error) => {
-            console.error('Firestore listener error:', error);
+            console.error('Firestore Result listener error:', error);
         });
 
-        return () => unsubscribe();
+        // 2. Listen to User's Subscription (for Monthly/Weekly Unlocks)
+        let unsubscribeSub = () => { };
+        if (userHash) {
+            const subRef = doc(db, 'subscriptions', userHash);
+            unsubscribeSub = onSnapshot(subRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const subData = snapshot.data();
+                    const now = new Date();
+                    const expiresAt = subData.expiresAt?.toDate ? subData.expiresAt.toDate() : new Date(subData.expiresAt);
+                    const isActive = subData.status === 'active' && expiresAt > now;
+
+                    setIsSubscribed(isActive);
+
+                    // SYNC TO LOCAL STORAGE
+                    if (typeof window !== 'undefined') {
+                        localStorage.setItem('etchvox_subscription', JSON.stringify({
+                            isActive,
+                            expiresAt: expiresAt.toISOString(),
+                            plan: subData.plan
+                        }));
+                    }
+
+                    console.log(`[Sync] Subscription state updated: ${isActive ? 'ACTIVE' : 'INACTIVE'}`);
+                }
+            }, (error) => {
+                console.error('Firestore Subscription listener error:', error);
+            });
+        }
+
+        return () => {
+            unsubscribeResult();
+            unsubscribeSub();
+        };
     }, [resultId, selectedMBTI]);
 
     const handleCheckout = async (type: 'solo' | 'couple' | 'spy') => {
