@@ -7,7 +7,7 @@ interface SubscriptionWallProps {
     setHasSubscription: (val: boolean | null) => void;
 }
 
-export default function SubscriptionWall({ userHash }: SubscriptionWallProps) {
+export default function SubscriptionWall({ userHash, setHasSubscription }: SubscriptionWallProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [activeStep, setActiveStep] = useState(0);
