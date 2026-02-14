@@ -238,11 +238,11 @@ const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, re
                                 if (resultId) {
                                     const data = await getResult(resultId);
                                     if (data?.isPremium) {
-                                        window.location.reload(); // Simplest way to re-propagate
+                                        window.location.reload();
                                     }
                                 }
                             }}
-                            className="text-[10px] text-zinc-400 hover:text-zinc-900 underline uppercase tracking-widest font-black transition-colors"
+                            className="py-3 px-4 text-[10px] text-zinc-500 hover:text-zinc-900 underline uppercase tracking-widest font-black transition-colors touch-manipulation relative z-50"
                         >
                             Already purchased? Refresh status
                         </button>
