@@ -402,348 +402,388 @@ function MirrorContent() {
         calculateProgress();
     }
 
-    if (checkingSubscription) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
-                <div className="text-center space-y-4">
-                    <div className="w-16 h-16 mx-auto border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-                    <p className="text-gray-400 text-sm">Checking subscription...</p>
-                </div>
-            </div>
-        );
-    }
-
-    if (!checkingSubscription && hasSubscription === false && userHash) {
-        return <SubscriptionWall userHash={userHash} setHasSubscription={setHasSubscription} />;
-    }
-
-    if (phase === 'auth' || (isNewUser && showMnemonic)) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
-                <div className="max-w-lg w-full space-y-8 bg-white/5 backdrop-blur-sm p-10 rounded-2xl border border-white/10">
-                    <div className="text-center space-y-2">
-                        <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                            Voice Mirror
-                        </h1>
-                        <p className="text-gray-400 text-sm">Zero-Knowledge Authentication</p>
+    function renderContent() {
+        if (checkingSubscription) {
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+                    <div className="text-center space-y-4">
+                        <div className="w-16 h-16 mx-auto border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+                        <p className="text-gray-400 text-sm">Checking subscription...</p>
                     </div>
+                </div>
+            );
+        }
 
-                    {isNewUser && showMnemonic ? (
-                        <div className="space-y-6">
-                            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 space-y-3">
-                                <h2 className="text-red-400 font-bold text-sm uppercase tracking-wider">⚠️ Critical: Save Your Recovery Phrase</h2>
-                                <p className="text-gray-300 text-sm leading-relaxed">
-                                    This 12-word phrase is your ONLY way to access your data on a new device.
-                                </p>
-                            </div>
+        if (!checkingSubscription && hasSubscription === false && userHash) {
+            return <SubscriptionWall userHash={userHash} setHasSubscription={setHasSubscription} />;
+        }
 
-                            <div className="bg-black/40 rounded-xl p-6 border border-cyan-500/20">
-                                <div className="grid grid-cols-3 gap-3">
-                                    {mnemonic?.split(' ').map((word, idx) => (
-                                        <div key={idx} className="flex items-center gap-2">
-                                            <span className="text-gray-500 text-xs font-mono">{idx + 1}.</span>
-                                            <span className="text-cyan-400 font-mono font-bold">{word}</span>
-                                        </div>
-                                    ))}
+        if (phase === 'auth' || (isNewUser && showMnemonic)) {
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
+                    <div className="max-w-lg w-full space-y-8 bg-white/5 backdrop-blur-sm p-10 rounded-2xl border border-white/10">
+                        <div className="text-center space-y-2">
+                            <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                                Voice Mirror
+                            </h1>
+                            <p className="text-gray-400 text-sm">Zero-Knowledge Authentication</p>
+                        </div>
+
+                        {isNewUser && showMnemonic ? (
+                            <div className="space-y-6">
+                                <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 space-y-3">
+                                    <h2 className="text-red-400 font-bold text-sm uppercase tracking-wider">⚠️ Critical: Save Your Recovery Phrase</h2>
+                                    <p className="text-gray-300 text-sm leading-relaxed">
+                                        This 12-word phrase is your ONLY way to access your data on a new device.
+                                    </p>
                                 </div>
-                            </div>
 
-                            <button
-                                onClick={() => {
-                                    setShowMnemonic(false);
-                                    setPhase('calibration');
-                                }}
-                                className="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold rounded-xl hover:shadow-[0_0_20px_rgba(34,211,238,0.5)] transition-all"
-                            >
-                                I've Saved It Securely →
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="text-center">
-                            <div className="w-16 h-16 mx-auto border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-                            <p className="text-gray-400 text-sm mt-4">Initializing secure session...</p>
-                        </div>
-                    )}
-                </div>
-            </div>
-        );
-    }
-
-    if (phase === 'result' && calibrationVector && readingVector && selectedMood) {
-        return (
-            <MirrorDashboard
-                calibrationVector={calibrationVector}
-                readingVector={readingVector}
-                onClose={handleDone}
-                context={{
-                    genre: selectedGenre || 'philosophy',
-                    scenario: selectedScenario?.title || 'Unknown',
-                    mood: selectedMood,
-                    dayIndex: currentDayIndex,
-                    progressLevel,
-                    archetype: selectedArchetype || 'optimizer',
-                    readingText,
-                    sampleRate: 48000
-                }}
-                userHash={userHash || ''}
-                wellnessConsentAgreed={researchAccepted}
-                postReadingInsight={(window as any).__lastMirrorPostReading}
-            />
-        );
-    }
-
-    if (phase === 'polishing') {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
-                <div className="text-center space-y-4">
-                    <div className="relative w-24 h-24 mx-auto">
-                        <div className="absolute inset-0 border-4 border-cyan-500/20 rounded-full" />
-                        <div className="absolute inset-0 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-                    </div>
-                    <div>
-                        <h2 className="text-xl font-bold text-white mb-2">Refining Resonance...</h2>
-                        <p className="text-cyan-400 font-mono text-xs animate-pulse uppercase tracking-widest">Applying Neural Filters • High-Pass • EQ • Comp</p>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    if (phase === 'analyzing') {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
-                <div className="text-center space-y-4">
-                    <div className="w-20 h-20 mx-auto border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-                    <p className="text-cyan-400 font-mono text-lg animate-pulse">Extracting bio-acoustic signature...</p>
-                </div>
-            </div>
-        );
-    }
-
-    if (phase === 'calibration' || phase === 'reading') {
-        const isCalibration = phase === 'calibration';
-        const displayText = isCalibration ? CALIBRATION_TEXT : readingText;
-
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
-                <div className="max-w-2xl w-full text-center space-y-12">
-                    <div className="space-y-4">
-                        <h2 className="text-sm font-black uppercase tracking-widest text-cyan-400">
-                            {isCalibration ? '🎯 Calibration' : `📖 Day ${currentDayIndex} Reading ${alreadyRecordedToday ? '(Overwrite)' : ''}`}
-                        </h2>
-                        <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 space-y-4">
-                            {!isCalibration && selectedScenario && (
-                                <div className="text-cyan-400 text-[10px] font-black uppercase tracking-[0.3em] pb-4 border-b border-white/5">
-                                    Direction: {selectedScenario.tone_instruction}
+                                <div className="bg-black/40 rounded-xl p-6 border border-cyan-500/20">
+                                    <div className="grid grid-cols-3 gap-3">
+                                        {mnemonic?.split(' ').map((word, idx) => (
+                                            <div key={idx} className="flex items-center gap-2">
+                                                <span className="text-gray-500 text-xs font-mono">{idx + 1}.</span>
+                                                <span className="text-cyan-400 font-mono font-bold">{word}</span>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-                            )}
-                            <p className="text-2xl text-white leading-relaxed font-serif pt-2">
-                                {displayText}
-                            </p>
-                        </div>
-                    </div>
 
-                    <div className="flex items-center justify-center">
-                        <div className="relative w-32 h-32">
-                            <div className="absolute inset-0 rounded-full border-4 border-cyan-500/30" />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <span className="text-5xl font-black text-cyan-400">{timeLeft}</span>
+                                <button
+                                    onClick={() => {
+                                        setShowMnemonic(false);
+                                        setPhase('calibration');
+                                    }}
+                                    className="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold rounded-xl hover:shadow-[0_0_20px_rgba(34,211,238,0.5)] transition-all"
+                                >
+                                    I've Saved It Securely →
+                                </button>
                             </div>
-                            <div className="absolute inset-0 rounded-full border-4 border-cyan-500 animate-ping" />
-                        </div>
-                    </div>
-
-                    <div className="flex flex-col items-center justify-center gap-6">
-                        <div className="flex items-center justify-center gap-3">
-                            <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-                            <span className="text-red-400 font-mono text-sm">RECORDING</span>
-                        </div>
-
-                        {!isCalibration && (
-                            <button
-                                onClick={() => finishRecording(false)}
-                                className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white text-xs font-black uppercase tracking-[0.2em] rounded-full border border-white/20 transition-all active:scale-95"
-                            >
-                                Finish Recording & Analyze →
-                            </button>
+                        ) : (
+                            <div className="text-center">
+                                <div className="w-16 h-16 mx-auto border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+                                <p className="text-gray-400 text-sm mt-4">Initializing secure session...</p>
+                            </div>
                         )}
                     </div>
                 </div>
-            </div>
-        );
-    }
+            );
+        }
 
-    if (phase === 'archetype') {
-        const archetypes: { id: Archetype; name: string; icon: string; lens: string; desc: string; bg: string; colors: string }[] = [
-            { id: 'optimizer', name: 'The Optimizer', icon: '⚡', lens: 'Efficiency', desc: 'Maximizing resonance and cognitive output.', bg: '/images/bg_optimizer.png', colors: 'from-cyan-500/20 to-blue-500/20' },
-            { id: 'stoic', name: 'The Stoic', icon: '🏛️', lens: 'Equilibrium', desc: 'Finding stillness amidst external turbulence.', bg: '/images/bg_stoic.jpg', colors: 'from-slate-500/20 to-zinc-500/20' },
-            { id: 'alchemist', name: 'The Alchemist', icon: '🧪', lens: 'Flow', desc: 'Transmuting raw emotion into creative heat.', bg: '/images/bg_alchemist.png', colors: 'from-amber-500/20 to-orange-500/20' },
-            { id: 'maverick', name: 'The Maverick', icon: '🔥', lens: 'Ambition', desc: 'Hard-won truth and power in the high-stakes void.', bg: '/images/bg_cinematic_grit.png', colors: 'from-orange-500/20 to-red-600/20' },
-            { id: 'sanctuary', name: 'The Sanctuary', icon: '🌿', lens: 'Restoration', desc: 'Compassionate stillness and sacred fragility.', bg: '/images/bg_sanctuary.png', colors: 'from-emerald-500/20 to-teal-600/20' }
-        ];
+        if (phase === 'result' && calibrationVector && readingVector && selectedMood) {
+            return (
+                <MirrorDashboard
+                    calibrationVector={calibrationVector}
+                    readingVector={readingVector}
+                    onClose={handleDone}
+                    context={{
+                        genre: selectedGenre || 'philosophy',
+                        scenario: selectedScenario?.title || 'Unknown',
+                        mood: selectedMood,
+                        dayIndex: currentDayIndex,
+                        progressLevel,
+                        archetype: selectedArchetype || 'optimizer',
+                        readingText,
+                        sampleRate: 48000
+                    }}
+                    userHash={userHash || ''}
+                    wellnessConsentAgreed={researchAccepted}
+                    postReadingInsight={(window as any).__lastMirrorPostReading}
+                />
+            );
+        }
+
+        if (phase === 'polishing') {
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+                    <div className="text-center space-y-4">
+                        <div className="relative w-24 h-24 mx-auto">
+                            <div className="absolute inset-0 border-4 border-cyan-500/20 rounded-full" />
+                            <div className="absolute inset-0 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-white mb-2">Refining Resonance...</h2>
+                            <p className="text-cyan-400 font-mono text-xs animate-pulse uppercase tracking-widest">Applying Neural Filters • High-Pass • EQ • Comp</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        if (phase === 'analyzing') {
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+                    <div className="text-center space-y-4">
+                        <div className="w-20 h-20 mx-auto border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+                        <p className="text-cyan-400 font-mono text-lg animate-pulse">Extracting bio-acoustic signature...</p>
+                    </div>
+                </div>
+            );
+        }
+
+        if (phase === 'calibration' || phase === 'reading') {
+            const isCalibration = phase === 'calibration';
+            const displayText = isCalibration ? CALIBRATION_TEXT : readingText;
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
+                    <div className="max-w-2xl w-full text-center space-y-12">
+                        <div className="space-y-4">
+                            <h2 className="text-sm font-black uppercase tracking-widest text-cyan-400">
+                                {isCalibration ? '🎯 Calibration' : `📖 Day ${currentDayIndex} Reading ${alreadyRecordedToday ? '(Overwrite)' : ''}`}
+                            </h2>
+                            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 space-y-4">
+                                {!isCalibration && selectedScenario && (
+                                    <div className="text-cyan-400 text-[10px] font-black uppercase tracking-[0.3em] pb-4 border-b border-white/5">
+                                        Direction: {selectedScenario.tone_instruction}
+                                    </div>
+                                )}
+                                <p className="text-2xl text-white leading-relaxed font-serif pt-2">
+                                    {displayText}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-center">
+                            <div className="relative w-32 h-32">
+                                <div className="absolute inset-0 rounded-full border-4 border-cyan-500/30" />
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <span className="text-5xl font-black text-cyan-400">{timeLeft}</span>
+                                </div>
+                                <div className="absolute inset-0 rounded-full border-4 border-cyan-500 animate-ping" />
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col items-center justify-center gap-6">
+                            <div className="flex items-center justify-center gap-3">
+                                <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                                <span className="text-red-400 font-mono text-sm">RECORDING</span>
+                            </div>
+
+                            {!isCalibration && (
+                                <button
+                                    onClick={() => finishRecording(false)}
+                                    className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white text-xs font-black uppercase tracking-[0.2em] rounded-full border border-white/20 transition-all active:scale-95"
+                                >
+                                    Finish Recording & Analyze →
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        if (phase === 'archetype') {
+            const archetypes: { id: Archetype; name: string; icon: string; lens: string; desc: string; bg: string; colors: string }[] = [
+                { id: 'optimizer', name: 'The Optimizer', icon: '⚡', lens: 'Efficiency', desc: 'Maximizing resonance and cognitive output.', bg: '/images/bg_optimizer.png', colors: 'from-cyan-500/20 to-blue-500/20' },
+                { id: 'stoic', name: 'The Stoic', icon: '🏛️', lens: 'Equilibrium', desc: 'Finding stillness amidst external turbulence.', bg: '/images/bg_stoic.jpg', colors: 'from-slate-500/20 to-zinc-500/20' },
+                { id: 'alchemist', name: 'The Alchemist', icon: '🧪', lens: 'Flow', desc: 'Transmuting raw emotion into creative heat.', bg: '/images/bg_alchemist.png', colors: 'from-amber-500/20 to-orange-500/20' },
+                { id: 'maverick', name: 'The Maverick', icon: '🔥', lens: 'Ambition', desc: 'Hard-won truth and power in the high-stakes void.', bg: '/images/bg_cinematic_grit.png', colors: 'from-orange-500/20 to-red-600/20' },
+                { id: 'sanctuary', name: 'The Sanctuary', icon: '🌿', lens: 'Restoration', desc: 'Compassionate stillness and sacred fragility.', bg: '/images/bg_sanctuary.png', colors: 'from-emerald-500/20 to-teal-600/20' }
+            ];
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6 py-12">
+                    <div className="max-w-5xl w-full space-y-12">
+                        <div className="text-center space-y-4">
+                            <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 uppercase tracking-tighter">
+                                Select Your Mirror Lens
+                            </h1>
+                            <p className="text-gray-400 text-sm max-w-lg mx-auto leading-relaxed">
+                                How should the Oracle interpret your voice today?
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {archetypes.map((arch) => (
+                                <button
+                                    key={arch.id}
+                                    onClick={() => handleArchetypeSelect(arch.id)}
+                                    className={`group relative h-[450px] bg-slate-900/40 border border-white/10 rounded-3xl p-8 transition-all overflow-hidden text-left flex flex-col justify-end ${arch.colors}`}
+                                >
+                                    <div className="absolute inset-0 z-0 opacity-40 group-hover:opacity-70 transition-opacity duration-500">
+                                        <img src={arch.bg} alt="" className="w-full h-full object-cover" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+                                    </div>
+
+                                    <div className="relative z-10 space-y-4">
+                                        <div className="text-5xl drop-shadow-2xl">{arch.icon}</div>
+                                        <div>
+                                            <h3 className="text-xl font-bold text-white mb-1">{arch.name}</h3>
+                                            <div className="inline-block px-2 py-0.5 bg-white/10 rounded text-[9px] font-black uppercase tracking-widest text-white/70 border border-white/5 mb-3">
+                                                {arch.lens}
+                                            </div>
+                                        </div>
+                                        <div className="pt-4 border-t border-white/10">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-cyan-500 group-hover:translate-x-1 transition-transform inline-block">
+                                                Select Archetype →
+                                            </span>
+                                        </div>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="text-center">
+                            <button onClick={() => setPhase('calibration')} className="text-gray-500 hover:text-white text-[10px] font-black uppercase tracking-[0.3em] transition">
+                                ← Back to Calibration
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        if (phase === 'genre') {
+            const genres: { id: Genre; name: string; icon: string; desc: string }[] = [
+                { id: 'philosophy', name: 'Philosophy', icon: '🏛️', desc: 'Stoic wisdom and resilience' },
+                { id: 'thriller', name: 'Thriller', icon: '🌊', desc: 'Survival and tension' },
+                { id: 'poetic', name: 'Poetic', icon: '🌙', desc: 'Ethereal and introspective' },
+                { id: 'maverick', name: 'The Maverick', icon: '🥃', desc: 'Hard-won truth and stillness' }
+            ];
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
+                    <div className="max-w-4xl w-full space-y-12">
+                        <div className="text-center space-y-4">
+                            <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                                Select Your Reading Genre
+                            </h1>
+                            <p className="text-gray-400">This choice will be locked for 7 days</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            {genres.map((genre) => (
+                                <button
+                                    key={genre.id}
+                                    onClick={() => handleGenreSelect(genre.id)}
+                                    className="group relative bg-white/5 backdrop-blur-sm hover:bg-white/10 border border-white/10 hover:border-cyan-500/50 rounded-2xl p-8 transition-all hover:shadow-[0_0_30px_rgba(34,211,238,0.3)] text-left flex items-start gap-6"
+                                >
+                                    <div className="text-5xl">{genre.icon}</div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-white mb-2">{genre.name}</h3>
+                                        <p className="text-gray-400 text-sm leading-relaxed">{genre.desc}</p>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="text-center">
+                            <Link href="/" className="text-gray-500 hover:text-gray-300 text-sm transition">
+                                ← Back to Home
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        if (phase === 'scenario' && selectedGenre) {
+            const scenarios = getScenariosByGenre(selectedGenre);
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
+                    <div className="max-w-4xl w-full space-y-12">
+                        <div className="text-center space-y-4">
+                            <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                                Select Your Story
+                            </h1>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {scenarios.map((scenario) => (
+                                <button
+                                    key={scenario.id}
+                                    onClick={() => handleScenarioSelect(scenario)}
+                                    className="group relative bg-white/5 backdrop-blur-sm hover:bg-white/10 border border-white/10 hover:border-cyan-500/50 rounded-2xl p-8 transition-all hover:shadow-[0_0_30px_rgba(34,211,238,0.3)] text-left flex flex-col gap-4"
+                                >
+                                    <h3 className="text-xl font-bold text-white mb-2">{scenario.title}</h3>
+                                    <p className="text-gray-400 text-sm leading-relaxed flex-1">{scenario.description}</p>
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="text-center">
+                            <button onClick={() => setPhase('genre')} className="text-gray-500 hover:text-gray-300 text-sm transition">
+                                ← Back to Genres
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        if (phase === 'mood') {
+            const moods: { id: Mood; name: string; icon: string; desc: string }[] = [
+                { id: 'high', name: 'High Energy', icon: '⚡', desc: 'Intense, provocative' },
+                { id: 'mid', name: 'Balanced', icon: '⚖️', desc: 'Measured, steady' },
+                { id: 'low', name: 'Reflective', icon: '🌊', desc: 'Somber, contemplative' }
+            ];
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
+                    <div className="max-w-2xl w-full space-y-12">
+                        <div className="text-center space-y-4">
+                            <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                                How Are You Feeling?
+                            </h1>
+                            <p className="text-cyan-400 text-sm font-mono">Day {currentDayIndex}/7</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4">
+                            {moods.map((mood) => (
+                                <button
+                                    key={mood.id}
+                                    onClick={() => handleMoodSelect(mood.id)}
+                                    className="group relative bg-white/5 backdrop-blur-sm hover:bg-white/10 border border-white/10 hover:border-cyan-500/50 rounded-2xl p-6 transition-all hover:shadow-[0_0_30px_rgba(34,211,238,0.3)] flex items-center gap-6"
+                                >
+                                    <div className="text-4xl">{mood.icon}</div>
+                                    <div className="flex-1 text-left">
+                                        <h3 className="text-xl font-bold text-white">{mood.name}</h3>
+                                        <p className="text-gray-400 text-sm">{mood.desc}</p>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
 
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6 py-12">
-                <div className="max-w-5xl w-full space-y-12">
-                    <div className="text-center space-y-4">
-                        <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 uppercase tracking-tighter">
-                            Select Your Mirror Lens
-                        </h1>
-                        <p className="text-gray-400 text-sm max-w-lg mx-auto leading-relaxed">
-                            How should the Oracle interpret your voice today?
+            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
+                <div className="max-w-md w-full space-y-8 bg-white/5 backdrop-blur-sm p-10 rounded-2xl border border-white/10 text-center">
+                    <div className="space-y-4">
+                        <h1 className="text-4xl font-black text-white uppercase tracking-widest">Mirror</h1>
+                        <div className="flex items-center justify-center gap-2">
+                            <div className="px-3 py-1 bg-cyan-500/10 border border-cyan-500/50 rounded text-cyan-400 text-[10px] font-black uppercase tracking-widest">
+                                {progressLevel.toUpperCase()} LEVEL
+                            </div>
+                            <div className="px-3 py-1 bg-blue-500/10 border border-blue-500/50 rounded text-blue-400 text-[10px] font-black uppercase tracking-widest">
+                                DAY {currentDayIndex}/7
+                            </div>
+                        </div>
+                        <p className="text-gray-400 text-sm leading-relaxed">
+                            Authorized recording session for AI resonance training and tactical biometric feedback.
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {archetypes.map((arch) => (
-                            <button
-                                key={arch.id}
-                                onClick={() => handleArchetypeSelect(arch.id)}
-                                className={`group relative h-[450px] bg-slate-900/40 border border-white/10 rounded-3xl p-8 transition-all overflow-hidden text-left flex flex-col justify-end ${arch.colors}`}
-                            >
-                                <div className="absolute inset-0 z-0 opacity-40 group-hover:opacity-70 transition-opacity duration-500">
-                                    <img src={arch.bg} alt="" className="w-full h-full object-cover" />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
-                                </div>
-
-                                <div className="relative z-10 space-y-4">
-                                    <div className="text-5xl drop-shadow-2xl">{arch.icon}</div>
-                                    <div>
-                                        <h3 className="text-xl font-bold text-white mb-1">{arch.name}</h3>
-                                        <div className="inline-block px-2 py-0.5 bg-white/10 rounded text-[9px] font-black uppercase tracking-widest text-white/70 border border-white/5 mb-3">
-                                            {arch.lens}
-                                        </div>
-                                    </div>
-                                    <div className="pt-4 border-t border-white/10">
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-cyan-500 group-hover:translate-x-1 transition-transform inline-block">
-                                            Select Archetype →
-                                        </span>
-                                    </div>
-                                </div>
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="text-center">
-                        <button onClick={() => setPhase('calibration')} className="text-gray-500 hover:text-white text-[10px] font-black uppercase tracking-[0.3em] transition">
-                            ← Back to Calibration
+                    <div className="space-y-6">
+                        <button
+                            onClick={() => startRecording(true)}
+                            disabled={!legalAccepted || (alreadyRecordedToday && !isDevMode)}
+                            className="w-full py-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xl font-black uppercase tracking-widest rounded-3xl hover:shadow-[0_0_40px_rgba(34,211,238,0.4)] transition-all disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed transform active:scale-95"
+                        >
+                            <span className="mr-3">🎤</span>
+                            {(alreadyRecordedToday && !isDevMode) ? 'Session Locked' : 'INITIATE CALIBRATION'}
                         </button>
-                    </div>
-                </div>
-            </div>
-        );
-    }
 
-    if (phase === 'genre') {
-        const genres: { id: Genre; name: string; icon: string; desc: string }[] = [
-            { id: 'philosophy', name: 'Philosophy', icon: '🏛️', desc: 'Stoic wisdom and resilience' },
-            { id: 'thriller', name: 'Thriller', icon: '🌊', desc: 'Survival and tension' },
-            { id: 'poetic', name: 'Poetic', icon: '🌙', desc: 'Ethereal and introspective' },
-            { id: 'maverick', name: 'The Maverick', icon: '🥃', desc: 'Hard-won truth and stillness' }
-        ];
-
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
-                <div className="max-w-4xl w-full space-y-12">
-                    <div className="text-center space-y-4">
-                        <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                            Select Your Reading Genre
-                        </h1>
-                        <p className="text-gray-400">This choice will be locked for 7 days</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        {genres.map((genre) => (
-                            <button
-                                key={genre.id}
-                                onClick={() => handleGenreSelect(genre.id)}
-                                className="group relative bg-white/5 backdrop-blur-sm hover:bg-white/10 border border-white/10 hover:border-cyan-500/50 rounded-2xl p-8 transition-all hover:shadow-[0_0_30px_rgba(34,211,238,0.3)] text-left flex items-start gap-6"
-                            >
-                                <div className="text-5xl">{genre.icon}</div>
-                                <div>
-                                    <h3 className="text-xl font-bold text-white mb-2">{genre.name}</h3>
-                                    <p className="text-gray-400 text-sm leading-relaxed">{genre.desc}</p>
-                                </div>
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="text-center">
-                        <Link href="/" className="text-gray-500 hover:text-gray-300 text-sm transition">
-                            ← Back to Home
-                        </Link>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    if (phase === 'scenario' && selectedGenre) {
-        const scenarios = getScenariosByGenre(selectedGenre);
-
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
-                <div className="max-w-4xl w-full space-y-12">
-                    <div className="text-center space-y-4">
-                        <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                            Select Your Story
-                        </h1>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {scenarios.map((scenario) => (
-                            <button
-                                key={scenario.id}
-                                onClick={() => handleScenarioSelect(scenario)}
-                                className="group relative bg-white/5 backdrop-blur-sm hover:bg-white/10 border border-white/10 hover:border-cyan-500/50 rounded-2xl p-8 transition-all hover:shadow-[0_0_30px_rgba(34,211,238,0.3)] text-left flex flex-col gap-4"
-                            >
-                                <h3 className="text-xl font-bold text-white mb-2">{scenario.title}</h3>
-                                <p className="text-gray-400 text-sm leading-relaxed flex-1">{scenario.description}</p>
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="text-center">
-                        <button onClick={() => setPhase('genre')} className="text-gray-500 hover:text-gray-300 text-sm transition">
-                            ← Back to Genres
-                        </button>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    if (phase === 'mood') {
-        const moods: { id: Mood; name: string; icon: string; desc: string }[] = [
-            { id: 'high', name: 'High Energy', icon: '⚡', desc: 'Intense, provocative' },
-            { id: 'mid', name: 'Balanced', icon: '⚖️', desc: 'Measured, steady' },
-            { id: 'low', name: 'Reflective', icon: '🌊', desc: 'Somber, contemplative' }
-        ];
-
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
-                <div className="max-w-2xl w-full space-y-12">
-                    <div className="text-center space-y-4">
-                        <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                            How Are You Feeling?
-                        </h1>
-                        <p className="text-cyan-400 text-sm font-mono">Day {currentDayIndex}/7</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4">
-                        {moods.map((mood) => (
-                            <button
-                                key={mood.id}
-                                onClick={() => handleMoodSelect(mood.id)}
-                                className="group relative bg-white/5 backdrop-blur-sm hover:bg-white/10 border border-white/10 hover:border-cyan-500/50 rounded-2xl p-6 transition-all hover:shadow-[0_0_30px_rgba(34,211,238,0.3)] flex items-center gap-6"
-                            >
-                                <div className="text-4xl">{mood.icon}</div>
-                                <div className="flex-1 text-left">
-                                    <h3 className="text-xl font-bold text-white">{mood.name}</h3>
-                                    <p className="text-gray-400 text-sm">{mood.desc}</p>
-                                </div>
-                            </button>
-                        ))}
+                        <div className="text-center">
+                            <Link href="/" className="text-gray-500 hover:text-white text-[10px] uppercase tracking-[0.3em] font-black transition-all">
+                                ← RETURN TO SYSTEM HOME
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -751,95 +791,70 @@ function MirrorContent() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
-            <div className="max-w-md w-full space-y-8 bg-white/5 backdrop-blur-sm p-10 rounded-2xl border border-white/10 text-center">
-                <div className="space-y-4">
-                    <h1 className="text-4xl font-black text-white uppercase tracking-widest">Mirror</h1>
-                    <div className="flex items-center justify-center gap-2">
-                        <div className="px-3 py-1 bg-cyan-500/10 border border-cyan-500/50 rounded text-cyan-400 text-[10px] font-black uppercase tracking-widest">
-                            {progressLevel.toUpperCase()} LEVEL
-                        </div>
-                        <div className="px-3 py-1 bg-blue-500/10 border border-blue-500/50 rounded text-blue-400 text-[10px] font-black uppercase tracking-widest">
-                            DAY {currentDayIndex}/7
-                        </div>
-                    </div>
-                    <p className="text-gray-400 text-sm leading-relaxed">
-                        Authorized recording session for AI resonance training and tactical biometric feedback.
-                    </p>
-                </div>
+        <div className="relative">
+            {renderContent()}
 
-                <div className="space-y-6">
+            {/* DEV TOOLS PANEL - Rendered outside the main switch/content logic to ensure visibility */}
+            {isDevMode && (
+                <div className="fixed bottom-0 left-0 right-0 p-4 bg-black/95 border-t border-red-500/50 z-[9999] flex flex-wrap items-center justify-center gap-4">
+                    <div className="text-[10px] font-black text-red-500 uppercase tracking-widest mr-4">Dev Mode Active</div>
+
                     <button
-                        onClick={() => startRecording(true)}
-                        disabled={!legalAccepted || (alreadyRecordedToday && !isDevMode)}
-                        className="w-full py-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xl font-black uppercase tracking-widest rounded-3xl hover:shadow-[0_0_40px_rgba(34,211,238,0.4)] transition-all disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed transform active:scale-95"
+                        onClick={() => {
+                            setAlreadyRecordedToday(false);
+                            alert("Unlocked.");
+                        }}
+                        className="px-4 py-2 bg-red-500/20 border border-red-500/50 text-red-500 text-[10px] font-bold rounded uppercase hover:bg-red-500/40"
                     >
-                        <span className="mr-3">🎤</span>
-                        {(alreadyRecordedToday && !isDevMode) ? 'Session Locked' : 'INITIATE CALIBRATION'}
+                        Unlock Today
                     </button>
 
-                    <div className="text-center">
-                        <Link href="/" className="text-gray-500 hover:text-white text-[10px] uppercase tracking-[0.3em] font-black transition-all">
-                            ← RETURN TO SYSTEM HOME
-                        </Link>
-                    </div>
+                    <button
+                        onClick={async () => {
+                            if (!userHash) return alert("Wait for auth...");
+                            const now = Date.now();
+                            const historyKey = 'etchvox_voice_mirror_history';
+                            const mockHistory = [];
+
+                            for (let i = 0; i < 7; i++) {
+                                const timestamp = new Date(now - (7 - i) * 24 * 60 * 60 * 1000);
+                                mockHistory.push({
+                                    timestamp: timestamp.toISOString(),
+                                    calibrationVector: Array.from({ length: 30 }, () => Math.random()),
+                                    readingVector: Array.from({ length: 30 }, () => Math.random()),
+                                    context: {
+                                        timeCategory: 'Morning',
+                                        dayCategory: 'Weekday',
+                                        genre: selectedGenre || 'maverick',
+                                        dayIndex: i + 1
+                                    },
+                                    annotationTag: 'Mock Data'
+                                });
+                                await saveAudioBlob(`voice_blob_${userHash}_${i + 1}`, new Blob(['mock'], { type: 'audio/wav' }));
+                            }
+                            localStorage.setItem(historyKey, JSON.stringify(mockHistory));
+                            alert("History injected. Reloading...");
+                            window.location.reload();
+                        }}
+                        className="px-4 py-2 bg-blue-500/20 border border-blue-500/50 text-blue-400 text-[10px] font-bold rounded uppercase hover:bg-blue-500/40"
+                    >
+                        Mock 7-Day History
+                    </button>
+
+                    <button
+                        onClick={() => {
+                            localStorage.removeItem('etchvox_voice_mirror_history');
+                            localStorage.removeItem('mirror_preference_v2');
+                            alert("Cleared.");
+                            window.location.reload();
+                        }}
+                        className="px-4 py-2 bg-gray-500/20 border border-gray-500/50 text-gray-400 text-[10px] font-bold rounded uppercase hover:bg-gray-500/40"
+                    >
+                        Reset
+                    </button>
+                    <div className="text-[8px] text-gray-600 font-mono">Phase: {phase}</div>
                 </div>
-
-                {/* DEV TOOLS PANEL */}
-                {isDevMode && (
-                    <div className="fixed bottom-0 left-0 right-0 p-4 bg-black/95 border-t border-red-500/50 z-[9999] flex flex-wrap items-center justify-center gap-4">
-                        <div className="text-[10px] font-black text-red-500 uppercase tracking-widest mr-4">Dev Mode Active</div>
-
-                        <button
-                            onClick={() => setAlreadyRecordedToday(false)}
-                            className="px-4 py-2 bg-red-500/20 border border-red-500/50 text-red-500 text-[10px] font-bold rounded uppercase hover:bg-red-500/40"
-                        >
-                            Unlock Today
-                        </button>
-
-                        <button
-                            onClick={async () => {
-                                if (!userHash) return alert("Wait for auth...");
-                                const now = Date.now();
-                                const historyKey = 'etchvox_voice_mirror_history';
-                                const mockHistory = [];
-
-                                for (let i = 0; i < 7; i++) {
-                                    const timestamp = new Date(now - (7 - i) * 24 * 60 * 60 * 1000);
-                                    mockHistory.push({
-                                        timestamp: timestamp.toISOString(),
-                                        calibrationVector: Array.from({ length: 30 }, () => Math.random()),
-                                        readingVector: Array.from({ length: 30 }, () => Math.random()),
-                                        context: {
-                                            timeCategory: 'Morning',
-                                            dayCategory: 'Weekday',
-                                            genre: selectedGenre || 'maverick',
-                                            dayIndex: i + 1
-                                        },
-                                        annotationTag: 'Mock Data'
-                                    });
-                                    await saveAudioBlob(`voice_blob_${userHash}_${i + 1}`, new Blob(['mock'], { type: 'audio/wav' }));
-                                }
-                                localStorage.setItem(historyKey, JSON.stringify(mockHistory));
-                                window.location.reload();
-                            }}
-                            className="px-4 py-2 bg-blue-500/20 border border-blue-500/50 text-blue-400 text-[10px] font-bold rounded uppercase hover:bg-blue-500/40"
-                        >
-                            Mock 7-Day History
-                        </button>
-
-                        <button
-                            onClick={() => {
-                                localStorage.removeItem('etchvox_voice_mirror_history');
-                                window.location.reload();
-                            }}
-                            className="px-4 py-2 bg-gray-500/20 border border-gray-500/50 text-gray-400 text-[10px] font-bold rounded uppercase hover:bg-gray-500/40"
-                        >
-                            Reset
-                        </button>
-                    </div>
-                )}
-            </div>
+            )}
         </div>
     );
 }
