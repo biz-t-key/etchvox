@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { VoiceAnalyzer } from '@/lib/analyzer';
 import { initializeAuth, loadUserHash } from '@/lib/authService';
 import { getScenariosByGenre, getReadingText, getProgressLevel, getScenarioById, type Genre, type Mood, type Scenario, type Archetype } from '@/lib/mirrorContent';
@@ -27,6 +28,9 @@ interface MirrorPreference {
 }
 
 export default function MirrorPage() {
+    const params = useSearchParams();
+    const isDevMode = params.get('dev') === 'true';
+
     const [phase, setPhase] = useState<Phase>('auth');
     const [userHash, setUserHash] = useState<string | null>(null);
     const [mnemonic, setMnemonic] = useState<string | null>(null);
@@ -176,7 +180,6 @@ export default function MirrorPage() {
         const dayInCycle = (uniqueDays.size % 7) + 1;
         setCurrentDayIndex(dayInCycle);
 
-        // Check if today is already recorded
         const today = new Date().toISOString().split('T')[0];
         setAlreadyRecordedToday(uniqueDays.has(today));
     }
@@ -913,11 +916,11 @@ export default function MirrorPage() {
 
                 <button
                     onClick={() => startRecording(true)}
-                    disabled={!legalAccepted || alreadyRecordedToday}
+                    disabled={!legalAccepted || (alreadyRecordedToday && !isDevMode)}
                     className="w-full py-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xl font-black uppercase tracking-widest rounded-3xl hover:shadow-[0_0_40px_rgba(34,211,238,0.4)] transition-all disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed transform active:scale-95"
                 >
                     <span className="mr-3">🎤</span>
-                    {alreadyRecordedToday ? 'Session Locked' : 'INITIATE CALIBRATION'}
+                    {(alreadyRecordedToday && !isDevMode) ? 'Session Locked' : 'INITIATE CALIBRATION'}
                 </button>
 
                 <div className="text-center">
@@ -926,6 +929,77 @@ export default function MirrorPage() {
                     </Link>
                 </div>
             </div>
+
+            {/* DEV TOOLS PANEL */}
+            {isDevMode && (
+                <div className="fixed bottom-0 left-0 right-0 p-4 bg-black/95 border-t border-red-500/50 z-[9999] flex flex-wrap items-center justify-center gap-4 animate-in slide-in-from-bottom duration-500">
+                    <div className="text-[10px] font-black text-red-500 uppercase tracking-widest mr-4">Dev Mode Active</div>
+
+                    <button
+                        onClick={() => {
+                            setAlreadyRecordedToday(false);
+                            alert("Daily lock bypassed.");
+                        }}
+                        className="px-4 py-2 bg-red-500/20 border border-red-500/50 text-red-500 text-[10px] font-bold rounded uppercase hover:bg-red-500/40 transition-all"
+                    >
+                        Unlock Today
+                    </button>
+
+                    <button
+                        onClick={async () => {
+                            if (!userHash) return alert("Wait for auth...");
+                            if (!confirm("Inject 7 days of mock biometric data? This will overwrite local history.")) return;
+
+                            const now = Date.now();
+                            const historyKey = 'etchvox_voice_mirror_history';
+                            const mockHistory = [];
+
+                            for (let i = 0; i < 7; i++) {
+                                const timestamp = new Date(now - (7 - i) * 24 * 60 * 60 * 1000);
+                                mockHistory.push({
+                                    timestamp: timestamp.toISOString(),
+                                    calibrationVector: Array.from({ length: 30 }, () => Math.random()),
+                                    readingVector: Array.from({ length: 30 }, () => Math.random()),
+                                    context: {
+                                        timeCategory: 'Morning',
+                                        dayCategory: 'Weekday',
+                                        genre: selectedGenre || 'maverick',
+                                        dayIndex: i + 1
+                                    },
+                                    annotationTag: 'Mock Data'
+                                });
+
+                                // Inject mock blob into IndexedDB
+                                try {
+                                    const dummyBlob = new Blob(['mock audio'], { type: 'audio/wav' });
+                                    await saveAudioBlob(`voice_blob_${userHash}_${i + 1}`, dummyBlob);
+                                } catch (e) {
+                                    console.error("Failed to save mock blob:", e);
+                                }
+                            }
+
+                            localStorage.setItem(historyKey, JSON.stringify(mockHistory));
+                            alert("7-Day Mock Data Injected. Reloading...");
+                            window.location.reload();
+                        }}
+                        className="px-4 py-2 bg-blue-500/20 border border-blue-500/50 text-blue-400 text-[10px] font-bold rounded uppercase hover:bg-blue-500/40 transition-all"
+                    >
+                        Mock 7-Day History
+                    </button>
+
+                    <button
+                        onClick={() => {
+                            localStorage.removeItem('etchvox_voice_mirror_history');
+                            localStorage.removeItem('mirror_preference_v2');
+                            alert("Mirror history cleared.");
+                            window.location.reload();
+                        }}
+                        className="px-4 py-2 bg-gray-500/20 border border-gray-500/50 text-gray-400 text-[10px] font-bold rounded uppercase hover:bg-gray-500/40 transition-all"
+                    >
+                        Reset All
+                    </button>
+                </div>
+            )}
         </div>
     );
 }
