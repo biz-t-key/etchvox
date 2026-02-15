@@ -221,10 +221,7 @@ export async function getMirrorLogs(userHash: string): Promise<any[]> {
     }
 }
 
-/**
- * Mark a result as premium (unlocked via purchase)
- */
-export async function unlockResult(resultId: string): Promise<void> {
+export async function unlockResult(resultId: string, email?: string): Promise<void> {
     if (!isFirebaseConfigured()) return;
 
     try {
@@ -234,7 +231,8 @@ export async function unlockResult(resultId: string): Promise<void> {
         await updateDoc(resultRef, {
             isPremium: true,
             purchasedAt: new Date().toISOString(),
-            updatedAt: Timestamp.now()
+            updatedAt: Timestamp.now(),
+            email: email || null
         });
 
         // Also update local storage cache if present
@@ -463,8 +461,19 @@ export async function verifySyncOtp(email: string, otp: string): Promise<boolean
 
         if (!response.ok) return false;
 
-        const { results } = await response.json();
-        if (!results || results.length === 0) return true; // Could be success with 0 results
+        const { results, subscription } = await response.json();
+
+        // 1. Restore Subscription State if present
+        if (subscription) {
+            localStorage.setItem('etchvox_subscription', JSON.stringify({
+                isActive: subscription.status === 'active',
+                expiresAt: subscription.expiresAt,
+                plan: subscription.plan
+            }));
+            console.log(`[Storage] Subscription restored for ${email}: ${subscription.plan}`);
+        }
+
+        if (!results || results.length === 0) return true;
 
         // Update local history index
         const historyIds = JSON.parse(localStorage.getItem('etchvox_history') || '[]');

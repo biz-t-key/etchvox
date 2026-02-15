@@ -529,7 +529,23 @@ export default function ResultPage() {
                                             >
                                                 Already purchased? Refresh status
                                             </button>
-                                            <div className="mt-8 text-[9px] text-gray-500 uppercase tracking-widest font-black">
+
+                                            <div className="mt-8 flex flex-col items-center gap-4">
+                                                <Link
+                                                    href="/?restore=true"
+                                                    className="text-[10px] text-gray-500 hover:text-cyan-400 underline uppercase tracking-widest font-bold transition-colors"
+                                                >
+                                                    Lost access? Restore via Email
+                                                </Link>
+                                                <a
+                                                    href="mailto:support@etchvox.com"
+                                                    className="text-[9px] text-gray-600 hover:text-white uppercase tracking-[0.2em] font-bold transition-colors"
+                                                >
+                                                    Questions? Contact Support
+                                                </a>
+                                            </div>
+
+                                            <div className="mt-12 text-[9px] text-gray-500 uppercase tracking-widest font-black">
                                                 Scroll for Acoustic Metrics
                                             </div>
                                         </div>

@@ -246,6 +246,12 @@ const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, re
                         >
                             Already purchased? Refresh status
                         </button>
+                        <a
+                            href="mailto:support@etchvox.com"
+                            className="text-[8px] text-zinc-400 hover:text-zinc-600 uppercase tracking-widest font-bold"
+                        >
+                            Support
+                        </a>
                     </div>
                 )}
             </div>

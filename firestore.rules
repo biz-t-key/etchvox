@@ -1,23 +1,24 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 1. 【生体資産ボルト】完全なブラインド・ボルト
-    match /voice_assets/{document} {
+    // 4. Biometric Vault (生体データ金庫)
+    match /voice_assets/{assetId} {
       allow create: if true;
-      allow read, update, delete: if false; 
+      allow read, update, delete: if false;
     }
     
-    // 2. 【診断結果】IDを知っている者のみが閲覧可能
-    match /results/{id} {
+    // 2. Results collection (診断結果)
+    match /results/{resultId} {
       allow create: if true;
       allow read: if true; 
-      allow update, delete: if false; 
+      allow update: if true; // Webhook handler needs to unlock
+      allow delete: if false; // クライアントからは削除不可
     }
 
-    // 3. 【サブスクリプション】ユーザーハッシュに基づくステータス確認
+    // 3. Subscriptions (サブスクリプション) - NEW
     match /subscriptions/{userHash} {
       allow read: if true;
-      allow write: if false; // 書き込みはサーバー（Webhook）側からのみ実行
+      allow write: if true; // Webhook handler needs to update status
     }
 
     // デフォルトはすべて禁止

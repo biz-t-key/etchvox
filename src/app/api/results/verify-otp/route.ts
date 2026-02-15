@@ -42,26 +42,40 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Invalid verification code.' }, { status: 401 });
         }
 
-        // 2. Success! Delete the OTP and fetch recorded results
+        // 2. Success! Delete the OTP
         await deleteDoc(otpRef);
 
+        // 3. Fetch recorded results
         const resultsRef = collection(db, 'results');
-        const q = query(
+        const resultsQuery = query(
             resultsRef,
             where('email', '==', normalizedEmail),
             orderBy('createdAt', 'desc')
         );
 
-        const querySnapshot = await getDocs(q);
-        const results = querySnapshot.docs.map(doc => ({
+        const resultsSnap = await getDocs(resultsQuery);
+        const results = resultsSnap.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
             createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate().toISOString() : doc.data().createdAt,
         }));
 
-        console.log(`[AUTH] Successfully verified ${normalizedEmail}. Restoring ${results.length} records.`);
+        // 4. Fetch subscription status
+        const subsRef = collection(db, 'subscriptions');
+        const subsQuery = query(
+            subsRef,
+            where('customerEmail', '==', normalizedEmail)
+        );
+        const subsSnap = await getDocs(subsQuery);
+        const subscription = !subsSnap.empty ? {
+            id: subsSnap.docs[0].id,
+            ...subsSnap.docs[0].data(),
+            expiresAt: subsSnap.docs[0].data().expiresAt?.toDate ? subsSnap.docs[0].data().expiresAt.toDate().toISOString() : subsSnap.docs[0].data().expiresAt
+        } : null;
 
-        return NextResponse.json({ results });
+        console.log(`[AUTH] Successfully verified ${normalizedEmail}. Restoring ${results.length} records and ${subscription ? '1' : '0'} subscriptions.`);
+
+        return NextResponse.json({ results, subscription });
 
     } catch (error: any) {
         console.error('OTP Verification Error:', error);

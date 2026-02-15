@@ -37,17 +37,18 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ received: true });
     } catch (error: any) {
         console.error('Polar Webhook Error:', error.message);
-        return NextResponse.json({ error: 'Webhook validation failed' }, { status: 400 });
+        return NextResponse.json({ error: 'Webhook processing failed' }, { status: 400 });
     }
 }
 
 async function handleOrderCreated(order: any) {
     // Extract metadata
     const resultId = order.metadata?.result_id || order.custom_field_data?.result_id;
+    const email = order.customer?.email;
 
     if (resultId) {
-        await unlockResult(resultId);
-        console.log(`✓ Result ${resultId} unlocked via Polar.sh order`);
+        await unlockResult(resultId, email);
+        console.log(`✓ Result ${resultId} unlocked via Polar.sh order (Email: ${email || 'none'})`);
     } else {
         console.warn('[Polar Webhook] Order created without result_id in metadata');
     }
