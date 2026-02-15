@@ -1003,3 +1003,11 @@ export default function MirrorPage() {
         </div>
     );
 }
+
+export default function MirrorPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center text-cyan-500 font-black tracking-widest animate-pulse">SYSTEM INITIALIZING...</div>}>
+            <MirrorContent />
+        </Suspense>
+    );
+}
