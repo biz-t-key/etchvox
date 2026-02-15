@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo, Suspense } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { VoiceAnalyzer } from '@/lib/analyzer';
 import { initializeAuth, loadUserHash } from '@/lib/authService';
@@ -27,7 +27,7 @@ interface MirrorPreference {
     timestamp: number;
 }
 
-function MirrorContent() {
+export default function MirrorPage() {
     const params = useSearchParams();
     const isDevMode = params.get('dev') === 'true';
 
@@ -295,6 +295,12 @@ function MirrorContent() {
 
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
             mediaRecorderRef.current.stop();
+            // Stop raw stream
+            if (analyzerRef.current) {
+                // @ts-ignore - access internal stream if needed or just stop all tracks
+                const stream = (mediaRecorderRef.current as any).stream;
+                if (stream) stream.getTracks().forEach((track: any) => track.stop());
+            }
             // Ensure all tracks from original stream are stopped
             const tracks = mediaRecorderRef.current.stream.getTracks();
             tracks.forEach(track => track.stop());
@@ -318,6 +324,7 @@ function MirrorContent() {
                     setReadingVector(v);
                     const rawBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
 
+                    // Stage 1: Analyzing (UI state already set above)
                     // Stage 2: Polishing
                     setPhase('polishing');
                     try {
@@ -325,6 +332,7 @@ function MirrorContent() {
                         setCapturedBlob(polishedBlob);
 
                         if (userHash) {
+                            // Use same key for today's blob to allow overwrite in DB
                             await saveAudioBlob(`voice_blob_${userHash}_${currentDayIndex}`, polishedBlob);
                             uploadMirrorBlob(userHash, currentDayIndex, polishedBlob);
                         }
@@ -345,6 +353,8 @@ function MirrorContent() {
                     );
 
                     setPhase('result');
+                    // We'll need to pass this postReading to the dashboard
+                    // For now, let's store it in a state or pass it through ref
                     (window as any).__lastMirrorPostReading = postReading;
                 }
             }
@@ -380,14 +390,24 @@ function MirrorContent() {
             setReadingText(text);
         }
 
+        // Reset analyzer for main reading
         if (analyzerRef.current) {
             analyzerRef.current.reset();
         }
+
+        // Logic check: If already recorded today, we are effectively overwriting.
+        // The day index won't increment in calculateProgress because the date set size stays same.
 
         setTimeout(() => startRecording(false), 500);
     }
 
     function handleDone() {
+        if (currentDayIndex >= 7) {
+            setPhase('result'); // To check if we should show recap?
+            // Actually, let's just reset but we need a way to trigger recap
+            // Let's add a 'recap' state to result view
+        }
+
         setPhase('calibration');
         setCalibrationVector(null);
         setReadingVector(null);
@@ -395,13 +415,16 @@ function MirrorContent() {
         setReadingText('');
         setCapturedBlob(null);
 
+        // Reset analyzer
         if (analyzerRef.current) {
             analyzerRef.current.reset();
         }
 
+        // Recalculate progress
         calculateProgress();
     }
 
+    // Checking subscription
     if (checkingSubscription) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
@@ -413,10 +436,12 @@ function MirrorContent() {
         );
     }
 
+    // Show subscription wall if not subscribed
     if (!checkingSubscription && hasSubscription === false && userHash) {
         return <SubscriptionWall userHash={userHash} setHasSubscription={setHasSubscription} />;
     }
 
+    // Auth phase
     if (phase === 'auth' || (isNewUser && showMnemonic)) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
@@ -434,6 +459,7 @@ function MirrorContent() {
                                 <h2 className="text-red-400 font-bold text-sm uppercase tracking-wider">⚠️ Critical: Save Your Recovery Phrase</h2>
                                 <p className="text-gray-300 text-sm leading-relaxed">
                                     This 12-word phrase is your ONLY way to access your data on a new device.
+                                    Take a screenshot or write it down.
                                 </p>
                             </div>
 
@@ -469,6 +495,7 @@ function MirrorContent() {
         );
     }
 
+    // Result phase
     if (phase === 'result' && calibrationVector && readingVector && selectedMood) {
         return (
             <MirrorDashboard
@@ -492,6 +519,7 @@ function MirrorContent() {
         );
     }
 
+    // Polishing phase
     if (phase === 'polishing') {
         return (
             <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
@@ -509,6 +537,7 @@ function MirrorContent() {
         );
     }
 
+    // Analyzing phase
     if (phase === 'analyzing') {
         return (
             <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
@@ -520,6 +549,7 @@ function MirrorContent() {
         );
     }
 
+    // Recording phases (calibration or reading)
     if (phase === 'calibration' || phase === 'reading') {
         const isCalibration = phase === 'calibration';
         const displayText = isCalibration ? CALIBRATION_TEXT : readingText;
@@ -573,6 +603,7 @@ function MirrorContent() {
         );
     }
 
+    // Archetype selection phase
     if (phase === 'archetype') {
         const archetypes: { id: Archetype; name: string; icon: string; lens: string; desc: string; bg: string; colors: string }[] = [
             { id: 'optimizer', name: 'The Optimizer', icon: '⚡', lens: 'Efficiency', desc: 'Maximizing resonance and cognitive output.', bg: '/images/bg_optimizer.png', colors: 'from-cyan-500/20 to-blue-500/20' },
@@ -590,7 +621,7 @@ function MirrorContent() {
                             Select Your Mirror Lens
                         </h1>
                         <p className="text-gray-400 text-sm max-w-lg mx-auto leading-relaxed">
-                            How should the Oracle interpret your voice today?
+                            How should the Oracle interpret your voice today? This choice defines your visual archive aesthetic and the "Lens" of your biometric analysis.
                         </p>
                     </div>
 
@@ -601,6 +632,7 @@ function MirrorContent() {
                                 onClick={() => handleArchetypeSelect(arch.id)}
                                 className={`group relative h-[450px] bg-slate-900/40 border border-white/10 rounded-3xl p-8 transition-all overflow-hidden text-left flex flex-col justify-end ${arch.colors}`}
                             >
+                                {/* Background Preview */}
                                 <div className="absolute inset-0 z-0 opacity-40 group-hover:opacity-70 transition-opacity duration-500">
                                     <img src={arch.bg} alt="" className="w-full h-full object-cover" />
                                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
@@ -613,6 +645,9 @@ function MirrorContent() {
                                         <div className="inline-block px-2 py-0.5 bg-white/10 rounded text-[9px] font-black uppercase tracking-widest text-white/70 border border-white/5 mb-3">
                                             {arch.lens}
                                         </div>
+                                        <p className="text-gray-400 text-xs leading-relaxed line-clamp-3">
+                                            {arch.desc}
+                                        </p>
                                     </div>
                                     <div className="pt-4 border-t border-white/10">
                                         <span className="text-[10px] font-black uppercase tracking-widest text-cyan-500 group-hover:translate-x-1 transition-transform inline-block">
@@ -634,6 +669,7 @@ function MirrorContent() {
         );
     }
 
+    // Genre selection phase
     if (phase === 'genre') {
         const genres: { id: Genre; name: string; icon: string; desc: string }[] = [
             { id: 'philosophy', name: 'Philosophy', icon: '🏛️', desc: 'Stoic wisdom and resilience' },
@@ -650,6 +686,9 @@ function MirrorContent() {
                             Select Your Reading Genre
                         </h1>
                         <p className="text-gray-400">This choice will be locked for 7 days</p>
+                        {progressLevel && (
+                            <p className="text-cyan-400 text-sm font-mono">Progress Level: {progressLevel.toUpperCase()}</p>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -678,6 +717,7 @@ function MirrorContent() {
         );
     }
 
+    // Scenario selection phase
     if (phase === 'scenario' && selectedGenre) {
         const scenarios = getScenariosByGenre(selectedGenre);
 
@@ -688,6 +728,7 @@ function MirrorContent() {
                         <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
                             Select Your Story
                         </h1>
+                        <p className="text-gray-400">Choose the narrative path for your 7-day resonance cycle</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -697,8 +738,10 @@ function MirrorContent() {
                                 onClick={() => handleScenarioSelect(scenario)}
                                 className="group relative bg-white/5 backdrop-blur-sm hover:bg-white/10 border border-white/10 hover:border-cyan-500/50 rounded-2xl p-8 transition-all hover:shadow-[0_0_30px_rgba(34,211,238,0.3)] text-left flex flex-col gap-4"
                             >
+                                <div className="text-xs font-black uppercase tracking-widest text-cyan-500/70">{scenario.tone_instruction}</div>
                                 <h3 className="text-xl font-bold text-white mb-2">{scenario.title}</h3>
                                 <p className="text-gray-400 text-sm leading-relaxed flex-1">{scenario.description}</p>
+                                <div className="mt-4 text-cyan-400 text-xs font-bold uppercase tracking-wider group-hover:translate-x-1 transition-transform">Select Story →</div>
                             </button>
                         ))}
                     </div>
@@ -713,6 +756,7 @@ function MirrorContent() {
         );
     }
 
+    // Mood selection phase
     if (phase === 'mood') {
         const moods: { id: Mood; name: string; icon: string; desc: string }[] = [
             { id: 'high', name: 'High Energy', icon: '⚡', desc: 'Intense, provocative' },
@@ -727,7 +771,8 @@ function MirrorContent() {
                         <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
                             How Are You Feeling?
                         </h1>
-                        <p className="text-cyan-400 text-sm font-mono">Day {currentDayIndex}/7</p>
+                        <p className="text-gray-400">Select your current energy level</p>
+                        <p className="text-cyan-400 text-sm font-mono">Day {currentDayIndex}/7 • {selectedScenario?.title}</p>
                     </div>
 
                     <div className="grid grid-cols-1 gap-4">
@@ -750,96 +795,211 @@ function MirrorContent() {
         );
     }
 
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
-            <div className="max-w-md w-full space-y-8 bg-white/5 backdrop-blur-sm p-10 rounded-2xl border border-white/10 text-center">
-                <div className="space-y-4">
-                    <h1 className="text-4xl font-black text-white uppercase tracking-widest">Mirror</h1>
-                    <div className="flex items-center justify-center gap-2">
-                        <div className="px-3 py-1 bg-cyan-500/10 border border-cyan-500/50 rounded text-cyan-400 text-[10px] font-black uppercase tracking-widest">
-                            {progressLevel.toUpperCase()} LEVEL
-                        </div>
-                        <div className="px-3 py-1 bg-blue-500/10 border border-blue-500/50 rounded text-blue-400 text-[10px] font-black uppercase tracking-widest">
-                            DAY {currentDayIndex}/7
-                        </div>
-                    </div>
-                    <p className="text-gray-400 text-sm leading-relaxed">
-                        Authorized recording session for AI resonance training and tactical biometric feedback.
-                    </p>
-                </div>
+    // Check if recording already done today (already handled by state)
 
-                <div className="space-y-6">
-                    <button
-                        onClick={() => startRecording(true)}
-                        disabled={!legalAccepted || (alreadyRecordedToday && !isDevMode)}
-                        className="w-full py-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xl font-black uppercase tracking-widest rounded-3xl hover:shadow-[0_0_40px_rgba(34,211,238,0.4)] transition-all disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed transform active:scale-95"
-                    >
-                        <span className="mr-3">🎤</span>
-                        {(alreadyRecordedToday && !isDevMode) ? 'Session Locked' : 'INITIATE CALIBRATION'}
-                    </button>
+    const renderOnboarding = () => (
+        <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 space-y-10 text-left">
+            <div className="space-y-4 text-center">
+                <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 uppercase tracking-tight">
+                    Active Mindfulness through Voice
+                </h2>
+                <p className="text-gray-400 text-sm italic max-w-md mx-auto leading-relaxed">
+                    A meditative 7-day journey to attune your mind and body. Experience Active Mindfulness through the power of narrative resonance.
+                </p>
+            </div>
 
-                    <div className="text-center">
-                        <Link href="/" className="text-gray-500 hover:text-white text-[10px] uppercase tracking-[0.3em] font-black transition-all">
-                            ← RETURN TO SYSTEM HOME
-                        </Link>
+            <div className="space-y-8">
+                <div className="flex items-start gap-5">
+                    <div className="text-cyan-400 font-black text-xs pt-1 tracking-tighter shrink-0">01 / SYNC</div>
+                    <div className="space-y-1">
+                        <p className="text-white font-bold uppercase tracking-wider text-sm">Choose Your Story</p>
+                        <p className="text-gray-400 text-xs leading-relaxed">Select a narrative genre that anchors your 7-day resonance path. This choice locks in your visual archetype.</p>
                     </div>
                 </div>
 
-                {/* DEV TOOLS PANEL */}
-                {isDevMode && (
-                    <div className="fixed bottom-0 left-0 right-0 p-4 bg-black/95 border-t border-red-500/50 z-[9999] flex flex-wrap items-center justify-center gap-4">
-                        <div className="text-[10px] font-black text-red-500 uppercase tracking-widest mr-4">Dev Mode Active</div>
+                <div className="flex items-start gap-5">
+                    <div className="text-cyan-400 font-black text-xs pt-1 tracking-tighter shrink-0">02 / ETCH</div>
+                    <div className="space-y-1">
+                        <p className="text-white font-bold uppercase tracking-wider text-sm">Daily 12-Sec Record</p>
+                        <p className="text-gray-400 text-xs leading-relaxed">Read the assigned narrative. Capture intentional pauses and biometric nuances as high-fidelity neural data.</p>
+                    </div>
+                </div>
 
-                        <button
-                            onClick={() => setAlreadyRecordedToday(false)}
-                            className="px-4 py-2 bg-red-500/20 border border-red-500/50 text-red-500 text-[10px] font-bold rounded uppercase hover:bg-red-500/40"
-                        >
-                            Unlock Today
-                        </button>
+                <div className="flex items-start gap-5">
+                    <div className="text-cyan-400 font-black text-xs pt-1 tracking-tighter shrink-0">03 / VOX</div>
+                    <div className="space-y-1">
+                        <p className="text-white font-bold uppercase tracking-wider text-sm">Resonance Dossier</p>
+                        <p className="text-gray-400 text-xs leading-relaxed">After 7 days, receive a cinematic compilation of your vocal evolution, mapped through your chosen archetype.</p>
+                    </div>
+                </div>
 
-                        <button
-                            onClick={async () => {
-                                if (!userHash) return alert("Wait for auth...");
-                                const now = Date.now();
-                                const historyKey = 'etchvox_voice_mirror_history';
-                                const mockHistory = [];
-
-                                for (let i = 0; i < 7; i++) {
-                                    const timestamp = new Date(now - (7 - i) * 24 * 60 * 60 * 1000);
-                                    mockHistory.push({
-                                        timestamp: timestamp.toISOString(),
-                                        calibrationVector: Array.from({ length: 30 }, () => Math.random()),
-                                        readingVector: Array.from({ length: 30 }, () => Math.random()),
-                                        context: {
-                                            timeCategory: 'Morning',
-                                            dayCategory: 'Weekday',
-                                            genre: selectedGenre || 'maverick',
-                                            dayIndex: i + 1
-                                        },
-                                        annotationTag: 'Mock Data'
-                                    });
-                                    await saveAudioBlob(`voice_blob_${userHash}_${i + 1}`, new Blob(['mock'], { type: 'audio/wav' }));
-                                }
-                                localStorage.setItem(historyKey, JSON.stringify(mockHistory));
-                                window.location.reload();
-                            }}
-                            className="px-4 py-2 bg-blue-500/20 border border-blue-500/50 text-blue-400 text-[10px] font-bold rounded uppercase hover:bg-blue-500/40"
-                        >
-                            Mock 7-Day History
-                        </button>
-
-                        <button
-                            onClick={() => {
-                                localStorage.removeItem('etchvox_voice_mirror_history');
-                                window.location.reload();
-                            }}
-                            className="px-4 py-2 bg-gray-500/20 border border-gray-500/50 text-gray-400 text-[10px] font-bold rounded uppercase hover:bg-gray-500/40"
-                        >
-                            Reset
-                        </button>
+                {alreadyRecordedToday && (
+                    <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-2xl p-6 text-center space-y-2">
+                        <p className="text-cyan-400 text-[10px] font-black uppercase tracking-[0.3em] leading-none">
+                            ✨ Daily Pulse Secured
+                        </p>
+                        <p className="text-gray-400 text-[10px] leading-relaxed opacity-70 italic">
+                            Biometric patterns cached. Return in 24 hours to proceed.
+                        </p>
                     </div>
                 )}
             </div>
+        </div>
+    );
+
+    // Calibration ready phase (default view)
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6 py-12">
+            <div className="max-w-2xl w-full space-y-12">
+                <div className="text-center space-y-4">
+                    <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 uppercase tracking-tighter">
+                        Voice Mirror
+                    </h1>
+                    <div className="inline-block px-4 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-mono font-bold tracking-[0.2em] uppercase">
+                        STATUS: {progressLevel}
+                    </div>
+                </div>
+
+                {renderOnboarding()}
+
+                {!alreadyRecordedToday && (
+                    <div className="space-y-4">
+                        {/* Mandatory Legal Consent */}
+                        <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+                            <label className="flex items-start gap-4 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    checked={legalAccepted}
+                                    onChange={(e) => setLegalAccepted(e.target.checked)}
+                                    className="mt-1 w-6 h-6 rounded border-gray-600 bg-black/50 cursor-pointer flex-shrink-0 accent-cyan-500"
+                                />
+                                <div className="space-y-1 text-left">
+                                    <span className="text-xs text-gray-400 leading-relaxed select-none block font-bold transition-colors group-hover:text-white uppercase tracking-wider">
+                                        I accept the <Link href="/terms" className="text-cyan-400 hover:underline">Terms of Service</Link> and <Link href="/privacy" className="text-cyan-400 hover:underline">Privacy Policy</Link>.
+                                        I understand this system is for mindfulness and not a medical diagnosis.
+                                    </span>
+                                </div>
+                            </label>
+                        </div>
+
+                        {/* Optional Cinematic Research Consent */}
+                        <div className="bg-cyan-500/5 backdrop-blur-sm rounded-2xl p-6 border border-cyan-500/10">
+                            <label className="flex items-start gap-4 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    checked={researchAccepted}
+                                    onChange={(e) => setResearchAccepted(e.target.checked)}
+                                    className="mt-1 w-6 h-6 rounded border-cyan-500/30 bg-black/50 cursor-pointer flex-shrink-0 accent-cyan-500"
+                                />
+                                <div className="space-y-1 text-left">
+                                    <span className="text-[10px] text-cyan-400/60 font-black uppercase tracking-[0.2em] block mb-1">
+                                        Optional: {
+                                            selectedGenre === 'maverick' ? "Transmit Intel" :
+                                                selectedGenre === 'philosophy' ? "Archive My Soul" :
+                                                    selectedGenre === 'thriller' ? "Upload Entropy" :
+                                                        "Donate Our Friction"
+                                        }
+                                    </span>
+                                    <span className="text-xs text-gray-400 leading-relaxed select-none block italic transition-colors group-hover:text-gray-200">
+                                        {
+                                            selectedGenre === 'maverick' ? "Authorized storage for AI research and tactical statistical telemetry. Data is stripped of PII and used for global behavioral indexing." :
+                                                selectedGenre === 'philosophy' ? "Your signal is utilized for neural synthesis, distributed node indexing, and statistical personality forecasting. No ID linked." :
+                                                    selectedGenre === 'thriller' ? "Agreement covers anonymized audio capture for neural grid training and commercial entropy research. Identity is disregarded by the protocol." :
+                                                        "Capture mutual resonance for relationship AI modeling, commercial biometric modeling, and statistical resonance audits. De-identified at source."
+                                        }
+                                    </span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                )}
+
+                <button
+                    onClick={() => startRecording(true)}
+                    disabled={!legalAccepted || (alreadyRecordedToday && !isDevMode)}
+                    className="w-full py-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xl font-black uppercase tracking-widest rounded-3xl hover:shadow-[0_0_40px_rgba(34,211,238,0.4)] transition-all disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed transform active:scale-95"
+                >
+                    <span className="mr-3">🎤</span>
+                    {(alreadyRecordedToday && !isDevMode) ? 'Session Locked' : 'INITIATE CALIBRATION'}
+                </button>
+
+                <div className="text-center">
+                    <Link href="/" className="text-gray-500 hover:text-white text-[10px] uppercase tracking-[0.3em] font-black transition-all">
+                        ← RETURN TO SYSTEM HOME
+                    </Link>
+                </div>
+            </div>
+
+            {/* DEV TOOLS PANEL */}
+            {isDevMode && (
+                <div className="fixed bottom-0 left-0 right-0 p-4 bg-black/95 border-t border-red-500/50 z-[9999] flex flex-wrap items-center justify-center gap-4 animate-in slide-in-from-bottom duration-500">
+                    <div className="text-[10px] font-black text-red-500 uppercase tracking-widest mr-4">Dev Mode Active</div>
+
+                    <button
+                        onClick={() => {
+                            setAlreadyRecordedToday(false);
+                            alert("Daily lock bypassed.");
+                        }}
+                        className="px-4 py-2 bg-red-500/20 border border-red-500/50 text-red-500 text-[10px] font-bold rounded uppercase hover:bg-red-500/40 transition-all"
+                    >
+                        Unlock Today
+                    </button>
+
+                    <button
+                        onClick={async () => {
+                            if (!userHash) return alert("Wait for auth...");
+                            if (!confirm("Inject 7 days of mock biometric data? This will overwrite local history.")) return;
+
+                            const now = Date.now();
+                            const historyKey = 'etchvox_voice_mirror_history';
+                            const mockHistory = [];
+
+                            for (let i = 0; i < 7; i++) {
+                                const timestamp = new Date(now - (7 - i) * 24 * 60 * 60 * 1000);
+                                mockHistory.push({
+                                    timestamp: timestamp.toISOString(),
+                                    calibrationVector: Array.from({ length: 30 }, () => Math.random()),
+                                    readingVector: Array.from({ length: 30 }, () => Math.random()),
+                                    context: {
+                                        timeCategory: 'Morning',
+                                        dayCategory: 'Weekday',
+                                        genre: selectedGenre || 'maverick',
+                                        dayIndex: i + 1
+                                    },
+                                    annotationTag: 'Mock Data'
+                                });
+
+                                // Inject mock blob into IndexedDB
+                                try {
+                                    const dummyBlob = new Blob(['mock audio'], { type: 'audio/wav' });
+                                    await saveAudioBlob(`voice_blob_${userHash}_${i + 1}`, dummyBlob);
+                                } catch (e) {
+                                    console.error("Failed to save mock blob:", e);
+                                }
+                            }
+
+                            localStorage.setItem(historyKey, JSON.stringify(mockHistory));
+                            alert("7-Day Mock Data Injected. Reloading...");
+                            window.location.reload();
+                        }}
+                        className="px-4 py-2 bg-blue-500/20 border border-blue-500/50 text-blue-400 text-[10px] font-bold rounded uppercase hover:bg-blue-500/40 transition-all"
+                    >
+                        Mock 7-Day History
+                    </button>
+
+                    <button
+                        onClick={() => {
+                            localStorage.removeItem('etchvox_voice_mirror_history');
+                            localStorage.removeItem('mirror_preference_v2');
+                            alert("Mirror history cleared.");
+                            window.location.reload();
+                        }}
+                        className="px-4 py-2 bg-gray-500/20 border border-gray-500/50 text-gray-400 text-[10px] font-bold rounded uppercase hover:bg-gray-500/40 transition-all"
+                    >
+                        Reset All
+                    </button>
+                </div>
+            )}
         </div>
     );
 }
