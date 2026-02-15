@@ -25,6 +25,11 @@ export const metadata: Metadata = {
     userScalable: false,
   },
   themeColor: "#000000",
+  icons: {
+    icon: "/favicon.jpg",
+    shortcut: "/favicon.jpg",
+    apple: "/favicon.jpg",
+  },
 };
 
 export default function RootLayout({
