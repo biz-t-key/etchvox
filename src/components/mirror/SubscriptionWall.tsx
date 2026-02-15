@@ -10,8 +10,19 @@ interface SubscriptionWallProps {
 
 export default function SubscriptionWall({ userHash, setHasSubscription }: SubscriptionWallProps) {
     const [isLoading, setIsLoading] = useState(false);
+    const [hasSubscription, setHasSubLocally] = useState<boolean | null>(null);
+    const [currentPlan, setCurrentPlan] = useState<'weekly' | 'monthly' | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [activeStep, setActiveStep] = useState(0);
+
+    useState(() => {
+        async function fetchSubscription() {
+            const sub = await checkSubscription(userHash);
+            setHasSubLocally(sub.isActive);
+            setCurrentPlan(sub.plan as 'weekly' | 'monthly' | null);
+        }
+        fetchSubscription();
+    });
 
     const onboardingSteps = [
         {
@@ -34,7 +45,7 @@ export default function SubscriptionWall({ userHash, setHasSubscription }: Subsc
         }
     ];
 
-    async function handleCheckout(plan: 'weekly' | 'monthly') {
+    async function handleCheckout(plan: 'weekly' | 'monthly' | 'upgrade') {
         setIsLoading(true);
         setError(null);
 
@@ -227,11 +238,11 @@ export default function SubscriptionWall({ userHash, setHasSubscription }: Subsc
                             </ul>
 
                             <button
-                                onClick={() => handleCheckout('monthly')}
+                                onClick={() => handleCheckout(currentPlan === 'weekly' ? 'upgrade' : 'monthly')}
                                 disabled={isLoading}
                                 className="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-black uppercase text-xs rounded-xl hover:shadow-[0_0_30px_rgba(34,211,238,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95"
                             >
-                                {isLoading ? 'INITIALIZING...' : 'Acquire 30-Day Pass'}
+                                {isLoading ? 'INITIALIZING...' : (currentPlan === 'weekly' ? `Upgrade to 30-Day Pass for $${POLAR_CONFIG.UPGRADE_PRICE}` : 'Acquire 30-Day Pass')}
                             </button>
                         </div>
                     </div>

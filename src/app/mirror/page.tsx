@@ -44,6 +44,7 @@ export default function MirrorPage() {
     const [selectedArchetype, setSelectedArchetype] = useState<Archetype | null>(null);
     const [currentDayIndex, setCurrentDayIndex] = useState(1);
     const [readingText, setReadingText] = useState('');
+    const [alreadyRecordedToday, setAlreadyRecordedToday] = useState(false);
 
     // Subscription state
     const [hasSubscription, setHasSubscription] = useState<boolean | null>(null);
@@ -162,12 +163,22 @@ export default function MirrorPage() {
 
     function calculateProgress() {
         const history = loadVoiceLogHistory();
-        const level = getProgressLevel(history.length);
+
+        // Get unique calendar dates (YYYY-MM-DD)
+        const uniqueDays = new Set(history.map(log =>
+            new Date(log.timestamp).toISOString().split('T')[0]
+        ));
+
+        const level = getProgressLevel(uniqueDays.size);
         setProgressLevel(level);
 
-        // Calculate current day in the 7-day cycle
-        const completedDays = history.length % 7;
-        setCurrentDayIndex(completedDays + 1);
+        // Calculate current day in the 7-day cycle (1-indexed)
+        const dayInCycle = (uniqueDays.size % 7) + 1;
+        setCurrentDayIndex(dayInCycle);
+
+        // Check if today is already recorded
+        const today = new Date().toISOString().split('T')[0];
+        setAlreadyRecordedToday(uniqueDays.has(today));
     }
 
     function saveMirrorPreference(genre: Genre, scenarioId: string) {
@@ -318,6 +329,7 @@ export default function MirrorPage() {
                         setCapturedBlob(polishedBlob);
 
                         if (userHash) {
+                            // Use same key for today's blob to allow overwrite in DB
                             await saveAudioBlob(`voice_blob_${userHash}_${currentDayIndex}`, polishedBlob);
                             uploadMirrorBlob(userHash, currentDayIndex, polishedBlob);
                         }
@@ -379,6 +391,9 @@ export default function MirrorPage() {
         if (analyzerRef.current) {
             analyzerRef.current.reset();
         }
+
+        // Logic check: If already recorded today, we are effectively overwriting.
+        // The day index won't increment in calculateProgress because the date set size stays same.
 
         setTimeout(() => startRecording(false), 500);
     }
@@ -541,7 +556,7 @@ export default function MirrorPage() {
                 <div className="max-w-2xl w-full text-center space-y-12">
                     <div className="space-y-4">
                         <h2 className="text-sm font-black uppercase tracking-widest text-cyan-400">
-                            {isCalibration ? '🎯 Calibration' : `📖 Day ${currentDayIndex} Reading`}
+                            {isCalibration ? '🎯 Calibration' : `📖 Day ${currentDayIndex} Reading ${alreadyRecordedToday ? '(Overwrite)' : ''}`}
                         </h2>
                         <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 space-y-4">
                             {!isCalibration && selectedScenario && (
@@ -777,10 +792,7 @@ export default function MirrorPage() {
         );
     }
 
-    // Check if recording already done today
-    const history = loadVoiceLogHistory();
-    const today = new Date().toDateString();
-    const alreadyRecordedToday = history.some(log => new Date(log.timestamp).toDateString() === today);
+    // Check if recording already done today (already handled by state)
 
     const renderOnboarding = () => (
         <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 space-y-10 text-left">

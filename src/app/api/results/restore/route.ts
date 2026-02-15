@@ -19,14 +19,14 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Valid email required' }, { status: 400 });
         }
 
-        const normalizedEmail = email.toLowerCase().trim();
+        const emailHash = require('@/lib/auth').hashEmail(email);
         const db = getDb();
 
         // 1. Verify that this email actually has purchased records
         const resultsRef = collection(db, 'results');
         const q = query(
             resultsRef,
-            where('email', '==', normalizedEmail)
+            where('emailHash', '==', emailHash)
         );
         const querySnapshot = await getDocs(q);
 
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
         // 3. Save OTP to Firestore (expiring in 10 minutes)
-        const otpRef = doc(db, 'otps', normalizedEmail);
+        const otpRef = doc(db, 'otps', emailHash);
         await setDoc(otpRef, {
             otp,
             createdAt: Timestamp.now(),
@@ -46,8 +46,8 @@ export async function POST(req: NextRequest) {
         });
 
         // 4. Send Email via Resend
-        console.log(`[AUTH] Sending OTP ${otp} to ${normalizedEmail}`);
-        await sendOtpEmail(normalizedEmail, otp);
+        console.log(`[AUTH] Sending OTP ${otp} to ${email}`);
+        await sendOtpEmail(email, otp);
 
         return NextResponse.json({ success: true, message: 'Verification code sent.' });
 

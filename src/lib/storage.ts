@@ -232,7 +232,7 @@ export async function unlockResult(resultId: string, email?: string): Promise<vo
             isPremium: true,
             purchasedAt: new Date().toISOString(),
             updatedAt: Timestamp.now(),
-            email: email || null
+            emailHash: email || null // 'email' passed here should already be hashed by the caller (webhook)
         });
 
         // Also update local storage cache if present
@@ -249,6 +249,38 @@ export async function unlockResult(resultId: string, email?: string): Promise<vo
         console.log(`✓ Result ${resultId} unlocked successfully`);
     } catch (error) {
         console.error('Failed to unlock result:', error);
+        throw error;
+    }
+}
+
+/**
+ * Revoke premium access for a result (e.g., on refund)
+ */
+export async function lockResult(resultId: string): Promise<void> {
+    if (!isFirebaseConfigured()) return;
+
+    try {
+        const db = getDb();
+        const resultRef = doc(db, 'results', resultId);
+
+        await updateDoc(resultRef, {
+            isPremium: false,
+            updatedAt: Timestamp.now()
+        });
+
+        // Also update local storage cache if present
+        if (typeof window !== 'undefined') {
+            const localData = localStorage.getItem(`etchvox_result_${resultId}`);
+            if (localData) {
+                const result = JSON.parse(localData);
+                result.isPremium = false;
+                localStorage.setItem(`etchvox_result_${resultId}`, JSON.stringify(result));
+            }
+        }
+
+        console.log(`⚠ Result ${resultId} locked successfully`);
+    } catch (error) {
+        console.error('Failed to lock result:', error);
         throw error;
     }
 }

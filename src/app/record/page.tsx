@@ -56,12 +56,12 @@ const SCRIPTS: Record<string, Record<RecordingStep, { ui: string, script: string
         6: { ui: 'N/A', script: '', duration: 0 },
     },
     spy: {
-        1: { ui: 'Mission 01', script: 'I am a human.', duration: 5, direction: 'Flat, human baseline.' },
-        2: { ui: 'Mission 02', script: 'I am calm.', duration: 5, direction: 'Low stress maintenance.' },
-        3: { ui: 'Mission 03', script: 'I am lying.', duration: 5, direction: 'Paradox check.' },
-        4: { ui: 'Mission 04', script: 'The sun is cold.', duration: 5, direction: 'Narrative adherence.' },
-        5: { ui: 'Mission 05', script: 'The cat is liquid.', duration: 5, direction: 'Cerebral flexibility.' },
-        6: { ui: 'Mission 06', script: 'The earth is hlat.', duration: 5, direction: 'Final commitment.' },
+        1: { ui: 'Mission 01', script: '"Testing my base biometric profile."', duration: 6, direction: 'Flat, human baseline.' },
+        2: { ui: 'Mission 02', script: '"Authorization Code: Alpha-7-Niner."', duration: 6, direction: 'Low stress maintenance.' },
+        3: { ui: 'Mission 03', script: '"The asset is secure and awaiting extraction."', duration: 6, direction: 'Narrative adherence.' },
+        4: { ui: 'Mission 04', script: '"Initiate neural firewall override now."', duration: 6, direction: 'High pressure performance.' },
+        5: { ui: 'Mission 05', script: '"I have no knowledge of the redacted files."', duration: 6, direction: 'Deception stability check.' },
+        6: { ui: 'Mission 06', script: '"Identity verified. Burn after reading."', duration: 6, direction: 'Final commitment.' },
     }
 }
 
@@ -230,7 +230,7 @@ function RecordPageContent() {
                         }
 
                         // VAD End Detection logic for last step
-                        const totalSteps = mode === 'elon' ? 6 : (mode === 'solo' ? 4 : 3);
+                        const totalSteps = mode === 'spy' ? 6 : (mode === 'elon' ? 3 : (mode === 'solo' ? 4 : 3));
 
                         if (currentStep === totalSteps) {
                             // Recording finished

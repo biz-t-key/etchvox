@@ -60,7 +60,7 @@ const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, re
                 setIsTyping(false);
                 triggerSlam();
             }
-        }, 25);
+        }, 10);
         return () => clearInterval(timer);
     }, [reportMessage]);
 
@@ -223,6 +223,21 @@ const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, re
                         <div className="text-[10px] font-black text-red-700 uppercase tracking-widest animate-pulse">
                             [ INTEL_LOCKED: neural_signature_required ]
                         </div>
+
+                        {/* Report Contents Description */}
+                        <div className="w-full max-w-xs mx-auto text-left space-y-3 py-2">
+                            <div className="text-[8px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Dossier Inclusion:</div>
+                            <div className="flex items-center gap-2 text-[9px] text-zinc-600 font-black uppercase">
+                                <span className="text-red-700">▶</span> Loyalty & Deception Leakage Audit
+                            </div>
+                            <div className="flex items-center gap-2 text-[9px] text-zinc-600 font-black uppercase">
+                                <span className="text-red-700">▶</span> Tactical Sector & Aptitude Assignment
+                            </div>
+                            <div className="flex items-center gap-2 text-[9px] text-zinc-600 font-black uppercase">
+                                <span className="text-red-700">▶</span> Agency Clearance Recommendation
+                            </div>
+                        </div>
+
                         <button
                             onClick={onUnlock}
                             className="bg-zinc-900 text-white text-[10px] font-black px-6 py-3 rounded uppercase tracking-[0.2em] hover:bg-red-700 transition-all shadow-lg active:scale-95"

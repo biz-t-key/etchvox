@@ -18,11 +18,11 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Email and verification code required' }, { status: 400 });
         }
 
-        const normalizedEmail = email.toLowerCase().trim();
+        const emailHash = require('@/lib/auth').hashEmail(email);
         const db = getDb();
 
         // 1. Get and Validate OTP from Firestore
-        const otpRef = doc(db, 'otps', normalizedEmail);
+        const otpRef = doc(db, 'otps', emailHash);
         const otpSnap = await getDoc(otpRef);
 
         if (!otpSnap.exists()) {
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
         const resultsRef = collection(db, 'results');
         const resultsQuery = query(
             resultsRef,
-            where('email', '==', normalizedEmail),
+            where('emailHash', '==', emailHash),
             orderBy('createdAt', 'desc')
         );
 
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
         const subsRef = collection(db, 'subscriptions');
         const subsQuery = query(
             subsRef,
-            where('customerEmail', '==', normalizedEmail)
+            where('customerEmailHash', '==', emailHash)
         );
         const subsSnap = await getDocs(subsQuery);
         const subscription = !subsSnap.empty ? {
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
             expiresAt: subsSnap.docs[0].data().expiresAt?.toDate ? subsSnap.docs[0].data().expiresAt.toDate().toISOString() : subsSnap.docs[0].data().expiresAt
         } : null;
 
-        console.log(`[AUTH] Successfully verified ${normalizedEmail}. Restoring ${results.length} records and ${subscription ? '1' : '0'} subscriptions.`);
+        console.log(`[AUTH] Successfully verified ${email}. Restoring ${results.length} records and ${subscription ? '1' : '0'} subscriptions.`);
 
         return NextResponse.json({ results, subscription });
 

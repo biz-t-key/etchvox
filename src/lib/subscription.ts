@@ -9,7 +9,8 @@ export interface SubscriptionStatus {
     plan?: 'weekly' | 'monthly';
     expiresAt?: Date;
     polarId?: string;
-    customerEmail?: string;
+    customerEmailHash?: string;
+    status: 'active' | 'cancelled' | 'expired' | 'refunded';
 }
 
 /**
@@ -17,7 +18,7 @@ export interface SubscriptionStatus {
  */
 export async function checkSubscription(userHash: string): Promise<SubscriptionStatus> {
     if (!isFirebaseConfigured()) {
-        return { isActive: false };
+        return { isActive: false, status: 'expired' };
     }
 
     try {
@@ -26,7 +27,7 @@ export async function checkSubscription(userHash: string): Promise<SubscriptionS
         const subSnap = await getDoc(subRef);
 
         if (!subSnap.exists()) {
-            return { isActive: false };
+            return { isActive: false, status: 'expired' };
         }
 
         const data = subSnap.data();
@@ -41,11 +42,12 @@ export async function checkSubscription(userHash: string): Promise<SubscriptionS
             plan: data.plan,
             expiresAt,
             polarId: data.polarId,
-            customerEmail: data.customerEmail
+            customerEmailHash: data.customerEmailHash,
+            status: data.status || (isActive ? 'active' : 'expired')
         };
     } catch (error) {
         console.error('Failed to check subscription:', error);
-        return { isActive: false };
+        return { isActive: false, status: 'expired' };
     }
 }
 
@@ -58,7 +60,7 @@ export async function updateSubscription(
         plan: 'weekly' | 'monthly';
         expiresAt: Date;
         polarId?: string;
-        customerEmail?: string;
+        customerEmailHash?: string;
         status: 'active' | 'cancelled' | 'expired';
     }
 ): Promise<void> {
@@ -74,7 +76,7 @@ export async function updateSubscription(
             plan: data.plan,
             expiresAt: Timestamp.fromDate(data.expiresAt),
             polarId: data.polarId || null,
-            customerEmail: data.customerEmail,
+            customerEmailHash: data.customerEmailHash || null,
             status: data.status,
             updatedAt: Timestamp.now()
         }, { merge: true });
@@ -83,5 +85,27 @@ export async function updateSubscription(
     } catch (error) {
         console.error('Failed to update subscription:', error);
         throw error;
+    }
+}
+
+/**
+ * Revoke subscription (called on refund)
+ */
+export async function revokeSubscription(userHash: string): Promise<void> {
+    if (!isFirebaseConfigured()) return;
+
+    try {
+        const db = getDb();
+        const subRef = doc(db, 'subscriptions', userHash);
+
+        await setDoc(subRef, {
+            status: 'refunded',
+            expiresAt: Timestamp.fromDate(new Date()), // Expire immediately
+            updatedAt: Timestamp.now()
+        }, { merge: true });
+
+        console.log(`⚠ Subscription REVOKED for ${userHash}`);
+    } catch (error) {
+        console.error('Failed to revoke subscription:', error);
     }
 }

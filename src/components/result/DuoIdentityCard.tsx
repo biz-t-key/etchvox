@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
-import html2canvas from 'html2canvas';
+import { toPng } from 'html-to-image';
 
 import { voiceTypes, TypeCode } from '@/lib/types';
 import { AnalysisMetrics } from '@/lib/types';
@@ -13,9 +13,10 @@ interface DuoIdentityCardProps {
     userA: { name: string; job: string; metrics: AnalysisMetrics; typeCode: TypeCode };
     userB: { name: string; job: string; metrics: AnalysisMetrics; typeCode: TypeCode };
     resultId: string;
+    onImageGenerated?: (url: string) => void;
 }
 
-export default function DuoIdentityCard({ userA, userB, resultId }: DuoIdentityCardProps) {
+export default function DuoIdentityCard({ userA, userB, resultId, onImageGenerated }: DuoIdentityCardProps) {
     const cardRef = useRef<HTMLDivElement>(null);
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [generating, setGenerating] = useState(false);
@@ -55,57 +56,16 @@ export default function DuoIdentityCard({ userA, userB, resultId }: DuoIdentityC
         const timer = setTimeout(async () => {
             try {
                 if (cardRef.current) {
-                    const canvas = await html2canvas(cardRef.current, {
+                    const dataUrl = await toPng(cardRef.current, {
+                        cacheBust: true,
+                        pixelRatio: 3,
                         backgroundColor: '#050505',
-                        scale: 3, // High quality
-                        useCORS: true,
-                        logging: false,
-                        allowTaint: false,
-                        width: cardRef.current.offsetWidth,
-                        height: cardRef.current.offsetHeight,
-                        scrollX: -window.scrollX,
-                        scrollY: -window.scrollY,
-                        windowWidth: document.documentElement.offsetWidth,
-                        windowHeight: document.documentElement.offsetHeight,
-                        onclone: (clonedDoc) => {
-                            const clonedCard = clonedDoc.querySelector('[data-capture-target="duo-card"]') as HTMLElement;
-                            if (clonedCard) {
-                                // 1. Fix potential oklch/oklab color leakage from Tailwind 4
-                                // html2canvas crashes on these modern color functions.
-                                try {
-                                    for (let i = 0; i < clonedDoc.styleSheets.length; i++) {
-                                        const sheet = clonedDoc.styleSheets[i] as any;
-                                        try {
-                                            const rules = sheet.cssRules || sheet.rules;
-                                            if (rules) {
-                                                for (let j = rules.length - 1; j >= 0; j--) {
-                                                    const rule = rules[j];
-                                                    if (rule.cssText.includes('oklch') || rule.cssText.includes('oklab') || rule.cssText.includes('color-mix')) {
-                                                        sheet.deleteRule(j);
-                                                    }
-                                                }
-                                            }
-                                        } catch (e) {
-                                            // Ignore cross-origin stylesheet errors
-                                        }
-                                    }
-                                } catch (e) {
-                                    console.warn("Failed to sanitize stylesheets for capture:", e);
-                                }
-
-                                // 2. Remove backdrop-filter
-                                const allElements = clonedDoc.querySelectorAll('*');
-                                allElements.forEach((el: any) => {
-                                    if (el.style) {
-                                        (el.style as any).backdropFilter = 'none';
-                                        (el.style as any).webkitBackdropFilter = 'none';
-                                    }
-                                });
-                            }
+                        style: {
+                            borderRadius: '0',
                         }
                     });
-                    const imgData = canvas.toDataURL('image/png');
-                    setImageUrl(imgData);
+                    setImageUrl(dataUrl);
+                    if (onImageGenerated) onImageGenerated(dataUrl);
                 }
             } catch (err) {
                 console.error("Duo Identity Card capture failed:", err);
@@ -123,7 +83,7 @@ export default function DuoIdentityCard({ userA, userB, resultId }: DuoIdentityC
             <div
                 ref={cardRef}
                 data-capture-target="duo-card"
-                className="relative w-full aspect-[4/5] rounded-[3rem] shadow-2xl overflow-hidden flex flex-col p-12 md:p-16 border border-white/10 font-sans"
+                className="relative w-full aspect-[4/5] rounded-none shadow-2xl overflow-hidden flex flex-col p-12 md:p-16 border border-white/10 font-sans"
                 style={{
                     backgroundColor: '#050505',
                     color: '#ffffff',

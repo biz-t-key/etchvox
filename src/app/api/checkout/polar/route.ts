@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Missing plan selection' }, { status: 400 });
         }
 
-        const validPlans = ['weekly', 'monthly', 'solo', 'couple', 'spy'];
+        const validPlans = ['weekly', 'monthly', 'solo', 'couple', 'spy', 'upgrade'];
         if (!validPlans.includes(plan)) {
             return NextResponse.json({ error: `Invalid plan: ${plan}` }, { status: 400 });
         }
@@ -43,6 +43,9 @@ export async function POST(request: NextRequest) {
                 break;
             case 'spy':
                 productId = POLAR_CONFIG.SPY_PRODUCT_ID;
+                break;
+            case 'upgrade':
+                productId = POLAR_CONFIG.UPGRADE_PRODUCT_ID;
                 break;
         }
 

@@ -23,6 +23,15 @@ export async function POST(request: NextRequest) {
             case 'order.created':
                 await handleOrderCreated(event.data);
                 break;
+            case 'order.updated':
+                // Polar sends order.updated when an order is refunded
+                if (event.data.status === 'refunded' || event.data.status === 'partially_refunded') {
+                    await handleOrderRefunded(event.data);
+                }
+                break;
+            case 'refund.created':
+                await handleOrderRefunded(event.data);
+                break;
 
             case 'subscription.created':
             case 'subscription.updated':
@@ -47,10 +56,37 @@ async function handleOrderCreated(order: any) {
     const email = order.customer?.email;
 
     if (resultId) {
-        await unlockResult(resultId, email);
-        console.log(`✓ Result ${resultId} unlocked via Polar.sh order (Email: ${email || 'none'})`);
+        // Only store hash now, no more plaintext emails
+        const emailHash = email ? require('@/lib/auth').hashEmail(email) : null;
+        await unlockResult(resultId, emailHash);
+        console.log(`✓ Result ${resultId} unlocked via Polar.sh order (Hash stored)`);
     } else {
         console.warn('[Polar Webhook] Order created without result_id in metadata');
+    }
+}
+
+async function handleOrderRefunded(data: any) {
+    // Polar order.updated and refund.created data shapes vary slightly
+    const order = data.order || data;
+    const resultId = order.metadata?.result_id || order.custom_field_data?.result_id;
+
+    if (resultId) {
+        if (resultId === 'mirror') {
+            // Handle Mirror Subscription Revocation
+            const userHash = order.metadata?.user_hash || order.custom_field_data?.user_hash;
+            if (userHash) {
+                const { revokeSubscription } = await import('@/lib/subscription');
+                await revokeSubscription(userHash);
+                console.log(`⚠ Mirror Subscription REVOKED for ${userHash} due to Polar.sh refund`);
+            } else {
+                console.warn('[Polar Webhook] Refund for mirror but no user_hash in metadata');
+            }
+        } else {
+            // Handle Single Report Locking
+            const { lockResult } = await import('@/lib/storage');
+            await lockResult(resultId);
+            console.log(`⚠ Result ${resultId} LOCKED due to Polar.sh refund`);
+        }
     }
 }
 
@@ -67,6 +103,8 @@ async function handleSubscriptionUpdated(subscription: any) {
     let plan: 'weekly' | 'monthly' = 'monthly';
     if (subscription.product_id === POLAR_CONFIG.WEEKLY_PRODUCT_ID) {
         plan = 'weekly';
+    } else if (subscription.product_id === POLAR_CONFIG.UPGRADE_PRODUCT_ID) {
+        plan = 'monthly'; // Upgrade results in monthly status
     }
 
     // Calculate expiration
@@ -76,7 +114,7 @@ async function handleSubscriptionUpdated(subscription: any) {
         plan,
         expiresAt,
         polarId: subscription.id,
-        customerEmail: subscription.customer?.email || '',
+        customerEmailHash: subscription.customer?.email ? require('@/lib/auth').hashEmail(subscription.customer.email) : undefined,
         status: subscription.status === 'active' ? 'active' : 'cancelled'
     });
 

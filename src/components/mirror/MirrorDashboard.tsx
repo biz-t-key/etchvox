@@ -272,6 +272,8 @@ export default function MirrorDashboard({
                         <div className="flex items-center justify-center gap-4 text-xs text-gray-500 font-mono">
                             <span>Genre: {context.genre}</span>
                             <span>•</span>
+                            <span>Archetype: {context.archetype.replace('_', ' ').toUpperCase()}</span>
+                            <span>•</span>
                             <span>Mood: {context.mood.toUpperCase()}</span>
                             <span>•</span>
                             <span>Day {context.dayIndex}/7</span>

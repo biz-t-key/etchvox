@@ -8,15 +8,17 @@ interface ShareButtonsProps {
     typeIcon: string;
     catchphrase: string;
     typeCode: string;
+    cardImageUrl?: string | null; // Added for sharing
 }
 
-export default function ShareButtons({ resultId, typeName, typeIcon, catchphrase, typeCode }: ShareButtonsProps) {
+export default function ShareButtons({ resultId, typeName, typeIcon, catchphrase, typeCode, cardImageUrl }: ShareButtonsProps) {
     const [copied, setCopied] = useState<'bio' | 'link' | null>(null);
     const [canShare, setCanShare] = useState(false);
 
     // Check for Web Share API support on mount
     useEffect(() => {
-        if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+        // Safe check for navigator.share existence
+        if (typeof navigator !== 'undefined' && !!navigator.share) {
             setCanShare(true);
         }
     }, []);
@@ -27,9 +29,9 @@ export default function ShareButtons({ resultId, typeName, typeIcon, catchphrase
 
     const shareUrl = `${baseUrl}/result/${resultId}`;
 
-    const bioText = `${typeIcon} ${typeName.toUpperCase()}\n"${catchphrase}"`;
+    const bioText = `${typeIcon} ${typeName.toUpperCase()}\n"${catchphrase}"\n#etchvox @etchvox`;
 
-    const fullShareText = `I just discovered I'm ${typeIcon} ${typeName.toUpperCase()}! "${catchphrase}" What's YOUR voice type? #EtchVox`;
+    const fullShareText = `I just discovered I'm ${typeIcon} ${typeName.toUpperCase()}! "${catchphrase}" What's YOUR voice type? #etchvox @etchvox`;
 
     const copyToClipboard = async (text: string, type: 'bio' | 'link') => {
         try {
@@ -62,15 +64,15 @@ export default function ShareButtons({ resultId, typeName, typeIcon, catchphrase
             </p>
 
             {/* Bio Copy Box */}
-            <div className="bg-black/50 rounded-lg p-4 mb-4 relative">
-                <pre className="text-sm whitespace-pre-wrap text-gray-300 mono">
+            <div className="bg-black/50 rounded-lg p-4 mb-4 relative border border-white/5">
+                <pre className="text-xs whitespace-pre-wrap text-gray-400 mono">
                     {bioText}
                 </pre>
                 <button
                     onClick={() => copyToClipboard(bioText, 'bio')}
-                    className="absolute top-2 right-2 px-3 py-1 text-xs bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 rounded transition-colors"
+                    className="absolute top-2 right-2 px-3 py-1 text-[10px] bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded transition-colors uppercase font-black"
                 >
-                    {copied === 'bio' ? '✓ Copied!' : '📋 Copy'}
+                    {copied === 'bio' ? '✓ Copied!' : '📋 Copy To Bio'}
                 </button>
             </div>
 
@@ -111,24 +113,41 @@ export default function ShareButtons({ resultId, typeName, typeIcon, catchphrase
                     <span className="text-sm font-bold text-gray-200">TikTok</span>
                 </button>
 
-                {/* Native Share (if supported) */}
+                {/* Web Share (if supported) */}
                 {canShare && (
                     <button
                         onClick={async () => {
                             try {
-                                await navigator.share({
-                                    title: 'My EtchVox Voice Type',
+                                const shareData: ShareData = {
+                                    title: 'My EtchVox Voice ID',
                                     text: fullShareText,
                                     url: shareUrl,
-                                });
+                                };
+
+                                // If we have an image, try to share it as a file
+                                if (cardImageUrl) {
+                                    try {
+                                        const response = await fetch(cardImageUrl);
+                                        const blob = await response.blob();
+                                        const file = new File([blob], 'etchvox-report.png', { type: 'image/png' });
+
+                                        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                                            shareData.files = [file];
+                                        }
+                                    } catch (err) {
+                                        console.error("Failed to prepare card file for sharing:", err);
+                                    }
+                                }
+
+                                await navigator.share(shareData);
                             } catch (err) {
-                                console.log('Share cancelled');
+                                console.log('Share failed or cancelled', err);
                             }
                         }}
-                        className="share-btn flex flex-col items-center justify-center text-center gap-2 p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border border-green-500/20 hover:border-green-500/40 transition-all"
+                        className="share-btn flex flex-col items-center justify-center text-center gap-2 p-4 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 hover:from-cyan-500/30 hover:to-blue-600/30 border border-cyan-500/30 hover:border-cyan-500/50 transition-all group"
                     >
-                        <span className="text-4xl">📤</span>
-                        <span className="text-sm font-bold text-gray-200">Share</span>
+                        <span className="text-4xl group-hover:scale-110 transition-transform">📤</span>
+                        <span className="text-sm font-black text-gray-200">Share ID</span>
                     </button>
                 )}
             </div>

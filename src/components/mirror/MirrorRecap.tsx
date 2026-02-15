@@ -87,6 +87,23 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
             snsLabel: ["DAY 01", "FRICTION", "THE PROOF"],
             visuals: (ctx: CanvasRenderingContext2D, params: any) => {
             }
+        },
+        sanctuary: {
+            name: "The Sanctuary",
+            bg: '#050D0A',
+            bgImage: '/assets/mirror/sanctuary.png',
+            font: "'Outfit', sans-serif",
+            align: 'center' as const,
+            color: '#A7F3D0',
+            blend: 'screen' as GlobalCompositeOperation,
+            letterSpacing: 2,
+            lineHeight: 1.8,
+            stamp: 'leaf_seal_emerald',
+            snsLabel: ["BREATH 01", "STILLNESS", "RESTORATION"],
+            visuals: (ctx: CanvasRenderingContext2D, params: any) => {
+                ctx.shadowColor = 'rgba(167,243,208,0.3)';
+                ctx.shadowBlur = 15;
+            }
         }
     };
 
@@ -135,6 +152,17 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
             ctx.fillStyle = '#ffffff';
             ctx.fillText("ETCH_RECORD", 10, 28);
             ctx.fillRect(0, 35, 120, 2);
+        } else if (style === 'leaf_seal_emerald') {
+            ctx.fillStyle = '#10b981';
+            ctx.beginPath();
+            ctx.moveTo(25, 10);
+            ctx.quadraticCurveTo(45, 10, 40, 40);
+            ctx.quadraticCurveTo(25, 45, 10, 40);
+            ctx.quadraticCurveTo(5, 10, 25, 10);
+            ctx.fill();
+            ctx.font = 'bold 12px serif';
+            ctx.fillStyle = '#064e3b';
+            ctx.fillText("RESTORE", 5, 55);
         }
         ctx.restore();
     };
@@ -386,8 +414,17 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
                     ...dest.stream.getAudioTracks()
                 ]);
 
+                const supportedTypes = [
+                    'video/webm;codecs=vp9,opus',
+                    'video/webm;codecs=vp8,opus',
+                    'video/webm',
+                    'video/mp4',
+                    'video/quicktime'
+                ];
+                const mimeType = supportedTypes.find(type => MediaRecorder.isTypeSupported(type)) || 'video/webm';
+
                 mediaRecorderRef.current = new MediaRecorder(combinedStream, {
-                    mimeType: 'video/webm;codecs=vp9,opus'
+                    mimeType: mimeType
                 });
 
                 mediaRecorderRef.current.ondataavailable = (e) => {
@@ -395,7 +432,7 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
                 };
 
                 mediaRecorderRef.current.onstop = () => {
-                    const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+                    const blob = new Blob(recordedChunksRef.current, { type: mimeType.split(';')[0] });
                     const url = URL.createObjectURL(blob);
                     setExportUrl(url);
                 };

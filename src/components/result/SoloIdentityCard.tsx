@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
-import html2canvas from 'html2canvas';
+import { toPng } from 'html-to-image';
 
 import { MBTIType, mbtiTypes, calculateGapLevel } from '@/lib/mbti';
 import { voiceTypes, TypeCode, AnalysisMetrics } from '@/lib/types';
@@ -11,12 +11,13 @@ interface SoloIdentityCardProps {
     voiceTypeCode: TypeCode;
     userName?: string;
     metrics: AnalysisMetrics;
+    onImageGenerated?: (url: string) => void;
 }
 
 // Inlined noise SVG to avoid CORS issues with html2canvas
 const NOISE_DATA_URL = "data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E";
 
-export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metrics }: SoloIdentityCardProps) {
+export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metrics, onImageGenerated }: SoloIdentityCardProps) {
     const cardRef = useRef<HTMLDivElement>(null);
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [generating, setGenerating] = useState(false);
@@ -59,57 +60,17 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
         const timer = setTimeout(async () => {
             try {
                 if (cardRef.current) {
-                    const canvas = await html2canvas(cardRef.current, {
+                    // Use html-to-image toPng for more reliable client-side capture
+                    const dataUrl = await toPng(cardRef.current, {
+                        cacheBust: true,
+                        pixelRatio: 3, // High quality
                         backgroundColor: '#050505',
-                        scale: 3, // Increased scale for even higher print quality
-                        useCORS: true,
-                        logging: false,
-                        allowTaint: false,
-                        width: cardRef.current.offsetWidth,
-                        height: cardRef.current.offsetHeight,
-                        scrollX: -window.scrollX,
-                        scrollY: -window.scrollY,
-                        windowWidth: document.documentElement.offsetWidth,
-                        windowHeight: document.documentElement.offsetHeight,
-                        onclone: (clonedDoc) => {
-                            const clonedCard = clonedDoc.querySelector('[data-capture-target="solo-card"]') as HTMLElement;
-                            if (clonedCard) {
-                                // 1. Fix potential oklch/oklab color leakage from Tailwind 4
-                                // html2canvas crashes on these modern color functions.
-                                try {
-                                    for (let i = 0; i < clonedDoc.styleSheets.length; i++) {
-                                        const sheet = clonedDoc.styleSheets[i] as any;
-                                        try {
-                                            const rules = sheet.cssRules || sheet.rules;
-                                            if (rules) {
-                                                for (let j = rules.length - 1; j >= 0; j--) {
-                                                    const rule = rules[j];
-                                                    if (rule.cssText.includes('oklch') || rule.cssText.includes('oklab') || rule.cssText.includes('color-mix')) {
-                                                        sheet.deleteRule(j);
-                                                    }
-                                                }
-                                            }
-                                        } catch (e) {
-                                            // Ignore cross-origin stylesheet errors
-                                        }
-                                    }
-                                } catch (e) {
-                                    console.warn("Failed to sanitize stylesheets for capture:", e);
-                                }
-
-                                // 2. Remove backdrop-filter as html2canvas doesn't support it
-                                const allElements = clonedDoc.querySelectorAll('*');
-                                allElements.forEach((el: any) => {
-                                    if (el instanceof HTMLElement && el.style) {
-                                        (el.style as any).backdropFilter = 'none';
-                                        (el.style as any).webkitBackdropFilter = 'none';
-                                    }
-                                });
-                            }
+                        style: {
+                            borderRadius: '0', // Force square corners for capture
                         }
                     });
-                    const imgData = canvas.toDataURL('image/png');
-                    setImageUrl(imgData);
+                    setImageUrl(dataUrl);
+                    if (onImageGenerated) onImageGenerated(dataUrl);
                 }
             } catch (err) {
                 console.error("Solo Identity Card capture failed:", err);
@@ -137,7 +98,7 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
             <div
                 ref={cardRef}
                 data-capture-target="solo-card"
-                className="relative w-full aspect-[4/5] rounded-[3rem] shadow-2xl overflow-hidden flex flex-col p-12 md:p-16 border border-white/10 font-sans select-none"
+                className="relative w-full aspect-[4/5] rounded-none shadow-2xl overflow-hidden flex flex-col p-12 md:p-16 border border-white/10 font-sans select-none"
                 style={{
                     width: '100%',
                     maxWidth: '480px',
