@@ -255,9 +255,9 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                 <div className="relative z-10 mt-auto flex justify-between items-center px-10 pb-6"
                     style={{ opacity: voiceTypeCode === 'ELON' ? 0.7 : 0.5 }}>
                     <div className="text-[8px] font-black tracking-[0.2em] uppercase"
-                        style={{ color: voiceTypeCode === 'ELON' ? '#cbd5e1' : '#ffffff' }}>Auth: Bio-Metric</div>
+                        style={{ color: voiceTypeCode === 'ELON' ? '#cbd5e1' : '#ffffff' }}></div>
                     <div className="text-[8px] font-mono"
-                        style={{ color: voiceTypeCode === 'ELON' ? '#94a3b8' : '#ffffff' }}>v1.1.1.SOLO</div>
+                        style={{ color: voiceTypeCode === 'ELON' ? '#94a3b8' : '#ffffff' }}></div>
                 </div>
             </div>
 

@@ -225,8 +225,8 @@ export default function DuoIdentityCard({ userA, userB, resultId, onImageGenerat
 
                 {/* FOOTER - Increased items spacing and bounds (Fixed clipping) */}
                 <div className="relative z-10 flex justify-between items-center opacity-30 mt-auto px-10 pb-10">
-                    <div className="text-[9px] font-black tracking-widest uppercase">Bio-Auth Matrix</div>
-                    <div className="text-[9px] font-mono text-white">etchvox.com</div>
+                    <div className="text-[9px] font-black tracking-widest uppercase"></div>
+                    <div className="text-[9px] font-mono text-white"></div>
                 </div>
             </div>
 

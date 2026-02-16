@@ -267,20 +267,6 @@ export default function MirrorDashboard({
                     <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
                         Voice Mirror
                     </h1>
-                    <p className="text-gray-400 text-sm font-mono">Bio-Acoustic Analysis • {new Date().toLocaleDateString()}</p>
-                    {context && (
-                        <div className="flex items-center justify-center gap-4 text-xs text-gray-500 font-mono">
-                            <span>Genre: {context.genre}</span>
-                            <span>•</span>
-                            <span>Archetype: {context.archetype.replace('_', ' ').toUpperCase()}</span>
-                            <span>•</span>
-                            <span>Mood: {context.mood.toUpperCase()}</span>
-                            <span>•</span>
-                            <span>Day {context.dayIndex}/7</span>
-                            <span>•</span>
-                            <span>Level: {context.progressLevel}</span>
-                        </div>
-                    )}
                 </div>
 
                 {/* Alert Level Banner */}
