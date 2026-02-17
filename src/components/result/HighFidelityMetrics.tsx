@@ -67,8 +67,12 @@ export default function HighFidelityMetrics({ log, logA, logB, relationshipType 
 
     return (
         <div className="space-y-16 animate-fade-in py-12">
+            <div className="flex items-center gap-4 mb-12">
+                <div className="h-px flex-grow bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
+                <h3 className="text-xl font-black text-cyan-400 uppercase tracking-[0.5em] italic">Metric Analysis</h3>
+                <div className="h-px flex-grow bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
+            </div>
             <div className="text-center space-y-2 mb-8">
-                <h3 className="text-2xl font-black text-cyan-400 uppercase tracking-[0.2em] italic">Metric Analysis</h3>
                 <p className="text-gray-500 text-[9px] uppercase font-bold tracking-[0.3em]">{isCouple ? 'Biometric Signature Comparison' : 'Biometric Extraction'}</p>
             </div>
 

@@ -8,6 +8,7 @@ import { voiceTypes, TypeCode, groupColors } from '@/lib/types';
 import { getResult, VoiceResult, removeFromHistory } from '@/lib/storage';
 import { getBestMatches, getWorstMatches, getCompatibilityTier } from '@/lib/compatibilityMatrix';
 import ShareButtons from '@/components/result/ShareButtons';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import HighFidelityMetrics from '@/components/result/HighFidelityMetrics';
 import ToxicitySelector from '@/components/recording/ToxicitySelector';
 import SoloIdentityCard from '@/components/result/SoloIdentityCard';
@@ -52,14 +53,23 @@ export default function ResultPage() {
     const [cardImageUrl, setCardImageUrl] = useState<string | null>(null);
     const [selectedMBTI, setSelectedMBTI] = useState<MBTIType | null>(null);
     const [mbtiSkipped, setMbtiSkipped] = useState(false);
-    const [showOTO, setShowOTO] = useState(false);
     const [isPurged, setIsPurged] = useState(false);
     const [isHoldingPurge, setIsHoldingPurge] = useState(false);
-    const [copied, setCopied] = useState(false);
-
-    // Lemon Squeezy integration
     const [isSubscribed, setIsSubscribed] = useState(false);
     const [checkoutLoading, setCheckoutLoading] = useState(false);
+
+    // 1. SCROLL DETECTION
+    const { scrollYProgress } = useScroll();
+
+    // 2. NEBULA PHASE TRANSFORMS (0% - 35%)
+    const nebulaScale = useTransform(scrollYProgress, [0, 0.35], [1, 0.4]);
+    const nebulaOpacity = useTransform(scrollYProgress, [0, 0.3], [1, 0]);
+
+    // 3. TRUTH CARD PHASE TRANSFORMS (25% - 60%)
+    const cardY = useTransform(scrollYProgress, [0.25, 0.55], [150, 0]);
+    const cardOpacity = useTransform(scrollYProgress, [0.3, 0.5], [0, 1]);
+    const cardBlur = useTransform(scrollYProgress, [0.3, 0.5], ["blur(20px)", "blur(0px)"]);
+    const cardScale = useTransform(scrollYProgress, [0.3, 0.55], [0.95, 1]);
 
     const isSpyMode = result?.typeCode === 'HIRED' ||
         result?.typeCode === 'SUSP' ||
@@ -72,24 +82,14 @@ export default function ResultPage() {
     function executeHardPurge() {
         if (typeof window === 'undefined') return;
         console.warn("INITIATING HARD PURGE PROTOCOL...");
-
-        // 1. Clear memory (explicit direction to GC)
         (window as any).analysisResult = null;
         (window as any).vocalVector = null;
         (window as any).recordedBlob = null;
-
-        // 2. Clear persistence
         localStorage.clear();
         sessionStorage.clear();
-
-        // 3. Prevent going back
         window.history.replaceState(null, '', window.location.origin);
-
-        // 4. Delete IndexedDB caches
         const DB_NAME = 'EtchVoxCache';
         indexedDB.deleteDatabase(DB_NAME);
-
-        // 5. Hard redirect
         setTimeout(() => {
             window.location.replace(window.location.origin + '?status=purged');
         }, 500);
@@ -105,45 +105,13 @@ export default function ResultPage() {
                     if (data.mbti) {
                         setSelectedMBTI(data.mbti as MBTIType);
                     }
-
-                    // Check subscription status
-                    const historyIds = JSON.parse(localStorage.getItem('etchvox_history') || '[]');
                     const userHash = localStorage.getItem('etchvox_user_hash');
                     if (userHash) {
                         const subStatus = await checkSubscription(userHash);
                         setIsSubscribed(subStatus.isActive);
                     }
-
-                    // Immediate display sequence (Removed artificial delays)
                     setTimeout(() => setDisplayStage('metrics'), 100);
                     setTimeout(() => setDisplayStage('full'), 200);
-
-                    // Calculate Drift if multiple records exist
-                    if (historyIds.length > 1) {
-                        const baselineId = historyIds[historyIds.length - 1];
-                        if (baselineId !== data.id) {
-                            const baselineData = localStorage.getItem(`etchvox_result_${baselineId}`);
-                            if (baselineData) {
-                                const baseline = JSON.parse(baselineData) as VoiceResult;
-                                const driftResult = calculateDrift(baseline.metrics, data.metrics, baseline.createdAt);
-                                setDrift(driftResult);
-                            }
-                        }
-
-                        // Fetch Full History context for Timeline
-                        const loadedHistory: VoiceResult[] = [];
-                        for (const id of historyIds) {
-                            const stored = localStorage.getItem(`etchvox_result_${id}`);
-                            if (stored) loadedHistory.push(JSON.parse(stored));
-                        }
-                        setFullHistory(loadedHistory);
-                    }
-
-                    // Only trigger free analysis if it was already unlocked/paid OR if user is subscribed
-                    // (Actually we should trigger it if it's unlocked, but we'll gate it in the UI)
-                    if (!data.aiAnalysis) {
-                        // We still trigger it, but only show it if unlocked
-                    }
                 } else {
                     setError('Result not found');
                 }
@@ -156,106 +124,47 @@ export default function ResultPage() {
         loadResult();
     }, [resultId]);
 
-    // ✅ Real-time updates: Listen for AI analysis completion & Payment Unlocks
+    // Real-time updates
     useEffect(() => {
         if (!isFirebaseConfigured() || !resultId) return;
-
         const db = getDb();
         const resultRef = doc(db, 'results', resultId);
         const userHash = typeof window !== 'undefined' ? localStorage.getItem('etchvox_user_hash') : null;
 
-        // 1. Listen to the Specific Result (for Single Purchase Unlocks)
         const unsubscribeResult = onSnapshot(resultRef, (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.data();
-
-                // Track if premium status just flipped
                 setResult((prev) => {
                     if (!prev) return prev;
-
                     const updated = {
                         ...prev,
                         aiAnalysis: data.aiAnalysis,
-                        aiAnalysisError: data.aiAnalysisError,
-                        vaultEnabled: true,
-                        mbti: data.mbti,
-                        metrics: data.metrics || prev.metrics,
                         isPremium: data.isPremium || prev.isPremium,
-                        purchasedAt: data.purchasedAt || prev.purchasedAt
                     } as VoiceResult;
-
-                    // SYNC TO LOCAL STORAGE: Prevent stale data on refresh
                     if (typeof window !== 'undefined') {
                         localStorage.setItem(`etchvox_result_${resultId}`, JSON.stringify(updated));
                     }
-
                     return updated;
                 });
-
-                if (data.mbti && !selectedMBTI) {
-                    setSelectedMBTI(data.mbti as MBTIType);
-                }
             }
-        }, (error) => {
-            console.error('Firestore Result listener error:', error);
         });
 
-        // 2. Listen to User's Subscription (for Monthly/Weekly Unlocks)
-        let unsubscribeSub = () => { };
-        if (userHash) {
-            const subRef = doc(db, 'subscriptions', userHash);
-            unsubscribeSub = onSnapshot(subRef, (snapshot) => {
-                if (snapshot.exists()) {
-                    const subData = snapshot.data();
-                    const now = new Date();
-                    const expiresAt = subData.expiresAt?.toDate ? subData.expiresAt.toDate() : new Date(subData.expiresAt);
-                    const isActive = subData.status === 'active' && expiresAt > now;
-
-                    setIsSubscribed(isActive);
-
-                    // SYNC TO LOCAL STORAGE
-                    if (typeof window !== 'undefined') {
-                        localStorage.setItem('etchvox_subscription', JSON.stringify({
-                            isActive,
-                            expiresAt: expiresAt.toISOString(),
-                            plan: subData.plan
-                        }));
-                    }
-
-                    console.log(`[Sync] Subscription state updated: ${isActive ? 'ACTIVE' : 'INACTIVE'}`);
-                }
-            }, (error) => {
-                console.error('Firestore Subscription listener error:', error);
-            });
-        }
-
-        return () => {
-            unsubscribeResult();
-            unsubscribeSub();
-        };
-    }, [resultId, selectedMBTI]);
+        return () => unsubscribeResult();
+    }, [resultId]);
 
     const handleCheckout = async (type: 'solo' | 'couple' | 'spy') => {
         setCheckoutLoading(true);
-
         try {
             const plan = type;
             const userHash = localStorage.getItem('etchvox_user_hash') || '';
-
             const response = await fetch('/api/checkout/polar', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userHash, resultId, plan })
             });
-
-            if (!response.ok) {
-                throw new Error('Failed to create checkout');
-            }
-
+            if (!response.ok) throw new Error('Failed to create checkout');
             const data = await response.json();
-            const checkoutUrl = data.checkoutUrl;
-            window.location.href = checkoutUrl;
-
+            window.location.href = data.checkoutUrl;
         } catch (err) {
             console.error('Checkout error:', err);
             setError('Failed to start checkout. Please try again.');
@@ -386,388 +295,248 @@ export default function ResultPage() {
     const diagnosticPrice = diagnosticType === 'spy' ? POLAR_CONFIG.SPY_PRICE : (diagnosticType === 'couple' ? POLAR_CONFIG.COUPLE_PRICE : POLAR_CONFIG.SOLO_PRICE);
 
     return (
-        <main className="min-h-screen bg-black text-white selection:bg-cyan-500/30 font-sans flex flex-col items-center overflow-x-hidden w-full relative">
+        <main className="relative bg-black text-white selection:bg-cyan-500/30 font-sans overflow-x-hidden w-full">
+            {/* 400vh Scroll Length for Storytelling */}
+            <div className="h-[400vh] w-full">
 
-            {/* Background Decoration */}
-            <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-                <div
-                    className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full blur-[100px] opacity-20 animate-pulse-slow"
-                    style={{
-                        backgroundColor: isCouple
-                            ? (RELATIONSHIP_COLORS[result.coupleData?.relationshipType as keyof typeof RELATIONSHIP_COLORS]?.a || RELATIONSHIP_COLORS.romantic.a)
-                            : '#22d3ee'
-                    }}
-                />
-                <div
-                    className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full blur-[100px] opacity-20 animate-pulse-slow delay-1000"
-                    style={{
-                        backgroundColor: isCouple
-                            ? (RELATIONSHIP_COLORS[result.coupleData?.relationshipType as keyof typeof RELATIONSHIP_COLORS]?.b || RELATIONSHIP_COLORS.romantic.b)
-                            : '#ec4899'
-                    }}
-                />
-            </div>
+                {/* BACKGROUND: CINEMATIC NOISE & BLOBS */}
+                <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+                    <div className="grain-overlay" />
+                    <motion.div
+                        className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full blur-[120px] opacity-[0.05] animate-pulse-slow"
+                        style={{
+                            backgroundColor: isCouple
+                                ? (RELATIONSHIP_COLORS[result.coupleData?.relationshipType as keyof typeof RELATIONSHIP_COLORS]?.a || RELATIONSHIP_COLORS.romantic.a)
+                                : '#ffffff'
+                        }}
+                    />
+                    <motion.div
+                        className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full blur-[120px] opacity-[0.05] animate-pulse-slow delay-1000"
+                        style={{
+                            backgroundColor: isCouple
+                                ? (RELATIONSHIP_COLORS[result.coupleData?.relationshipType as keyof typeof RELATIONSHIP_COLORS]?.b || RELATIONSHIP_COLORS.romantic.b)
+                                : '#444444'
+                        }}
+                    />
+                </div>
 
-            <div className="relative z-10 w-full px-4 py-20 md:py-48 space-y-32 flex flex-col items-center text-center">
-                {/* Header */}
-                <header className="flex flex-col items-center justify-center space-y-4 w-full max-w-2xl px-4">
-                    <Link
-                        href="/"
-                        className="text-[10px] font-black tracking-[0.4em] text-gray-600 hover:text-white transition-colors duration-300 uppercase"
-                    >
-                        ← [ NEW_ANALYSIS_PROTOCOL ]
-                    </Link>
-                    <div className="relative pt-4">
-                        <h1 className={`text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r ${isCouple ? 'from-pink-400 to-pink-200' : 'from-cyan-400 to-cyan-200'} drop-shadow-[0_0_15px_${isCouple ? 'rgba(236,72,153,0.5)' : 'rgba(34,211,238,0.5)'}] uppercase tracking-widest`}>
-                            {isCouple ? 'Duo Resonance' : 'Identity Audit'}
-                        </h1>
-                        <div className={`absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-12 h-0.5 ${isCouple ? 'bg-pink-500' : 'bg-cyan-500'} rounded-full blur-[1px]`} />
+                {/* CHAPTER 1: THE SOUL REVEAL (Fixed 0% - 35%) */}
+                <motion.section
+                    style={{ scale: nebulaScale, opacity: nebulaOpacity }}
+                    className="fixed inset-0 flex flex-col items-center justify-center z-10 pointer-events-none"
+                >
+                    <div className="text-[120px] mb-12 animate-pulse-slow grayscale opacity-40">
+                        {voiceType.icon}
                     </div>
-                </header>
-
-                {/* STAGE 1: THE REVEAL */}
-                {displayStage === 'label' && (
-                    <div className="flex flex-col items-center justify-center min-h-[50vh] animate-fade-in text-center w-full max-w-2xl">
-                        <div className="text-8xl mb-6 animate-bounce-slow filter drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]">
-                            {voiceType.icon}
-                        </div>
-                        <h2 className="text-4xl md:text-6xl font-black uppercase text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-white mb-4 tracking-tighter">
-                            {voiceType.name}
-                        </h2>
-                        <div className="text-sm md:text-base font-mono text-cyan-500 tracking-[0.3em] uppercase opacity-80">
-                            {result.typeCode}
-                        </div>
+                    <h2 className="text-5xl md:text-9xl font-black uppercase text-white mb-6 tracking-[-0.05em] leading-none opacity-80">
+                        {voiceType.name}
+                    </h2>
+                    <div className="text-[11px] font-black text-white tracking-[1.2em] uppercase opacity-30 pl-[1.2em]">
+                        {result.typeCode}
                     </div>
-                )}
+                    <div className="absolute bottom-20 flex flex-col items-center gap-4 opacity-20">
+                        <div className="text-[10px] font-black tracking-[0.5em] uppercase pl-[0.5em]">Scroll to Decode</div>
+                        <motion.div
+                            animate={{ y: [0, 8, 0] }}
+                            transition={{ repeat: Infinity, duration: 2 }}
+                            className="w-px h-12 bg-white"
+                        />
+                    </div>
+                </motion.section>
 
-                {/* STAGE 2 & 3 CONTENT */}
-                {(displayStage === 'metrics' || displayStage === 'full') && (
-                    <div className="animate-fade-in w-full space-y-24 md:space-y-40 pt-12 flex flex-col items-center">
-                        {isSpyMode ? (
-                            <div className="w-full max-w-lg mx-auto px-4">
-                                <SpyReportCard
-                                    typeCode={result.typeCode}
-                                    spyMetadata={result.spyMetadata!}
-                                    score={result.spyAnalysis?.score || 0}
-                                    reportMessage={generateFinalReport(
-                                        result.spyAnalysis ? { stamp: result.typeCode, ...result.spyAnalysis } : { stamp: result.typeCode },
-                                        result.spyMetadata!
-                                    )}
-                                    onBurn={handleSpyBurn}
-                                    autoBurn={!result.researchConsentAgreed}
-                                    isHoldingPurge={isHoldingPurge}
-                                    isPremium={isPremium}
-                                    onUnlock={() => handleCheckout('spy')}
+                {/* CHAPTER 2: TRUTH CARD REVEAL (Fixed 25% - 60%) */}
+                <motion.section
+                    style={{
+                        opacity: cardOpacity,
+                        y: cardY,
+                        filter: cardBlur,
+                        scale: cardScale
+                    }}
+                    className="fixed inset-0 flex items-center justify-center z-20 px-4 pointer-events-auto"
+                >
+                    <div className="w-full max-w-lg mx-auto relative group">
+                        {/* Film Grain Jitter Overlay on Card */}
+                        <motion.div
+                            animate={{ x: [0, -1, 1, -1], y: [0, 1, -1, 1] }}
+                            transition={{ repeat: Infinity, duration: 0.1 }}
+                            className="absolute inset-0 z-30 pointer-events-none opacity-20"
+                            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")` }}
+                        />
+
+                        <div className="transform transition-transform duration-1000 group-hover:scale-[1.02]">
+                            {isCouple && result.coupleData ? (
+                                <DuoIdentityCard
+                                    userA={result.coupleData.userA as any}
+                                    userB={result.coupleData.userB as any}
+                                    relationshipType={result.coupleData.relationshipType}
+                                    resultId={result.id}
+                                    onImageGenerated={setCardImageUrl}
                                 />
-                            </div>
-                        ) : (
-                            <>
-                                <div className="animate-slide-up space-y-24 md:space-y-40 w-full flex flex-col items-center">
-
-                                    {/* 1. IDENTITY CARD (The "Reward") */}
-                                    <div id="identity-card" className="w-full max-w-lg mx-auto">
-                                        <div className="flex items-center gap-3 mb-8 px-4 md:px-0">
-                                            <div className="w-1 h-6 bg-cyan-500" />
-                                            <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em]">
-                                                {isCouple ? 'Duo Identity' : 'Truth Card'}
-                                            </h2>
-                                        </div>
-                                        {isCouple && result.coupleData ? (
-                                            <DuoIdentityCard
-                                                userA={result.coupleData.userA as any}
-                                                userB={result.coupleData.userB as any}
-                                                relationshipType={result.coupleData.relationshipType}
-                                                resultId={result.id}
-                                                onImageGenerated={setCardImageUrl}
-                                            />
-                                        ) : (
-                                            <SoloIdentityCard
-                                                mbti={(result.mbti || 'INTJ') as MBTIType}
-                                                voiceTypeCode={result.typeCode}
-                                                userName={result.id}
-                                                metrics={safeMetrics}
-                                                onImageGenerated={setCardImageUrl}
-                                            />
-                                        )}
-                                    </div>
-
-                                    {/* 2. INVISIBLE ARTIFACT (The "Surprise") */}
-                                    {result.postReading && result.postReading.category !== 'Statue' && (
-                                        <div className="w-full max-w-lg mx-auto px-4 md:px-0">
-                                            <div className="flex items-center gap-3 mb-6 justify-center">
-                                                <div className="w-1 h-4 bg-pink-500 rounded-full animate-pulse" />
-                                                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-pink-400">
-                                                    Invisible Artifact Detected
-                                                </h3>
-                                            </div>
-                                            <div className="bg-pink-500/5 rounded-2xl p-6 border border-pink-500/10 transition-all hover:bg-pink-500/10">
-                                                <div className="flex items-center gap-4 mb-3">
-                                                    <div className="w-10 h-10 bg-pink-500/20 rounded-lg flex items-center justify-center text-xl">
-                                                        {result.postReading.category === 'Sigh' ? '💨' :
-                                                            result.postReading.category === 'Laughter' ? '✨' :
-                                                                result.postReading.category === 'Mumble' ? '🌫️' :
-                                                                    result.postReading.category === 'Fidget' ? '🫨' : '🗿'}
-                                                    </div>
-                                                    <div className="text-left">
-                                                        <div className="text-pink-400 font-bold text-sm uppercase tracking-widest">
-                                                            {result.postReading.category}
-                                                        </div>
-                                                        <div className="text-[10px] font-mono text-gray-500 uppercase">
-                                                            Intensity: {Math.round(result.postReading.score * 100)}%
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <p className="text-xs text-gray-400 leading-relaxed text-left italic">
-                                                    "{result.postReading.description}"
-                                                </p>
-                                            </div>
-                                        </div>
-                                    )}
-
-
-                                    {/* 4. METRICS SECTION */}
-                                    <div className="w-full text-left">
-                                        <div className="grid grid-cols-1 gap-12">
-                                            <div>
-                                                {result.logV2 ? (
-                                                    <HighFidelityMetrics
-                                                        log={result.logV2}
-                                                        logA={isCouple ? result.coupleData?.userA?.logV2 : undefined}
-                                                        logB={isCouple ? result.coupleData?.userB?.logV2 : undefined}
-                                                        relationshipType={isCouple ? result.coupleData?.relationshipType : undefined}
-                                                    />
-                                                ) : (
-                                                    <div className="text-gray-500 text-xs italic">High-fidelity metrics unavailable for this legacy record.</div>
-                                                )}
-
-                                                <div className="w-full max-w-lg mx-auto py-20">
-                                                    <div className="flex items-center gap-4 mb-12">
-                                                        <div className="h-px flex-grow bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
-                                                        <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-cyan-500/50">Identity Kit</h2>
-                                                        <div className="h-px flex-grow bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
-                                                    </div>
-                                                    <PremiumExporter
-                                                        metadata={{
-                                                            archetypeCode: result.typeCode || 'UNKNOWN',
-                                                            mbti: result.mbti || 'Void',
-                                                            roast: voiceType.roast || voiceType.catchphrase || 'Echo in the void',
-                                                            isCouple: isCouple,
-                                                            price: isCouple ? 5 : 3,
-                                                            partnerA: isCouple ? result.coupleData?.userA?.name : undefined,
-                                                            partnerB: isCouple ? result.coupleData?.userB?.name : undefined,
-                                                            relationshipLabel: isCouple ? result.coupleData?.relationshipType : undefined
-                                                        }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="w-full max-w-4xl px-4 py-20 mx-auto">
-                                            <div className="flex items-center gap-4 mb-20">
-                                                <div className="h-px flex-grow bg-white/10" />
-                                                <h4 className="text-[10px] font-black uppercase tracking-[0.5em] text-gray-600">Compatibility Index</h4>
-                                                <div className="h-px flex-grow bg-white/10" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* 5. COMPATIBILITY MATRIX (Solo Only) */}
-                                {!isCouple && !isSpyMode && (
-                                    <div className="w-full max-w-4xl px-4 pb-20 mt-32">
-                                        <div className="flex flex-col md:flex-row items-baseline justify-between mb-12 gap-4">
-                                            <div>
-                                                <h2 className="text-3xl font-black uppercase tracking-tighter mb-2">Social Signal Matrix</h2>
-                                                <p className="text-gray-500 font-mono text-xs uppercase tracking-widest">Cross-Reference Compatibility Index</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-                                            <div className="glass rounded-3xl p-8 border border-cyan-500/20">
-                                                <h3 className="text-xs font-black text-cyan-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-                                                    Best Signal Match
-                                                </h3>
-                                                <div className="grid grid-cols-1 gap-4">
-                                                    {bestMatches.map(match => {
-                                                        const matchedVoiceType = voiceTypes[match.type];
-                                                        return (
-                                                            <div
-                                                                key={match.type}
-                                                                className="glass rounded-2xl p-4 border border-cyan-500/20 hover:border-cyan-500/40 transition-all group"
-                                                            >
-                                                                <div className="flex items-center gap-3 mb-2">
-                                                                    <span className="text-2xl group-hover:scale-110 transition-transform">{matchedVoiceType.icon}</span>
-                                                                    <div className="flex-1">
-                                                                        <div className="text-sm font-black text-white uppercase tracking-wider">
-                                                                            {matchedVoiceType.name}
-                                                                        </div>
-                                                                        <div className="text-[9px] text-cyan-500/60 font-mono font-bold">
-                                                                            {match.type}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="text-[10px] text-gray-500 italic leading-relaxed pl-9">
-                                                                    "{matchedVoiceType.catchphrase}"
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-
-                                            <div className="glass rounded-3xl p-8 border border-red-500/20">
-                                                <h3 className="text-xs font-black text-red-500 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                                                    Interference Risk
-                                                </h3>
-                                                <div className="grid grid-cols-1 gap-4">
-                                                    {worstMatches.map(match => {
-                                                        const matchedVoiceType = voiceTypes[match.type];
-                                                        return (
-                                                            <div
-                                                                key={match.type}
-                                                                className="glass rounded-2xl p-4 border border-red-500/10 hover:border-red-500/30 transition-all group"
-                                                            >
-                                                                <div className="flex items-center gap-3 mb-2">
-                                                                    <span className="text-2xl grayscale group-hover:grayscale-0 transition-all">{matchedVoiceType.icon}</span>
-                                                                    <div className="flex-1">
-                                                                        <div className="text-sm font-black text-gray-300 uppercase tracking-wider">
-                                                                            {matchedVoiceType.name}
-                                                                        </div>
-                                                                        <div className="text-[10px] text-red-500/40 font-mono font-bold">
-                                                                            {match.type}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="text-[10px] text-gray-600 italic leading-relaxed pl-9">
-                                                                    "{matchedVoiceType.catchphrase}"
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Neural Drift Analysis Segment (Duo Only or Complex Audit Only) */}
-                                        {isCouple && drift && (
-                                            <div className="mb-32">
-                                                <div className="flex items-center gap-4 mb-8">
-                                                    <div className="h-px flex-grow bg-white/10" />
-                                                    <h2 className="text-xs font-black uppercase tracking-[0.5em] text-gray-500">Neural Drift Analysis</h2>
-                                                    <div className="h-px flex-grow bg-white/10" />
-                                                </div>
-                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-                                                    <div className="glass rounded-3xl p-8 border border-white/5">
-                                                        <div className="text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Drift Score</div>
-                                                        <div className="text-4xl font-black text-white italic">{drift.driftRate}%</div>
-                                                    </div>
-                                                    <div className="md:col-span-2 glass rounded-3xl p-8 border border-white/5 relative overflow-hidden group">
-                                                        <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-20 transition-opacity">
-                                                            <span className="text-8xl">📊</span>
-                                                        </div>
-                                                        <p className="text-sm font-medium leading-relaxed text-gray-300 italic relative z-10 text-left">
-                                                            "{getDriftNarrative(drift)}"
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-
-
-                                        <ShareButtons
-                                            resultId={resultId}
-                                            typeName={voiceType.name}
-                                            typeIcon={voiceType.icon}
-                                            catchphrase={voiceType.catchphrase}
-                                            typeCode={result.typeCode}
-                                            cardImageUrl={cardImageUrl}
-                                        />
-                                    </div>
-                                )}
-
-                                {/* 6. AI AUDIT REPORT (PREMIUM GATING) */}
-                                {isPremium && (
-                                    <div className="w-full mb-32 max-w-4xl px-4">
-                                        <div className="flex items-center gap-3 mb-12">
-                                            <div className={`w-1 h-6 ${isCouple ? 'bg-pink-500' : isSpyMode ? 'bg-red-500' : 'bg-cyan-500'}`} />
-                                            <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em]">
-                                                {isCouple ? 'Resonance Map' : isSpyMode ? 'Intel Dossier' : 'Identity Archive'}
-                                            </h2>
-                                        </div>
-
-                                        {result.aiAnalysis ? (
-                                            <div className={`bg-black/50 border ${isCouple ? 'border-pink-500/30' : isSpyMode ? 'border-red-500/30 font-mono' : 'border-cyan-500/30'} rounded-2xl p-6 md:p-10 text-left space-y-6 shadow-[0_0_30px_rgba(6,182,212,0.15)]`}>
-                                                <div className="prose prose-invert prose-sm max-w-none">
-                                                    <ReactMarkdown
-                                                        components={{
-                                                            h1: ({ node, ...props }) => <h1 className={`text-2xl font-bold ${isSpyMode ? 'text-red-500 font-mono' : 'text-cyan-400'} uppercase tracking-widest mb-4`} {...props} />,
-                                                            h2: ({ node, ...props }) => <h2 className="text-xl font-bold text-white uppercase tracking-wide mt-8 mb-4" {...props} />,
-                                                            p: ({ node, ...props }) => <p className="text-gray-300 leading-relaxed mb-4" {...props} />,
-                                                            ul: ({ node, ...props }) => <ul className="list-disc list-inside space-y-3 text-gray-300 ml-2" {...props} />,
-                                                            li: ({ node, ...props }) => <li className="text-gray-300 leading-relaxed" {...props} />,
-                                                            strong: ({ node, ...props }) => <strong className={`${isSpyMode ? 'text-red-400' : 'text-cyan-400'} font-bold`} {...props} />,
-                                                        }}
-                                                    >
-                                                        {result.aiAnalysis}
-                                                    </ReactMarkdown>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="text-center p-12 border border-dashed border-cyan-500/30 rounded-xl bg-gradient-to-br from-cyan-500/5 to-transparent">
-                                                <div className="w-16 h-16 mx-auto mb-4 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-                                                <div className="text-sm font-bold text-cyan-400 uppercase tracking-widest mb-3">🧬 Neural Analysis In Progress</div>
-                                                <div className="text-gray-400 text-xs max-w-xs mx-auto leading-relaxed">
-                                                    Your vocal DNA is being decoded by the AI engine. This typically takes 10-20 seconds.
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {/* 7. PURGE PROTOCOL (The "End") */}
-                                <div className="w-full max-w-2xl px-4 py-32 md:py-48 flex flex-col items-center gap-12 border-t border-white/5">
-                                    <div className="text-center space-y-8">
-                                        <div className="inline-block px-4 py-1 rounded-full border border-red-900/50 bg-red-950/20 text-[10px] text-red-500 font-black uppercase tracking-widest mb-4">
-                                            Danger Zone // Privacy Protocol
-                                        </div>
-                                        <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter">Hard Purge</h2>
-                                        <p className="text-gray-500 text-sm max-w-sm mx-auto leading-relaxed italic">
-                                            Permanently delete this vocal fingerprint and all associated neural data. This action is irreversible.
-                                        </p>
-                                        <div className="flex flex-col items-center gap-6">
-                                            <div className="relative group">
-                                                <div className="absolute -inset-1 bg-red-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200" />
-                                                <button
-                                                    onClick={() => {
-                                                        if (window.confirm("ARE YOU SURE? This will permanently delete your biometric data and redirect you to the home page.")) {
-                                                            setIsHoldingPurge(true);
-                                                            setTimeout(() => {
-                                                                removeFromHistory(resultId);
-                                                                window.location.href = '/';
-                                                            }, 2000);
-                                                        }
-                                                    }}
-                                                    disabled={isHoldingPurge}
-                                                    className="relative btn-metallic border-red-500/50 bg-black px-12 py-5 rounded-2xl text-[10px] text-red-500 hover:text-white transition-all disabled:opacity-50"
-                                                >
-                                                    {isHoldingPurge ? 'INITIATING SCRUB...' : '[ EXECUTE DATA PURGE ]'}
-                                                </button>
-                                            </div>
-                                            <p className="text-[9px] text-zinc-600 uppercase tracking-widest max-w-sm mx-auto leading-relaxed">
-                                                You have the right to be forgotten. Purging removes all traces of this analysis from both your device and our secure cloud.
-                                            </p>
-                                        </div>
-                                        <Link href="/" className="inline-block text-[11px] text-gray-600 hover:text-white transition-colors uppercase tracking-[0.3em] border-b border-transparent hover:border-gray-500 pb-1 font-black">
-                                            [ START NEW ANALYSIS ]
-                                        </Link>
-                                    </div>
-                                </div>
-                            </>
-                        )}
+                            ) : (
+                                <SoloIdentityCard
+                                    mbti={(result.mbti || 'INTJ') as MBTIType}
+                                    voiceTypeCode={result.typeCode}
+                                    userName={result.id}
+                                    metrics={safeMetrics}
+                                    onImageGenerated={setCardImageUrl}
+                                />
+                            )}
+                        </div>
                     </div>
-                )}
+                </motion.section>
+
+                {/* CHAPTER 3: ANALYSIS & EXPORT (Scrollable 60% - 100%) */}
+                <div className="relative z-30 pt-[250vh] pb-32 flex flex-col items-center bg-transparent">
+                    <div className="w-full max-w-4xl px-4 flex flex-col items-center">
+
+                        {/* 1. LOGICAL ANALYSIS */}
+                        <section className="w-full flex flex-col items-center py-64 border-t border-white/5">
+                            <div className="w-full">
+                                {result.logV2 ? (
+                                    <HighFidelityMetrics
+                                        log={result.logV2}
+                                        logA={isCouple ? result.coupleData?.userA?.logV2 : undefined}
+                                        logB={isCouple ? result.coupleData?.userB?.logV2 : undefined}
+                                        relationshipType={isCouple ? result.coupleData?.relationshipType : undefined}
+                                    />
+                                ) : (
+                                    <div className="text-gray-500 text-xs italic text-center">Biometric trace successfully encrypted.</div>
+                                )}
+                            </div>
+                        </section>
+
+                        {/* 2. SOCIAL SIGNAL MATRIX */}
+                        {!isCouple && !isSpyMode && (
+                            <section className="w-full flex flex-col items-center py-64 border-t border-white/5">
+                                <div className="text-center mb-32 space-y-6">
+                                    <h2 className="text-xl font-black text-white uppercase tracking-[0.6em] italic opacity-80">Social Signal Matrix</h2>
+                                    <p className="text-gray-600 font-mono text-[10px] uppercase tracking-[0.4em]">Global Compatibility Index</p>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-12 w-full">
+                                    <div className="space-y-8">
+                                        <h3 className="text-[10px] font-black text-cyan-400/50 uppercase tracking-[0.3em] text-center mb-8">Best Signal Match</h3>
+                                        {bestMatches.map(match => (
+                                            <div key={match.type} className="glass rounded-3xl p-6 border border-white/5 hover:border-cyan-500/20 transition-all group flex items-center gap-4">
+                                                <span className="text-3xl grayscale group-hover:grayscale-0 transition-all duration-500">{voiceTypes[match.type].icon}</span>
+                                                <div className="flex-1 text-left">
+                                                    <div className="text-sm font-black text-white uppercase tracking-wider">{voiceTypes[match.type].name}</div>
+                                                    <div className="text-[10px] text-cyan-500 font-mono italic opacity-50">{match.type}</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="space-y-8">
+                                        <h3 className="text-[10px] font-black text-red-500/50 uppercase tracking-[0.3em] text-center mb-8">Interference Risk</h3>
+                                        {worstMatches.map(match => (
+                                            <div key={match.type} className="glass rounded-3xl p-6 border border-white/5 hover:border-red-500/20 transition-all group flex items-center gap-4 opacity-50">
+                                                <span className="text-3xl grayscale group-hover:grayscale-0 transition-all duration-500">{voiceTypes[match.type].icon}</span>
+                                                <div className="flex-1 text-left">
+                                                    <div className="text-sm font-black text-white uppercase tracking-wider">{voiceTypes[match.type].name}</div>
+                                                    <div className="text-[10px] text-red-500 font-mono italic opacity-50">{match.type}</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </section>
+                        )}
+
+                        {/* 3. AI REPORT / PAYWALL */}
+                        <section className="w-full flex flex-col items-center py-64 border-t border-white/5">
+                            {result.isPremium && result.aiAnalysis ? (
+                                <div className="w-full max-w-3xl">
+                                    <div className="text-center mb-32 opacity-80">
+                                        <h2 className="text-xl font-black text-white uppercase tracking-[0.6em] italic">Full Intelligence Audit</h2>
+                                    </div>
+                                    <div className="prose prose-invert prose-sm max-w-none text-left leading-loose opacity-80">
+                                        <ReactMarkdown
+                                            components={{
+                                                h1: ({ node, ...props }) => <h1 className="text-2xl font-black text-white uppercase tracking-widest mb-12 border-b border-white/10 pb-4" {...props} />,
+                                                h2: ({ node, ...props }) => <h2 className="text-xl font-black text-white uppercase tracking-wide mt-16 mb-6" {...props} />,
+                                                p: ({ node, ...props }) => <p className="text-gray-400 leading-relaxed mb-8" {...props} />,
+                                                strong: ({ node, ...props }) => <strong className="text-cyan-400 font-black" {...props} />,
+                                            }}
+                                        >
+                                            {result.aiAnalysis}
+                                        </ReactMarkdown>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="w-full max-w-lg text-center space-y-12">
+                                    <div className="text-center mb-12">
+                                        <h3 className="text-xl font-black text-cyan-400 uppercase tracking-[0.5em] italic">The Full Archive</h3>
+                                        <p className="text-gray-600 text-[10px] font-black uppercase tracking-widest mt-2">Deeper Context Hidden</p>
+                                    </div>
+                                    <div className="glass rounded-[3rem] p-12 border border-white/5 space-y-12">
+                                        <div className="text-5xl opacity-40">🧬</div>
+                                        <p className="text-sm text-gray-500 leading-relaxed italic">
+                                            Unlock the complete 30-page neural blueprint including social compatibility scores and blindspot detection.
+                                        </p>
+                                        <button
+                                            onClick={() => handleCheckout(diagnosticType)}
+                                            className="w-full bg-white text-black font-black py-6 rounded-3xl uppercase tracking-widest hover:bg-cyan-400 transition-all transform active:scale-95"
+                                        >
+                                            Reveal Intelligence Report
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </section>
+
+                        {/* 4. IDENTITY KIT */}
+                        <section className="w-full flex flex-col items-center py-64 bg-white/[0.02] rounded-[4rem] px-8">
+                            <div className="text-center mb-32">
+                                <h2 className="text-xl font-black text-white uppercase tracking-[0.6em] italic">Identity Kit</h2>
+                                <p className="text-gray-500 text-[10px] uppercase font-black tracking-[0.4em] mt-6 opacity-50">Authorized Metadata Distribution</p>
+                            </div>
+                            <PremiumExporter
+                                metadata={{
+                                    archetypeCode: result.typeCode || 'UNKNOWN',
+                                    mbti: result.mbti || 'Void',
+                                    roast: voiceType.roast || voiceType.catchphrase || 'Echo in the void',
+                                    isCouple: isCouple,
+                                    price: isCouple ? 5 : 3,
+                                    partnerA: isCouple ? result.coupleData?.userA?.name : undefined,
+                                    partnerB: isCouple ? result.coupleData?.userB?.name : undefined,
+                                    relationshipLabel: isCouple ? result.coupleData?.relationshipType : undefined
+                                }}
+                            />
+                        </section>
+
+                        {/* 5. BROADCAST */}
+                        <section className="w-full py-64 flex flex-col items-center">
+                            <div className="text-center mb-16 opacity-30">
+                                <h2 className="text-[11px] font-black text-white uppercase tracking-[1.2em] pl-[1.2em]">Broadcast</h2>
+                            </div>
+                            <ShareButtons
+                                resultId={resultId}
+                                typeName={voiceType.name}
+                                typeIcon={voiceType.icon}
+                                catchphrase={voiceType.catchphrase}
+                                typeCode={result.typeCode}
+                                cardImageUrl={cardImageUrl}
+                            />
+                        </section>
+
+                        {/* 6. PURGE PROTOCOL */}
+                        <div className="w-full py-32 flex flex-col items-center gap-12 opacity-30 hover:opacity-100 transition-opacity duration-1000">
+                            <button
+                                onClick={() => {
+                                    if (window.confirm("ARE YOU SURE?")) {
+                                        setIsHoldingPurge(true);
+                                        setTimeout(() => {
+                                            removeFromHistory(resultId);
+                                            window.location.href = '/';
+                                        }, 2000);
+                                    }
+                                }}
+                                className="text-[9px] font-black text-gray-600 uppercase tracking-[0.5em] hover:text-red-500 transition-colors"
+                            >
+                                [ EXECUTE HARD PURGE ]
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
     );

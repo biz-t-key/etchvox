@@ -207,18 +207,18 @@ export default function PremiumExporter({ metadata }: { metadata: ExportMetadata
                             </div>
                             <span className="text-2xl md:text-3xl uppercase tracking-tighter">Download Identity Kit</span>
                             <div className="text-xs opacity-80 font-medium">
-                                4K PNG Card + HQ Cinematic Loop
+                                Ultra-HD Assets • PNG + MP4
                             </div>
                         </button>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="bg-white/5 rounded-2xl p-4 border border-white/10 flex flex-col items-center gap-2">
                                 <span className="text-xl">🖨️</span>
-                                <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">4K Master Copy</span>
+                                <span className="text-[9px] font-black uppercase tracking-widest text-white/40">High-Res Image (PNG)</span>
                             </div>
                             <div className="bg-white/5 rounded-2xl p-4 border border-white/10 flex flex-col items-center gap-2">
                                 <span className="text-xl">🎬</span>
-                                <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">Video Background</span>
+                                <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Animated BG (MP4)</span>
                             </div>
                         </div>
                     </motion.div>

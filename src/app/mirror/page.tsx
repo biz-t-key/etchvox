@@ -10,6 +10,7 @@ import { saveAudioBlob } from '@/lib/mirrorDb';
 import { uploadMirrorBlob } from '@/lib/storage';
 import { polishAudio } from '@/lib/audioPolisher';
 import MirrorDashboard from '@/components/mirror/MirrorDashboard';
+import StorySelector from '@/components/mirror/StorySelector';
 import SubscriptionWall from '@/components/mirror/SubscriptionWall';
 import { checkSubscription } from '@/lib/subscription';
 import { isFirebaseConfigured, getDb } from '@/lib/firebase';
@@ -27,7 +28,10 @@ interface MirrorPreference {
     timestamp: number;
 }
 
+import { MirrorProvider, useMirror, MirrorArchetype } from '@/context/MirrorContext';
+
 function MirrorContent() {
+    const { setMirror } = useMirror();
     const params = useSearchParams();
     const isDevMode = params.get('dev') === 'true';
 
@@ -365,6 +369,7 @@ function MirrorContent() {
 
     function handleArchetypeSelect(archetype: Archetype) {
         setSelectedArchetype(archetype);
+        setMirror(archetype.toUpperCase() as MirrorArchetype);
         if (selectedGenre && selectedScenario && !canChangePreference) {
             setPhase('mood');
         } else {
@@ -644,38 +649,13 @@ function MirrorContent() {
             ];
 
             return (
-                <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
-                    <div className="max-w-4xl w-full space-y-12">
-                        <div className="text-center space-y-4">
-                            <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                                Select Your Reading Genre
-                            </h1>
-                            <p className="text-gray-400">This choice will be locked for 7 days</p>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            {genres.map((genre) => (
-                                <button
-                                    key={genre.id}
-                                    onClick={() => handleGenreSelect(genre.id)}
-                                    className="group relative bg-white/5 backdrop-blur-sm hover:bg-white/10 border border-white/10 hover:border-cyan-500/50 rounded-2xl p-8 transition-all hover:shadow-[0_0_30px_rgba(34,211,238,0.3)] text-left flex items-start gap-6"
-                                >
-                                    <div className="text-5xl">{genre.icon}</div>
-                                    <div>
-                                        <h3 className="text-xl font-bold text-white mb-2">{genre.name}</h3>
-                                        <p className="text-gray-400 text-sm leading-relaxed">{genre.desc}</p>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-
-                        <div className="text-center">
-                            <Link href="/" className="text-gray-500 hover:text-gray-300 text-sm transition">
-                                ← Back to Home
-                            </Link>
-                        </div>
-                    </div>
-                </div>
+                <StorySelector
+                    phase="genre"
+                    genres={genres}
+                    onGenreSelect={handleGenreSelect}
+                    onScenarioSelect={() => { }}
+                    onBack={() => setPhase('archetype')}
+                />
             );
         }
 
@@ -683,34 +663,14 @@ function MirrorContent() {
             const scenarios = getScenariosByGenre(selectedGenre);
 
             return (
-                <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
-                    <div className="max-w-4xl w-full space-y-12">
-                        <div className="text-center space-y-4">
-                            <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                                Select Your Story
-                            </h1>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {scenarios.map((scenario) => (
-                                <button
-                                    key={scenario.id}
-                                    onClick={() => handleScenarioSelect(scenario)}
-                                    className="group relative bg-white/5 backdrop-blur-sm hover:bg-white/10 border border-white/10 hover:border-cyan-500/50 rounded-2xl p-8 transition-all hover:shadow-[0_0_30px_rgba(34,211,238,0.3)] text-left flex flex-col gap-4"
-                                >
-                                    <h3 className="text-xl font-bold text-white mb-2">{scenario.title}</h3>
-                                    <p className="text-gray-400 text-sm leading-relaxed flex-1">{scenario.description}</p>
-                                </button>
-                            ))}
-                        </div>
-
-                        <div className="text-center">
-                            <button onClick={() => setPhase('genre')} className="text-gray-500 hover:text-gray-300 text-sm transition">
-                                ← Back to Genres
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <StorySelector
+                    phase="scenario"
+                    genres={[]}
+                    scenarios={scenarios}
+                    onGenreSelect={() => { }}
+                    onScenarioSelect={handleScenarioSelect}
+                    onBack={() => setPhase('genre')}
+                />
             );
         }
 
@@ -862,7 +822,9 @@ function MirrorContent() {
 export default function MirrorPage() {
     return (
         <Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center text-cyan-500 font-black tracking-widest animate-pulse">SYSTEM INITIALIZING...</div>}>
-            <MirrorContent />
+            <MirrorProvider>
+                <MirrorContent />
+            </MirrorProvider>
         </Suspense>
     );
 }

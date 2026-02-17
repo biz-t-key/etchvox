@@ -15,6 +15,33 @@ export interface DayContent {
     };
 }
 
+export const GENRE_THEMES: Record<Genre, { archetype: string; font: string; color: string; tracking: string }> = {
+    philosophy: {
+        archetype: 'STOIC',
+        font: "'Newsreader', serif",
+        color: 'text-zinc-200',
+        tracking: 'tracking-tight'
+    },
+    thriller: {
+        archetype: 'OPTIMIZER',
+        font: "'JetBrains Mono', monospace",
+        color: 'text-cyan-400',
+        tracking: 'tracking-widest'
+    },
+    poetic: {
+        archetype: 'SANCTUARY',
+        font: "'Playfair Display', serif",
+        color: 'text-amber-200',
+        tracking: 'tracking-wide'
+    },
+    maverick: {
+        archetype: 'MAVERICK',
+        font: "'Inter', sans-serif",
+        color: 'text-purple-400',
+        tracking: 'tracking-tighter'
+    }
+};
+
 export interface Scenario {
     id: string;
     title: string;

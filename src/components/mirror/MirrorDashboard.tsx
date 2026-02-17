@@ -8,6 +8,11 @@ import { generateContent } from '@/lib/gemini';
 import { MIRROR_ORACLE_SYSTEM_PROMPT } from '@/lib/mirrorPrompt';
 import { saveMirrorLog, getMirrorLogs, deleteMirrorLogs } from '@/lib/storage';
 import MirrorRecap from './MirrorRecap';
+import AcousticNebula from '../result/AcousticNebula';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useMirror } from '@/context/MirrorContext';
+import IdentityKitExporter from './IdentityKitExporter';
+import BackgroundLayer from './BackgroundLayer';
 
 interface MirrorDashboardProps {
     calibrationVector: number[];
@@ -42,6 +47,15 @@ interface OracleResponse {
     suggested_tags: string[];
 }
 
+const Sparkline = ({ data, color }: { data: number[], color: string }) => {
+    const points = data.map((v, i) => `${(i * 100) / (data.length - 1)},${100 - v * 100}`).join(' ');
+    return (
+        <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible">
+            <polyline fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" points={points} opacity="0.8" />
+        </svg>
+    );
+};
+
 export default function MirrorDashboard({
     calibrationVector,
     readingVector,
@@ -57,6 +71,8 @@ export default function MirrorDashboard({
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
     const [showRecap, setShowRecap] = useState(false);
     const [savedDaysCount, setSavedDaysCount] = useState(0);
+    const [showInsight, setShowInsight] = useState(false);
+    const { config, type } = useMirror();
 
     useEffect(() => {
         analyzeVoice();
@@ -225,10 +241,10 @@ export default function MirrorDashboard({
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+            <div className="min-h-screen bg-black flex items-center justify-center">
                 <div className="text-center space-y-4">
-                    <div className="w-16 h-16 mx-auto border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-                    <p className="text-cyan-400 font-mono text-sm animate-pulse">Consulting the Oracle...</p>
+                    <div className="w-16 h-16 mx-auto border-4 border-white border-t-transparent rounded-full animate-spin" />
+                    <p className="text-white font-mono text-sm animate-pulse tracking-widest">CONSULTING THE ORACLE...</p>
                 </div>
             </div>
         );
@@ -236,265 +252,186 @@ export default function MirrorDashboard({
 
     if (!zScoreResult || !oracleResponse) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+            <div className="min-h-screen bg-black flex items-center justify-center">
                 <div className="text-center space-y-4">
                     <p className="text-red-400 font-mono">Failed to analyze voice data</p>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white transition">
-                        Close
+                    <button onClick={onClose} className="text-gray-400 hover:text-white transition uppercase text-xs tracking-widest">
+                        [ Close ]
                     </button>
                 </div>
             </div>
         );
     }
 
-    const alertLevelColors = {
-        'Optimal': 'from-green-500 to-emerald-600',
-        'Caution': 'from-yellow-500 to-orange-600',
-        'Critical': 'from-red-500 to-rose-600'
-    };
-
-    const alertLevelIcons = {
-        'Optimal': '✓',
-        'Caution': '⚠',
-        'Critical': '🔴'
-    };
-
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 px-6 py-12">
-            <div className="max-w-4xl mx-auto space-y-8">
-                {/* Header */}
-                <div className="text-center space-y-2">
-                    <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                        Voice Mirror
-                    </h1>
-                </div>
+        <div className="relative h-screen w-full overflow-hidden bg-black text-white selection:bg-white/30">
+            {/* Unified Atmospheric Background Layer */}
+            <BackgroundLayer readingVector={readingVector} showInsight={showInsight} />
 
-                {/* Alert Level Banner */}
-                <div className={`rounded-2xl p-6 bg-gradient-to-r ${alertLevelColors[oracleResponse.oracle_prediction.alert_level]} shadow-2xl`}>
-                    <div className="flex items-center gap-4">
-                        <span className="text-4xl">{alertLevelIcons[oracleResponse.oracle_prediction.alert_level]}</span>
-                        <div className="flex-1">
-                            <h2 className="text-2xl font-bold text-white">{oracleResponse.mirror_analysis.headline}</h2>
-                            <p className="text-white/90 text-sm mt-1">Alert Level: {oracleResponse.oracle_prediction.alert_level}</p>
-                        </div>
-                        <div className="text-right">
-                            <div className="text-3xl font-black text-white">{oracleResponse.mirror_analysis.alignment_score}%</div>
-                            <div className="text-[10px] uppercase font-bold text-white/70 tracking-tighter">Archetype Alignment</div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Mirror Analysis */}
-                <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 space-y-6">
-                    <div>
-                        <h3 className="text-xs font-black uppercase tracking-widest text-cyan-400 mb-3">Scientific Observation</h3>
-                        <p className="text-gray-200 leading-relaxed">{oracleResponse.mirror_analysis.scientific_observation}</p>
-                    </div>
-
-                    <div className="border-t border-white/10 pt-6">
-                        <h3 className="text-xs font-black uppercase tracking-widest text-cyan-400 mb-3">Oracle Prediction</h3>
-                        <p className="text-gray-200 leading-relaxed">{oracleResponse.oracle_prediction.forecast}</p>
-                    </div>
-
-                    <div className="border-t border-white/10 pt-6">
-                        <h3 className="text-xs font-black uppercase tracking-widest text-cyan-400 mb-3">Actionable Guidance</h3>
-                        <p className="text-gray-200 leading-relaxed font-medium">{oracleResponse.actionable_guidance}</p>
-                    </div>
-
-                    {postReadingInsight && postReadingInsight.category !== 'Statue' && (
-                        <div className="border-t border-white/10 pt-6">
-                            <h3 className="text-xs font-black uppercase tracking-widest text-pink-400 mb-4 flex items-center gap-2">
-                                <span className="w-2 h-2 bg-pink-500 rounded-full animate-pulse" />
-                                Invisible Artifact (5s Post-Reading)
-                            </h3>
-                            <div className="bg-pink-500/10 rounded-2xl p-6 border border-pink-500/20">
-                                <div className="flex items-start gap-5">
-                                    <div className="w-12 h-12 bg-pink-500/20 rounded-xl flex items-center justify-center text-2xl shrink-0">
-                                        {postReadingInsight.category === 'Sigh' ? '💨' :
-                                            postReadingInsight.category === 'Laughter' ? '✨' :
-                                                postReadingInsight.category === 'Mumble' ? '🌫️' :
-                                                    postReadingInsight.category === 'Fidget' ? '🫨' : '🗿'}
-                                    </div>
-                                    <div className="space-y-1">
-                                        <h4 className="text-pink-400 font-bold uppercase tracking-widest text-sm">
-                                            Detected: {postReadingInsight.category}
-                                        </h4>
-                                        <p className="text-gray-300 text-sm leading-relaxed">
-                                            {postReadingInsight.description}
+            {/* Information Layer: UI Elements */}
+            <div className="relative z-20 h-full p-8 md:p-16 flex flex-col justify-between">
+                <AnimatePresence mode="wait">
+                    {!showInsight ? (
+                        /* --- Today's Oracle (Default View) --- */
+                        <motion.div
+                            key="today"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="h-full flex flex-col justify-between"
+                        >
+                            <header className="space-y-4">
+                                <div className="flex justify-between items-start">
+                                    <div className="space-y-2">
+                                        <p className="text-[10px] tracking-[0.5em] opacity-40 uppercase font-mono">
+                                            Mirror: {config.name}
                                         </p>
-                                        <div className="pt-2 flex items-center gap-4 text-[10px] font-mono text-gray-500 uppercase">
-                                            <span>Intensity: {Math.round(postReadingInsight.score * 100)}%</span>
+                                        <h1 className="text-5xl md:text-7xl italic leading-[1.1] max-w-2xl" style={{ fontFamily: config.font }}>
+                                            {oracleResponse.mirror_analysis.headline}
+                                        </h1>
+                                        <p className="max-w-md text-sm leading-relaxed opacity-70 font-light">
+                                            {oracleResponse.mirror_analysis.scientific_observation}
+                                        </p>
+                                    </div>
+
+                                    {/* Top Right: Weekly Drift */}
+                                    <div className="text-right">
+                                        <p className="text-[8px] tracking-[0.2em] opacity-30 mb-2 font-mono uppercase">7-Day Drift</p>
+                                        <div className="w-32 h-12 relative">
+                                            <Sparkline data={[0.2, 0.4, 0.3, 0.5, 0.45, 0.6, 0.7]} color={config.colors.accent} />
+                                            <div className="absolute inset-0 border-b border-white/10" />
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
+                            </header>
 
-                {/* ARCHETYPE PROGRESS & RESET */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-                    <div className="bg-white/5 border border-white/5 rounded-2xl p-6">
-                        <h3 className="text-zinc-500 text-[10px] uppercase tracking-widest mb-4">Identity Integrity</h3>
-                        <div className="flex items-center gap-4">
-                            <div className="flex-1 h-2 bg-zinc-800 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-cyan-500 transition-all duration-1000"
-                                    style={{ width: `${Math.min(100, savedDaysCount * 14.3)}%` }}
-                                />
-                            </div>
-                            <span className="text-xs font-mono text-cyan-400">{savedDaysCount}/7 DAYS</span>
-                        </div>
-                    </div>
+                            <footer className="space-y-10">
+                                <div className="flex justify-between items-end">
+                                    <div className="space-y-6 flex-1">
+                                        <div className="space-y-2">
+                                            <p className="text-[8px] tracking-[0.3em] opacity-30 uppercase font-mono">Acoustic Oracle</p>
+                                            <p className="text-xl md:text-3xl max-w-xl border-l border-white/20 pl-6 py-1 leading-snug">
+                                                {oracleResponse.oracle_prediction.forecast}
+                                            </p>
+                                        </div>
 
-                    <div className="bg-white/5 border border-white/5 rounded-2xl p-6 flex flex-col justify-center">
-                        <button
-                            onClick={handleVaultReset}
-                            className="text-[10px] font-black text-zinc-600 hover:text-red-500 transition-colors uppercase tracking-widest flex items-center justify-center gap-2"
-                        >
-                            <span className="text-xs opacity-50 text-red-600">⚠</span> Reset Biometric Profile
-                        </button>
-                    </div>
-                </div>
-
-                {/* 7-Day Resonance Progress */}
-                <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 space-y-6">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-xs font-black uppercase tracking-widest text-purple-400">7-Day Resonance Progress</h3>
-                        <span className="text-purple-400 font-mono text-xs">{savedDaysCount}/7 Days Etched</span>
-                    </div>
-
-                    <div className="grid grid-cols-7 gap-2">
-                        {[1, 2, 3, 4, 5, 6, 7].map((day) => {
-                            const isCurrent = day === (context?.dayIndex || 1);
-                            const isPast = day < (context?.dayIndex || 1);
-                            const isFuture = day > (context?.dayIndex || 1);
-
-                            return (
-                                <div key={day} className="flex flex-col items-center gap-2">
-                                    <div className={`w-full h-12 rounded-lg flex items-center justify-center border transition-all ${isPast ? 'bg-purple-500/20 border-purple-500/50 text-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.2)]' :
-                                        isCurrent ? 'bg-cyan-500/20 border-cyan-500 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.3)] animate-pulse' :
-                                            'bg-white/5 border-white/10 text-gray-600'
-                                        }`}>
-                                        <span className="text-xs font-bold">{day}</span>
+                                        <div className="flex flex-col gap-4">
+                                            <div className="flex gap-4">
+                                                {oracleResponse.suggested_tags.map((tag) => (
+                                                    <button
+                                                        key={tag}
+                                                        onClick={() => handleTagSelection(tag)}
+                                                        className={`text-[10px] tracking-[0.2em] font-mono px-4 py-2 border transition-all ${selectedTag === tag ? 'bg-white text-black border-white' : 'border-white/20 text-white/40 hover:text-white hover:border-white'}`}
+                                                    >
+                                                        [{tag.toUpperCase()}]
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            {/* Entry to Insights */}
+                                            <button
+                                                onClick={() => setShowInsight(true)}
+                                                className="text-[10px] tracking-[0.2em] opacity-30 hover:opacity-100 transition-opacity uppercase font-mono text-left"
+                                            >
+                                                [ 30-Day Insight : Tap to Expand ]
+                                            </button>
+                                        </div>
                                     </div>
-                                    <span className="text-[10px] font-mono uppercase tracking-tighter text-gray-500">
-                                        {isCurrent ? 'Active' : isPast ? 'Etched' : 'Void'}
-                                    </span>
-                                </div>
-                            );
-                        })}
-                    </div>
 
-                    {savedDaysCount < 7 ? (
-                        <p className="text-gray-400 text-xs italic leading-relaxed">
-                            Each day, your refined voice is etched into the mirror. On Day 7, your **Resonance Dossier** will be synthesized into a permanent digital asset.
-                        </p>
+                                    <div className="flex flex-col items-end gap-10">
+                                        {/* Actionable Guidance Card */}
+                                        <div className="bg-white/5 backdrop-blur-2xl border border-white/10 p-6 rounded-sm min-w-[300px] text-right">
+                                            <span className="text-[9px] bg-white text-black px-2 py-0.5 mb-3 inline-block font-bold tracking-tighter uppercase">Actionable</span>
+                                            <p className="text-lg font-medium leading-tight">{oracleResponse.actionable_guidance}</p>
+                                        </div>
+
+                                        {/* Day 7 Dossier Synthesis Trigger */}
+                                        {context?.dayIndex === 7 && (
+                                            <motion.button
+                                                initial={{ opacity: 0, scale: 0.9 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                onClick={() => setShowRecap(true)}
+                                                className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-6 py-3 rounded-xl font-bold shadow-[0_0_20px_rgba(168,85,247,0.4)] animate-pulse uppercase text-[10px] tracking-widest"
+                                            >
+                                                ✨ Synthesize 7-Day Dossier
+                                            </motion.button>
+                                        )}
+
+                                        {/* Progress Dots */}
+                                        <div className="flex space-x-3 pb-2">
+                                            {[...Array(7)].map((_, i) => (
+                                                <div
+                                                    key={i}
+                                                    className={`w-1 h-1 rounded-full transition-all duration-700 ${i < (context?.dayIndex || 1) ? 'bg-white shadow-[0_0_8px_white]' : 'bg-white/10'}`}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-between items-center pt-8 border-t border-white/5">
+                                    <button onClick={onClose} className="text-[10px] tracking-[0.2em] opacity-30 hover:opacity-100 uppercase font-mono transition-opacity">
+                                        [ Close Mirror ]
+                                    </button>
+
+                                    {/* Identity Kit Integration */}
+                                    <IdentityKitExporter metadata={{
+                                        progress: (context?.dayIndex || 1) + savedDaysCount - 1,
+                                        storyTitle: oracleResponse.mirror_analysis.headline
+                                    }} />
+
+                                    <div className="text-[8px] text-white/20 font-mono uppercase tracking-[0.2em]">
+                                        Voice Mirror System v2.0 // {type} Lens
+                                    </div>
+                                </div>
+                            </footer>
+                        </motion.div>
                     ) : (
-                        <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-xl">
-                            <p className="text-purple-400 text-sm font-bold">✨ Resonance Dossier Ready for Synthesis</p>
-                        </div>
-                    )}
-                </div>
-
-                {/* Resonance Path (Historical Log) */}
-                <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 space-y-6">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-emerald-400">Resonance Path (History)</h3>
-                    <div className="space-y-4">
-                        {loadVoiceLogHistory().slice(-5).reverse().map((log, idx) => (
-                            <div key={idx} className="flex items-center gap-4 text-sm border-l-2 border-white/10 pl-4 py-1">
-                                <span className="text-gray-500 font-mono text-xs w-20">
-                                    {new Date(log.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                                </span>
-                                <span className="text-gray-300 flex-1">{log.annotationTag || 'No Tag'}</span>
-                                {log.alignmentScore && (
-                                    <span className="text-cyan-400 font-bold text-xs">
-                                        {log.alignmentScore}%
-                                    </span>
-                                )}
-                                <span className={`text-xs font-mono ${log.context.mood === 'high' ? 'text-orange-400' :
-                                    log.context.mood === 'mid' ? 'text-green-400' : 'text-blue-400'
-                                    }`}>
-                                    {log.context.mood?.toUpperCase()}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                    {loadVoiceLogHistory().length === 0 && (
-                        <p className="text-gray-500 text-xs italic">Your first echoes will appear here tomorrow.</p>
-                    )}
-                </div>
-
-                {/* Anomalies (if any) */}
-                {zScoreResult.anomalies.length > 0 && (
-                    <div className="bg-red-500/10 backdrop-blur-sm rounded-2xl p-6 border border-red-500/20">
-                        <h3 className="text-xs font-black uppercase tracking-widest text-red-400 mb-4">Detected Anomalies</h3>
-                        <div className="space-y-3">
-                            {zScoreResult.anomalies.slice(0, 5).map((anomaly, idx) => (
-                                <div key={idx} className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-300 font-mono">{anomaly.dimensionName}</span>
-                                    <div className="flex items-center gap-3">
-                                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${anomaly.severity === 'high' ? 'bg-red-500/20 text-red-300' :
-                                            anomaly.severity === 'medium' ? 'bg-yellow-500/20 text-yellow-300' :
-                                                'bg-blue-500/20 text-blue-300'
-                                            }`}>
-                                            {anomaly.severity.toUpperCase()}
-                                        </span>
-                                        <span className="text-gray-400 font-mono text-xs">
-                                            {anomaly.zScore > 0 ? '+' : ''}{anomaly.zScore.toFixed(2)}σ
-                                        </span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Annotation Loop */}
-                <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 space-y-4">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-cyan-400">Tag This State</h3>
-                    <p className="text-gray-400 text-sm">Select the tag that best describes your current state. This helps build your personalized baseline.</p>
-
-                    <div className="grid grid-cols-2 gap-3">
-                        {oracleResponse.suggested_tags.map((tag) => (
-                            <button
-                                key={tag}
-                                onClick={() => handleTagSelection(tag)}
-                                className={`px-6 py-4 rounded-xl text-sm font-bold transition-all ${selectedTag === tag
-                                    ? 'bg-cyan-500 text-black shadow-[0_0_20px_rgba(34,211,238,0.5)]'
-                                    : 'bg-white/10 text-gray-300 hover:bg-white/20 border border-white/10'
-                                    }`}
-                            >
-                                {tag}
-                            </button>
-                        ))}
-                    </div>
-
-                    {selectedTag && (
-                        <div className="mt-4 p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
-                            <p className="text-green-400 text-sm font-mono">✓ Tagged as "{selectedTag}" and saved to history</p>
-                        </div>
-                    )}
-                </div>
-
-                {/* Close Button & Recap Trigger */}
-                <div className="text-center space-y-4">
-                    {context?.dayIndex === 7 && selectedTag && (
-                        <button
-                            onClick={() => setShowRecap(true)}
-                            className="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl font-bold shadow-[0_0_20px_rgba(34,211,238,0.4)] hover:shadow-[0_0_30px_rgba(34,211,238,0.6)] transition-all animate-pulse"
+                        /* --- 30-Day Insights (Insight View) --- */
+                        <motion.div
+                            key="insight"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="h-full flex flex-col justify-center space-y-20 p-12"
                         >
-                            ✨ Reveal 7-Day Voice Recap
-                        </button>
-                    )}
+                            <section className="space-y-4">
+                                <p className="text-[10px] tracking-[0.4em] opacity-40 uppercase font-mono">30-Day Dominant Archetype</p>
+                                <h2 className="text-6xl md:text-8xl italic" style={{ fontFamily: config.font }}>
+                                    THE {type} ({Math.round(oracleResponse.mirror_analysis.alignment_score)}%)
+                                </h2>
+                            </section>
 
-                    <button
-                        onClick={onClose}
-                        className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white rounded-full font-bold transition-all border border-white/20"
-                    >
-                        Close Mirror
-                    </button>
-                </div>
+                            <section className="flex gap-20">
+                                <div className="space-y-2">
+                                    <p className="text-[10px] tracking-[0.4em] opacity-40 uppercase font-mono">Narrative Progress</p>
+                                    <p className="text-4xl font-light">{savedDaysCount} <span className="text-xl opacity-30">/ 252 STORIES</span></p>
+                                </div>
+                                <div className="space-y-2">
+                                    <p className="text-[10px] tracking-[0.4em] opacity-40 uppercase font-mono">Biometric Stability</p>
+                                    <p className="text-4xl font-light">
+                                        {(100 - (zScoreResult.anomalies.length * 5)).toFixed(1)}%
+                                        <span className="text-xs text-green-400 font-mono ml-4 uppercase">↑ Optimal</span>
+                                    </p>
+                                </div>
+                            </section>
+
+                            <div className="flex gap-4">
+                                <button
+                                    onClick={() => setShowInsight(false)}
+                                    className="w-fit text-[10px] border border-white/20 px-8 py-4 hover:bg-white hover:text-black transition-all font-mono uppercase tracking-[0.2em]"
+                                >
+                                    Return to Oracle
+                                </button>
+                                <button
+                                    onClick={handleVaultReset}
+                                    className="w-fit text-[10px] border border-red-500/20 px-8 py-4 text-red-500/40 hover:bg-red-500 hover:text-white transition-all font-mono uppercase tracking-[0.2em]"
+                                >
+                                    Reset Biometric Profile
+                                </button>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
             {showRecap && (

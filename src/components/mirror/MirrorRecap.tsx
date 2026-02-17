@@ -23,11 +23,11 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
     const [exportMode, setExportMode] = useState<'full' | 'sns'>('full');
 
     const THEMES: Record<string, any> = {
-        optimizer: {
-            name: "Thriller",
-            bg: '#00050A',
+        OPTIMIZER: {
+            name: "The Optimizer",
+            bg: '#001540',
             bgImage: '/assets/mirror/optimizer.png',
-            font: "'Inter', 'SF Pro Display', sans-serif",
+            font: "'JetBrains Mono', monospace",
             align: 'left' as const,
             color: '#FFFFFF',
             blend: 'overlay' as GlobalCompositeOperation,
@@ -36,15 +36,15 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
             stamp: 'barcode_cyan',
             snsLabel: ["LOG_ID: 01", "SYNC_POINT: 04", "ENTITY_FINAL"],
             visuals: (ctx: CanvasRenderingContext2D, params: any) => {
-                ctx.shadowColor = 'rgba(34,211,238,0.4)';
+                ctx.shadowColor = 'rgba(255,255,255,0.4)';
                 ctx.shadowBlur = 10;
             }
         },
-        stoic: {
-            name: "Poet",
-            bg: '#121214',
+        STOIC: {
+            name: "The Stoic",
+            bg: '#0d0d0d',
             bgImage: '/assets/mirror/stoic.jpg',
-            font: "'EB Garamond', 'Lora', serif",
+            font: "'Newsreader', serif",
             align: 'center' as const,
             color: '#FFFFFF',
             blend: 'screen' as GlobalCompositeOperation,
@@ -56,52 +56,54 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
                 ctx.globalAlpha = 0.85;
             }
         },
-        alchemist: {
-            name: "Philosophy",
-            bg: '#100F0D',
+        ALCHEMIST: {
+            name: "The Alchemist",
+            bg: '#1a0033',
             bgImage: '/assets/mirror/alchemist.png',
-            font: "'Cinzel', 'Spectral', serif",
+            font: "'EB Garamond', serif",
             align: 'center' as const,
-            color: '#EAD6A8',
+            color: '#9933ff',
             blend: 'color-dodge' as GlobalCompositeOperation,
             letterSpacing: 8,
             lineHeight: 2.0,
             stamp: 'sacred_geometry_gold',
-            snsLabel: ["AXIOM I", "CAESURA 4", "CODA 7"],
+            snsLabel: ["AXIOM I", "TRANSFORM 4", "CODA 7"],
             visuals: (ctx: CanvasRenderingContext2D, params: any) => {
-                ctx.shadowColor = '#CCA352';
-                ctx.shadowBlur = 5;
+                ctx.shadowColor = '#9933ff';
+                ctx.shadowBlur = 10;
             }
         },
-        maverick: {
+        MAVERICK: {
             name: "The Maverick",
-            bg: '#0D0D0D',
-            bgImage: '/assets/mirror/cinematic_grit.png',
-            font: "'Oswald', 'Barlow Condensed', sans-serif",
+            bg: '#2b002b',
+            bgImage: '/assets/mirror/maverick.png',
+            font: "'Inter', sans-serif",
             align: 'left' as const,
-            color: '#D1D1D1',
+            color: '#ccff00',
             blend: 'hard-light' as GlobalCompositeOperation,
             letterSpacing: 2,
             lineHeight: 1.2,
             stamp: 'industrial_stencil_white',
-            snsLabel: ["DAY 01", "FRICTION", "THE PROOF"],
+            snsLabel: ["EP 01: FRICTION", "EP 04: KINETIC", "EP 07: PROVED"],
             visuals: (ctx: CanvasRenderingContext2D, params: any) => {
+                ctx.shadowColor = '#ccff00';
+                ctx.shadowBlur = 5;
             }
         },
-        sanctuary: {
+        SANCTUARY: {
             name: "The Sanctuary",
-            bg: '#050D0A',
+            bg: '#1a0f0f',
             bgImage: '/assets/mirror/sanctuary.png',
-            font: "'Outfit', sans-serif",
+            font: "'Playfair Display', serif",
             align: 'center' as const,
-            color: '#A7F3D0',
+            color: '#f5e6ca',
             blend: 'screen' as GlobalCompositeOperation,
             letterSpacing: 2,
             lineHeight: 1.8,
             stamp: 'leaf_seal_emerald',
-            snsLabel: ["BREATH 01", "STILLNESS", "RESTORATION"],
+            snsLabel: ["STILLNESS 01", "ASCENT 04", "RESTORATION 07"],
             visuals: (ctx: CanvasRenderingContext2D, params: any) => {
-                ctx.shadowColor = 'rgba(167,243,208,0.3)';
+                ctx.shadowColor = '#f5e6ca';
                 ctx.shadowBlur = 15;
             }
         }
@@ -232,7 +234,7 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
 
     // Load background image when archetype changes
     useEffect(() => {
-        const theme = THEMES[archetype] || THEMES.optimizer;
+        const theme = THEMES[archetype.toUpperCase()] || THEMES.OPTIMIZER;
         if (theme.bgImage) {
             const img = new Image();
             img.src = theme.bgImage;
@@ -491,7 +493,7 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
         const z_score = (logs[currentIndex]?.alignmentScore || 85) / 100;
 
         // 2. THEME-SPECIFIC DYNAMIC MAPPING
-        const theme = THEMES[archetype] || THEMES.optimizer;
+        const theme = THEMES[archetype.toUpperCase()] || THEMES.OPTIMIZER;
         let containerStyles: React.CSSProperties = {};
         let canvasFilter = 'none';
 
@@ -631,7 +633,7 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
             ctx.restore();
 
             // GENRE LABELS
-            const currentTheme = THEMES[archetype] || THEMES.optimizer;
+            const currentTheme = THEMES[archetype.toUpperCase()] || THEMES.OPTIMIZER;
             if (currentTheme.snsLabel) {
                 ctx.save();
                 ctx.font = 'black 10px monospace';
@@ -682,7 +684,7 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
         );
     }
 
-    const pageTheme = THEMES[archetype] || THEMES.optimizer;
+    const pageTheme = THEMES[archetype.toUpperCase()] || THEMES.OPTIMIZER;
 
     return (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-8 text-slate-900 overflow-hidden" style={{ backgroundColor: pageTheme.bg }}>
