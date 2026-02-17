@@ -101,9 +101,9 @@ function MirrorContent() {
             setHasSubscription(isDevMode ? true : subStatus.isActive);
             setCheckingSubscription(false);
 
-            if (auth.isNew) {
+            if (auth.isNew && !isDevMode) {
                 setShowMnemonic(true);
-            } else if (subStatus.isActive) {
+            } else {
                 setPhase('calibration');
             }
         } catch (error) {
