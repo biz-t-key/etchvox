@@ -152,13 +152,16 @@ export class VoiceAnalyzer {
      * [10-24] Resonance: Spectral features
      * [25-29] Temporal: Speech Rate, Pause Duration, V/UV Ratio
      */
-    get30DVector(): number[] {
-        const validPitch = this.pitchSamples.filter(p => p > 0);
-        const validVol = this.volumeSamples.filter(v => v > 0);
-        const validCentroid = this.centroidSamples.filter(c => c > 0);
-        const validZcr = this.zcrSamples.filter(z => z > 0);
-        const validRolloff = this.rolloffSamples.filter(r => r > 0);
-        const validFlatness = this.flatnessSamples.filter(f => f > 0);
+    get30DVector(tag?: string): number[] {
+        const filter = (arr: any[]) => tag ? arr.filter((_, i) => this.tagSamples[i] === tag) : arr;
+
+        const validPitch = filter(this.pitchSamples).filter(p => p > 0);
+        const validVol = filter(this.volumeSamples).filter(v => v > 0);
+        const validCentroid = filter(this.centroidSamples).filter(c => c > 0);
+        const validZcr = filter(this.zcrSamples).filter(z => z > 0);
+        const validRolloff = filter(this.rolloffSamples).filter(r => r > 0);
+        const validFlatness = filter(this.flatnessSamples).filter(f => f > 0);
+        const filteredSnr = filter(this.snrSamples);
 
         const vector = new Array(30).fill(0);
 
@@ -333,8 +336,8 @@ export class VoiceAnalyzer {
 
 
     // Calculate final analysis result
-    analyze(mode: string = 'solo', spyMetadata: any = null): AnalysisResult {
-        const metrics = this.calculateMetrics();
+    analyze(mode: string = 'solo', spyMetadata: any = null, tag?: string): AnalysisResult {
+        const metrics = this.calculateMetrics(tag);
         const typeCode = this.classifyType(metrics, mode, spyMetadata);
 
         return {
@@ -343,13 +346,20 @@ export class VoiceAnalyzer {
         };
     }
 
-    private calculateMetrics(): AnalysisMetrics {
-        const validPitch = this.pitchSamples.filter(p => p > 0);
+    calculateMetrics(tag?: string): AnalysisMetrics {
+        const filter = (arr: any[]) => tag ? arr.filter((_, i) => this.tagSamples[i] === tag) : arr;
+
+        const filteredPitch = filter(this.pitchSamples);
+        const filteredVolume = filter(this.volumeSamples);
+        const filteredCentroid = filter(this.centroidSamples);
+        const filteredSnr = filter(this.snrSamples);
+
+        const validPitch = filteredPitch.filter(p => p > 0);
         const avgPitch = validPitch.length > 0
             ? validPitch.reduce((a, b) => a + b, 0) / validPitch.length
             : 150;
 
-        const validVolume = this.volumeSamples.filter(v => v > 0);
+        const validVolume = filteredVolume.filter(v => v > 0);
         const avgVolume = validVolume.length > 0
             ? validVolume.reduce((a, b) => a + b, 0) / validVolume.length
             : 0.5;
@@ -358,12 +368,12 @@ export class VoiceAnalyzer {
             ? this.calculateStandardDeviation(validVolume) / (avgVolume || 1)
             : 0.1;
 
-        const validCentroid = this.centroidSamples.filter(c => c > 0);
+        const validCentroid = filteredCentroid.filter(c => c > 0);
         const avgCentroid = validCentroid.length > 0
             ? validCentroid.reduce((a, b) => a + b, 0) / validCentroid.length
             : 2000;
 
-        const speedScore = this.estimateSpeed();
+        const speedScore = this.estimateSpeed(tag);
 
         const pitchVariance = validPitch.length > 1
             ? this.calculateStandardDeviation(validPitch) / (avgPitch || 1)
@@ -374,23 +384,25 @@ export class VoiceAnalyzer {
 
         // Version 2.0 / Elon Metrics Calculation
         const jitter = pitchVariance > 0.1 ? 0.05 : 0.01;
-        const hnr = this.snrSamples.length > 0
-            ? this.snrSamples.reduce((a, b) => a + b, 0) / this.snrSamples.length
+        const hnr = filteredSnr.length > 0
+            ? filteredSnr.reduce((a, b) => a + b, 0) / filteredSnr.length
             : 15;
 
-        const totalDuration = this.timestampSamples.length > 1
-            ? (this.timestampSamples[this.timestampSamples.length - 1] - this.timestampSamples[0]) / 1000
-            : 0;
+        // Simplified duration for tagged samples
+        const totalDuration = (tag ? this.tagSamples.filter(t => t === tag).length : this.timestampSamples.length) * 0.05; // 50ms per frame approx
 
         let pauses = 0;
-        for (let i = 1; i < this.timestampSamples.length; i++) {
-            if (this.timestampSamples[i] - this.timestampSamples[i - 1] > 500) pauses++;
+        // Pause calculation for tagged segments is complex, using simplified proxy
+        if (!tag) {
+            for (let i = 1; i < this.timestampSamples.length; i++) {
+                if (this.timestampSamples[i] - this.timestampSamples[i - 1] > 500) pauses++;
+            }
         }
 
         const silenceRate = pauses / (totalDuration || 1);
-        const volumeDb = 20 * Math.log10(avgVolume / 0.001); // Approximation
-        const speedVar = this.volumeSamples.length > 1
-            ? this.calculateStandardDeviation(this.volumeSamples) / avgVolume
+        const volumeDb = 20 * Math.log10(avgVolume / 0.001);
+        const speedVar = filteredVolume.length > 1
+            ? this.calculateStandardDeviation(filteredVolume) / avgVolume
             : 0.1;
 
         return {
@@ -409,37 +421,46 @@ export class VoiceAnalyzer {
     }
 
     // Version 2.0 full log generation (Schema 1.0.0)
-    getV2Log(baseMetrics: AnalysisMetrics, context: any = {}): any {
+    getV2Log(baseMetrics: AnalysisMetrics, context: any = {}, tag?: string): any {
         if (this.isPrivacyTriggered) return null;
 
-        const avgZcr = this.zcrSamples.filter(z => z > 0).reduce((a, b) => a + b, 0) / (this.zcrSamples.length || 1);
-        const avgRolloff = this.rolloffSamples.filter(r => r > 0).reduce((a, b) => a + b, 0) / (this.rolloffSamples.length || 1);
+        const filter = (arr: any[]) => tag ? arr.filter((_, i) => this.tagSamples[i] === tag) : arr;
 
-        const validPitch = this.pitchSamples.filter(p => p > 0);
+        const filteredZcr = filter(this.zcrSamples);
+        const filteredRolloff = filter(this.rolloffSamples);
+        const filteredPitch = filter(this.pitchSamples);
+        const filteredMfcc = filter(this.mfccSamples);
+
+        const avgZcr = filteredZcr.filter(z => z > 0).reduce((a, b) => a + b, 0) / (filteredZcr.length || 1);
+        const avgRolloff = filteredRolloff.filter(r => r > 0).reduce((a, b) => a + b, 0) / (filteredRolloff.length || 1);
+
+        const validPitch = filteredPitch.filter(p => p > 0);
 
         // MFCC Mean/Var (Stream B)
         const mfccDim = 13;
         const mfccMean = new Array(mfccDim).fill(0);
         const mfccVar = new Array(mfccDim).fill(0);
 
-        if (this.mfccSamples.length > 0) {
+        if (filteredMfcc.length > 0) {
             for (let d = 0; d < mfccDim; d++) {
-                const dimValues = this.mfccSamples.map(v => v[d] || 0);
+                const dimValues = filteredMfcc.map(v => v[d] || 0);
                 mfccMean[d] = dimValues.reduce((a, b) => a + b, 0) / dimValues.length;
                 mfccVar[d] = this.calculateStandardDeviation(dimValues);
             }
         }
 
-        const totalDuration = this.timestampSamples.length > 1
+        const totalDuration = tag ? (this.tagSamples.filter(t => t === tag).length * 0.05) : (this.timestampSamples.length > 1
             ? (this.timestampSamples[this.timestampSamples.length - 1] - this.timestampSamples[0]) / 1000
-            : 0;
+            : 0);
 
         let pauses = 0;
-        for (let i = 1; i < this.timestampSamples.length; i++) {
-            if (this.timestampSamples[i] - this.timestampSamples[i - 1] > 500) pauses++;
+        if (!tag) {
+            for (let i = 1; i < this.timestampSamples.length; i++) {
+                if (this.timestampSamples[i] - this.timestampSamples[i - 1] > 500) pauses++;
+            }
         }
 
-        const speechRate = this.estimateSpeed() * 10;
+        const speechRate = this.estimateSpeed(tag) * 10;
         const pauseRatio = pauses > 0 ? (pauses * 0.5) / (totalDuration || 1) : 0.05;
 
         // Anonymization / Rounding
@@ -485,7 +506,8 @@ export class VoiceAnalyzer {
                 spectral_rolloff: Math.round(avgRolloff),
                 dtw_score: 0.05, // Placeholder for DTW
                 mfcc_mean: mfccMean.map(v => parseFloat(v.toFixed(4))),
-                mfcc_var: mfccVar.map(v => parseFloat(v.toFixed(4)))
+                mfcc_var: mfccVar.map(v => parseFloat(v.toFixed(4))),
+                biometric_vector: this.get30DVector(tag).map(v => parseFloat(v.toFixed(4)))
             },
 
             environment: {
@@ -838,16 +860,19 @@ export class VoiceAnalyzer {
     }
 
     // Estimate speaking speed based on volume pattern
-    private estimateSpeed(): number {
-        if (this.volumeSamples.length < 10) return 0.5;
+    private estimateSpeed(tag?: string): number {
+        const filter = (arr: any[]) => tag ? arr.filter((_, i) => this.tagSamples[i] === tag) : arr;
+        const filteredVolume = filter(this.volumeSamples);
+
+        if (filteredVolume.length < 10) return 0.5;
 
         // Count volume peaks (syllables/words)
         let peaks = 0;
-        const threshold = 0.7 * Math.max(...this.volumeSamples);
+        const threshold = 0.7 * Math.max(...filteredVolume);
 
-        for (let i = 1; i < this.volumeSamples.length - 1; i++) {
+        for (let i = 1; i < filteredVolume.length - 1; i++) {
             if (
-                this.volumeSamples[i] > threshold &&
+                filteredVolume[i] > threshold &&
                 this.volumeSamples[i] > this.volumeSamples[i - 1] &&
                 this.volumeSamples[i] > this.volumeSamples[i + 1]
             ) {

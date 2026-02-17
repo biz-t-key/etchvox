@@ -55,12 +55,13 @@ export async function POST(req: NextRequest) {
             const payload = engine.generatePayload();
             aiReport = await generateContent(SOLO_AUDIT_SYSTEM_PROMPT, JSON.stringify(payload, null, 2));
         } else if (isCouple && data.coupleData) {
-            const { userA, userB } = data.coupleData;
+            const { userA, userB, relationshipType } = data.coupleData;
             const normalizedA = normalizeMetricsForEngine(userA.metrics);
             const normalizedB = normalizeMetricsForEngine(userB.metrics);
             const engine = new CoupleResonanceEngine(
-                { ...normalizedA, name: userA.name, job: userA.job, accent: 'Unknown', gender: userA.gender, birthYear: userA.birthYear },
-                { ...normalizedB, name: userB.name, job: userB.job, accent: 'Unknown', gender: userB.gender, birthYear: userB.birthYear }
+                { ...normalizedA, name: userA.name, job: userA.job, accent: userA.accent || 'Standard English', gender: userA.gender, birthYear: userA.birthYear },
+                { ...normalizedB, name: userB.name, job: userB.job, accent: userB.accent || 'Standard English', gender: userB.gender, birthYear: userB.birthYear },
+                relationshipType || 'romantic'
             );
             const payload = engine.generatePayload();
             aiReport = await generateContent(COUPLE_AUDIT_SYSTEM_PROMPT, JSON.stringify(payload, null, 2));

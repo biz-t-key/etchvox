@@ -8,12 +8,17 @@ import { generateResultId } from '@/lib/permalink';
 import { saveResult, getSessionId, VoiceResult } from '@/lib/storage';
 import ParticleVisualizer from '@/components/recording/ParticleVisualizer';
 
-type Phase = 'intro' | 'names' | 'step1' | 'step2' | 'step3' | 'step4' | 'details' | 'analyzing';
+type Phase = 'intro' | 'relation' | 'names' | 'step1' | 'step2' | 'step3' | 'step4' | 'details' | 'analyzing';
 
 const JOBS = [
     'Lawyer', 'Executive', 'Engineer', 'Doctor', 'Founder',
     'Consultant', 'Artist', 'Teacher', 'Designer', 'Nurse',
     'Writer', 'Musician', 'Student', 'Sales', 'Other'
+];
+
+const ACCENTS = [
+    'Standard English', 'British (RP)', 'American (General)', 'NYC', 'Southern US',
+    'Australian', 'Indian', 'East Asian', 'European', 'African', 'Other'
 ];
 
 type StepConfig = {
@@ -47,10 +52,11 @@ export default function CouplePage() {
     const [researchB, setResearchB] = useState(false);
 
     // Data Store
+    const [relationshipType, setRelationshipType] = useState<'romantic' | 'friend' | 'rival'>('romantic');
     const [names, setNames] = useState({ A: '', B: '' });
     const [profiles, setProfiles] = useState({
-        A: { gender: 'non-binary', birthYear: new Date().getFullYear() - 25, job: 'Other' },
-        B: { gender: 'non-binary', birthYear: new Date().getFullYear() - 25, job: 'Other' }
+        A: { gender: 'non-binary', birthYear: new Date().getFullYear() - 25, job: 'Other', accent: 'Standard English' },
+        B: { gender: 'non-binary', birthYear: new Date().getFullYear() - 25, job: 'Other', accent: 'Standard English' }
     });
     // We only store the "Main" recording (Step 1) for analysis to keep backend simple for now
     // In a future update, we could merge all 3 blobs
@@ -191,9 +197,14 @@ export default function CouplePage() {
                 if (analyzerRef.current && isRecording) {
                     // Logic to switch tags during recording for resonance
                     let tag = 'Both';
-                    if (currentStep === 'step1') tag = 'Both';
-                    else if (currentStep === 'step2' || currentStep === 'step3') tag = 'Both'; // Mixed signals
-                    else tag = 'Both';
+                    if (currentStep === 'step1') {
+                        // Stage 1 is 5 seconds. Split 2.5s / 2.5s
+                        tag = timeLeft > 2.5 ? 'A' : 'B';
+                    } else if (currentStep === 'step2' || currentStep === 'step3') {
+                        tag = 'Both'; // Mixed signals
+                    } else {
+                        tag = 'Both';
+                    }
 
                     analyzerRef.current.collectSample(tag);
 
@@ -281,6 +292,12 @@ export default function CouplePage() {
         // Calculate Resonance (Stream B)
         const resonance = analyzerRef.current?.calculateCoupleResonance();
 
+        // Individual Analysis
+        const metricsA = analyzerRef.current?.calculateMetrics('A');
+        const metricsB = analyzerRef.current?.calculateMetrics('B');
+        const typeA = classifyTypeCode(metricsA || mainMetricsProcessed);
+        const typeB = classifyTypeCode(metricsB || mainMetricsProcessed);
+
         const coupleData: VoiceResult = {
             id: coupleResultId,
             sessionId: getSessionId(),
@@ -289,27 +306,48 @@ export default function CouplePage() {
             postReading,
             accentOrigin: 'Couple',
             createdAt: new Date().toISOString(),
-            locale: 'en-US',
             isPremium: false,
+            mode: 'solo', // Using solo for now to avoid breaking existing logic, or 'duo' if added
             coupleData: {
-                userA: { name: names.A, job: jobA, metrics: mainMetrics, typeCode: unionTypeCode, gender: pA?.gender || profiles.A.gender, birthYear: pA?.birthYear || profiles.A.birthYear, consentAgreed: termsA && privacyA, researchConsentAgreed: researchA },
-                userB: { name: names.B, job: jobB, metrics: mainMetrics, typeCode: unionTypeCode, gender: pB?.gender || profiles.B.gender, birthYear: pB?.birthYear || profiles.B.birthYear, consentAgreed: termsB && privacyB, researchConsentAgreed: researchB }
+                relationshipType,
+                userA: {
+                    name: names.A,
+                    job: jobA,
+                    metrics: metricsA || mainMetricsProcessed,
+                    typeCode: typeA,
+                    gender: pA?.gender || profiles.A.gender,
+                    birthYear: pA?.birthYear || profiles.A.birthYear,
+                    consentAgreed: termsA && privacyA,
+                    researchConsentAgreed: researchA,
+                    logV2: analyzerRef.current?.getV2Log(metricsA || mainMetricsProcessed, { record_id: `${coupleResultId}_A` }, 'A')
+                },
+                userB: {
+                    name: names.B,
+                    job: jobB,
+                    metrics: metricsB || mainMetricsProcessed,
+                    typeCode: typeB,
+                    gender: pB?.gender || profiles.B.gender,
+                    birthYear: pB?.birthYear || profiles.B.birthYear,
+                    consentAgreed: termsB && privacyB,
+                    researchConsentAgreed: researchB,
+                    logV2: analyzerRef.current?.getV2Log(metricsB || mainMetricsProcessed, { record_id: `${coupleResultId}_B` }, 'B')
+                }
             },
-            logV2: analyzerRef.current?.getV2Log(mainMetrics, {
+            logV2: analyzerRef.current?.getV2Log(mainMetricsProcessed, {
                 record_id: coupleResultId,
                 script_id: 'couple_sync_v1',
                 mbti: 'Unknown',
                 gender: 'non-binary',
                 isMobile: false
             }),
-            logV3: analyzerRef.current?.getV3Log(mainMetrics, {
+            logV3: analyzerRef.current?.getV3Log(mainMetricsProcessed, {
                 record_id: coupleResultId,
                 script_id: 'couple_sync_v1',
                 mbti: 'Unknown',
                 gender: 'non-binary',
                 isMobile: false,
                 consent: {
-                    terms: termsA && termsB, // Both must agree for the joint log
+                    terms: termsA && termsB,
                     privacy: privacyA && privacyB,
                     research: researchA && researchB
                 },
@@ -364,7 +402,7 @@ export default function CouplePage() {
     if (phase === 'intro') return (
         <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-12 md:p-24 text-center max-w-2xl mx-auto py-32 md:py-48">
             <h1 className="text-3xl md:text-5xl font-bold uppercase tracking-widest mb-10">
-                <span className="text-pink-500">Couple</span> Analysis
+                <span className="text-pink-500">Duo</span> Resonance
             </h1>
             <p className="text-gray-400 mb-16 text-lg leading-relaxed">
                 Step 1: Bio-Sync (Unison)<br />
@@ -481,7 +519,7 @@ export default function CouplePage() {
             </div>
 
             <button
-                onClick={() => setPhase('names')}
+                onClick={() => setPhase('relation')}
                 disabled={!termsA || !privacyA || !termsB || !privacyB || !isOver13A || !isOver13B || !wellnessA || !wellnessB}
                 className="w-full bg-white text-black font-black py-5 rounded-full uppercase tracking-[0.2em] hover:bg-pink-500 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(255,255,255,0.2)] text-lg"
             >
@@ -491,6 +529,39 @@ export default function CouplePage() {
             <div className="mt-8 text-[10px] text-gray-700 font-mono">
                 Support: <a href="mailto:info@etchvox.com" className="hover:text-gray-500">info@etchvox.com</a>
             </div>
+        </main>
+    );
+
+    // 1.5 RELATION
+    if (phase === 'relation') return (
+        <main className="min-h-screen bg-black text-white p-12 flex flex-col items-center justify-center text-center max-w-2xl mx-auto">
+            <h2 className="text-2xl font-black uppercase tracking-[0.2em] mb-12 italic">Define the Dynamic</h2>
+            <div className="grid grid-cols-1 gap-4 w-full">
+                {[
+                    { id: 'romantic', label: 'Romantic Partner', icon: '💍', tagline: 'Decoding the heat of intimacy.' },
+                    { id: 'friend', label: 'Best Friend / Partner', icon: '🤝', tagline: 'Mapping the rhythm of shared trust.' },
+                    { id: 'rival', label: 'Creative Rival', icon: '⚔️', tagline: 'Measuring the sparks of creative friction.' }
+                ].map(r => (
+                    <button
+                        key={r.id}
+                        onClick={() => {
+                            setRelationshipType(r.id as any);
+                            setPhase('names');
+                        }}
+                        className="glass p-6 md:p-8 rounded-2xl border border-white/10 bg-white/5 hover:border-pink-500 hover:bg-pink-500/10 transition-all flex items-center justify-between group text-left"
+                    >
+                        <div className="flex items-center gap-6">
+                            <span className="text-2xl">{r.icon}</span>
+                            <div>
+                                <span className="font-black uppercase tracking-widest group-hover:text-pink-400 block">{r.label}</span>
+                                <span className="text-[10px] text-gray-500 font-medium group-hover:text-white/60 block mt-1 tracking-wider uppercase italic">{r.tagline}</span>
+                            </div>
+                        </div>
+                        <span className="text-gray-500 group-hover:text-white">→</span>
+                    </button>
+                ))}
+            </div>
+            <button onClick={() => setPhase('intro')} className="mt-12 text-gray-500 hover:text-white text-[10px] uppercase font-bold tracking-widest">← Back to Consent</button>
         </main>
     );
 
@@ -654,8 +725,8 @@ function NamesForm({ onBack, onSubmit }: { onBack: () => void, onSubmit: (a: str
 }
 
 function DetailsForm({ names, onSubmit }: { names: { A: string, B: string }, onSubmit: (pA: any, pB: any) => void }) {
-    const [pA, setPA] = useState({ gender: 'non-binary', birthYear: new Date().getFullYear() - 25, job: 'Other' });
-    const [pB, setPB] = useState({ gender: 'non-binary', birthYear: new Date().getFullYear() - 25, job: 'Other' });
+    const [pA, setPA] = useState({ gender: 'non-binary', birthYear: new Date().getFullYear() - 25, job: 'Other', accent: 'Standard English' });
+    const [pB, setPB] = useState({ gender: 'non-binary', birthYear: new Date().getFullYear() - 25, job: 'Other', accent: 'Standard English' });
 
     const years = Array.from({ length: 80 }, (_, i) => new Date().getFullYear() - 13 - i);
 
@@ -691,11 +762,19 @@ function DetailsForm({ names, onSubmit }: { names: { A: string, B: string }, onS
                             </select>
                         </div>
                     </div>
-                    <div className="pt-4 border-t border-white/5">
-                        <label className="text-[10px] uppercase tracking-widest text-gray-600 font-bold block mb-4">Professional Orientation</label>
-                        <select value={pA.job} onChange={e => setPA({ ...pA, job: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-xs font-medium outline-none focus:border-cyan-500 transition-all">
-                            {JOBS.map(j => <option key={j} value={j}>{j}</option>)}
-                        </select>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4 border-t border-white/5">
+                        <div className="space-y-4">
+                            <label className="text-[10px] uppercase tracking-widest text-gray-600 font-bold block mb-2">Professional Orientation</label>
+                            <select value={pA.job} onChange={e => setPA({ ...pA, job: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-xs font-medium outline-none focus:border-cyan-500 transition-all">
+                                {JOBS.map(j => <option key={j} value={j}>{j}</option>)}
+                            </select>
+                        </div>
+                        <div className="space-y-4">
+                            <label className="text-[10px] uppercase tracking-widest text-gray-600 font-bold block mb-2">Acoustic Accent</label>
+                            <select value={pA.accent} onChange={e => setPA({ ...pA, accent: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-xs font-medium outline-none focus:border-cyan-500 transition-all">
+                                {ACCENTS.map(a => <option key={a} value={a}>{a}</option>)}
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -725,11 +804,19 @@ function DetailsForm({ names, onSubmit }: { names: { A: string, B: string }, onS
                             </select>
                         </div>
                     </div>
-                    <div className="pt-4 border-t border-white/5">
-                        <label className="text-[10px] uppercase tracking-widest text-gray-600 font-bold block mb-4">Professional Orientation</label>
-                        <select value={pB.job} onChange={e => setPB({ ...pB, job: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-xs font-medium outline-none focus:border-pink-500 transition-all">
-                            {JOBS.map(j => <option key={j} value={j}>{j}</option>)}
-                        </select>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4 border-t border-white/5">
+                        <div className="space-y-4">
+                            <label className="text-[10px] uppercase tracking-widest text-gray-600 font-bold block mb-2">Professional Orientation</label>
+                            <select value={pB.job} onChange={e => setPB({ ...pB, job: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-xs font-medium outline-none focus:border-pink-500 transition-all">
+                                {JOBS.map(j => <option key={j} value={j}>{j}</option>)}
+                            </select>
+                        </div>
+                        <div className="space-y-4">
+                            <label className="text-[10px] uppercase tracking-widest text-gray-600 font-bold block mb-2">Acoustic Accent</label>
+                            <select value={pB.accent} onChange={e => setPB({ ...pB, accent: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-xs font-medium outline-none focus:border-pink-500 transition-all">
+                                {ACCENTS.map(a => <option key={a} value={a}>{a}</option>)}
+                            </select>
+                        </div>
                     </div>
                 </div>
 

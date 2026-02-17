@@ -145,8 +145,8 @@ export default function HomePage() {
               className="group relative glass rounded-3xl p-8 text-left transition-all hover:scale-[1.02] border-2 border-transparent hover:border-magenta-500/50"
             >
               <div className="flex items-center justify-between mb-6">
-                <span className="text-4xl">💕</span>
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-magenta-500 px-3 py-1 bg-magenta-500/10 rounded-full italic">High Affinity</span>
+                <span className="text-4xl text-magenta-500">👥</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-magenta-500 px-3 py-1 bg-magenta-500/10 rounded-full italic">Resonance Axis</span>
               </div>
               <h3 className="text-2xl font-black mb-2 italic">RESONANCE TEST</h3>
               <p className="text-sm text-gray-400 font-medium leading-relaxed">
@@ -205,7 +205,7 @@ export default function HomePage() {
             <div className="glass rounded-2xl p-8 md:p-16 max-w-2xl mx-auto space-y-12">
               <div className="text-center space-y-4">
                 <div className="text-6xl mb-4">
-                  {selectedMode === 'solo' ? '🎤' : selectedMode === 'couple' ? '💕' : selectedMode === 'elon' ? '🚀' : '🕵️‍♂️'}
+                  {selectedMode === 'solo' ? '🎤' : selectedMode === 'couple' ? '👥' : selectedMode === 'elon' ? '🚀' : '🕵️‍♂️'}
                 </div>
                 <h2 className="text-3xl md:text-4xl font-black italic tracking-tighter uppercase">
                   {selectedMode === 'solo' ? <span className="neon-text-cyan">Solo Archive</span> :
@@ -348,7 +348,7 @@ export default function HomePage() {
                   <div className="relative z-10 space-y-4">
                     <div className="flex justify-between items-start">
                       <span className="text-3xl filter drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
-                        {isCouple ? '💕' : (vType?.icon || '🎤')}
+                        {isCouple ? '👥' : (vType?.icon || '🎤')}
                       </span>
                       <div className="flex items-center gap-3">
                         <span className="text-[9px] font-mono text-gray-500 group-hover:text-cyan-400 transition-colors uppercase">

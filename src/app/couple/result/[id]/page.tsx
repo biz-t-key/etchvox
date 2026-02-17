@@ -66,9 +66,9 @@ export default function CoupleResultPage() {
         return (
             <div className="min-h-screen flex items-center justify-center bg-black px-6">
                 <div className="text-center max-w-md space-y-8">
-                    <div className="text-6xl">💔</div>
+                    <div className="text-6xl">📡</div>
                     <h1 className="text-3xl font-bold">
-                        <span className="neon-text-magenta">Result Not Found</span>
+                        <span className="neon-text-magenta">Trace Expired</span>
                     </h1>
                     <p className="text-gray-400 text-lg leading-relaxed">
                         This couple result doesn't exist or has expired. Try recording a new session together!
@@ -77,7 +77,7 @@ export default function CoupleResultPage() {
                         href="/couple"
                         className="inline-block btn-primary px-8 py-4 rounded-full text-lg font-bold"
                     >
-                        💕 Try Couple Mode
+                        👥 Try Duo Mode
                     </Link>
                 </div>
             </div>

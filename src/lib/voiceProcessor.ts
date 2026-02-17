@@ -287,7 +287,7 @@ export class CoupleResonanceEngine {
     private statsA: { p: number; s: number; v: number; t: number };
     private statsB: { p: number; s: number; v: number; t: number };
 
-    constructor(private ua: UserData, private ub: UserData) {
+    constructor(private ua: UserData, private ub: UserData, private relationshipType: string = 'romantic') {
         const normA = new DemographicNormalizer(ua.p, ua.s, ua.v, ua.t, ua.gender, ua.birthYear ? getAgeGroup(ua.birthYear) : '30s');
         this.statsA = normA.normalize();
 
@@ -344,20 +344,25 @@ export class CoupleResonanceEngine {
         const synergy = this.calculateSynergy();
 
         return {
-            Report_Type: "Couple_Resonance_v1",
-            Relationship_Core: synergy,
-            User_A_Insight: {
-                Name: this.ua.name,
-                Profile: `${this.ua.job} (${this.ua.gender} ${this.ua.birthYear ? new Date().getFullYear() - this.ua.birthYear : ''})`,
-                SCM_Profile: scmA,
-                Acoustic_Tags: tagsA
-            },
-            User_B_Insight: {
-                Name: this.ub.name,
-                Profile: `${this.ub.job} (${this.ub.gender} ${this.ub.birthYear ? new Date().getFullYear() - this.ub.birthYear : ''})`,
-                SCM_Profile: scmB,
-                Acoustic_Tags: tagsB
-            },
+            User_A: this.ua.name,
+            Age_A: this.ua.birthYear ? new Date().getFullYear() - this.ua.birthYear : 'Unknown',
+            Job_A: this.ua.job,
+            Accent_A: this.ua.accent,
+            P1: this.statsA.p,
+            S1: this.statsA.s,
+            V1: this.statsA.v,
+            T1: this.statsA.t,
+            User_B: this.ub.name,
+            Age_B: this.ub.birthYear ? new Date().getFullYear() - this.ub.birthYear : 'Unknown',
+            Job_B: this.ub.job,
+            Accent_B: this.ub.accent,
+            P2: this.statsB.p,
+            S2: this.statsB.s,
+            V2: this.statsB.v,
+            T2: this.statsB.t,
+            Relationship_Type: this.relationshipType,
+            Score: synergy.Sync_Score,
+            // Extra context for compatibility
             Narrative_Hint: `Interaction is ${synergy.Dynamic_Type}.`
         };
     }

@@ -37,8 +37,9 @@ export interface VoiceResult {
     mbti?: string; // User's self-reported MBTI
     mode?: 'solo' | 'elon' | 'spy'; // Which feature was used
     coupleData?: {
-        userA: { name: string; job: string; metrics: AnalysisMetrics; gender?: string; birthYear?: number; typeCode?: TypeCode; consentAgreed: boolean; researchConsentAgreed: boolean };
-        userB: { name: string; job: string; metrics: AnalysisMetrics; gender?: string; birthYear?: number; typeCode?: TypeCode; consentAgreed: boolean; researchConsentAgreed: boolean };
+        relationshipType?: 'romantic' | 'friend' | 'rival';
+        userA: { name: string; job: string; metrics: AnalysisMetrics; gender?: string; birthYear?: number; typeCode?: TypeCode; consentAgreed: boolean; researchConsentAgreed: boolean; logV2?: import('./types').VoiceLogV2; logV3?: import('./types').VoiceLogV3 };
+        userB: { name: string; job: string; metrics: AnalysisMetrics; gender?: string; birthYear?: number; typeCode?: TypeCode; consentAgreed: boolean; researchConsentAgreed: boolean; logV2?: import('./types').VoiceLogV2; logV3?: import('./types').VoiceLogV3 };
     };
     consentAgreed: boolean;
     researchConsentAgreed: boolean;

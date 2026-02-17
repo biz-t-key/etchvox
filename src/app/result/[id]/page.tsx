@@ -12,6 +12,7 @@ import HighFidelityMetrics from '@/components/result/HighFidelityMetrics';
 import ToxicitySelector from '@/components/recording/ToxicitySelector';
 import SoloIdentityCard from '@/components/result/SoloIdentityCard';
 import DuoIdentityCard from '@/components/result/DuoIdentityCard';
+import PremiumExporter from '@/components/result/PremiumExporter';
 import { VideoPlayerSection } from '@/components/video/VideoPlayerSection';
 import { MBTIType } from '@/lib/mbti';
 import { isFirebaseConfigured, getDb } from '@/lib/firebase';
@@ -28,6 +29,14 @@ import { checkSubscription } from '@/lib/subscription';
 
 
 type DisplayStage = 'label' | 'metrics' | 'full';
+
+// relationship types for background coloring
+const RELATIONSHIP_COLORS = {
+    romantic: { a: '#00bcd4', b: '#ff5722' },
+    friend: { a: '#50c878', b: '#ffd700' },
+    rival: { a: '#8a2be2', b: '#cddc39' },
+    unknown: { a: '#4b0082', b: '#c0c0c0' },
+};
 
 export default function ResultPage() {
     const params = useParams();
@@ -381,8 +390,22 @@ export default function ResultPage() {
 
             {/* Background Decoration */}
             <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-                <div className={`absolute top-[-20%] left-[-10%] w-[600px] h-[600px] ${isCouple ? 'bg-pink-500/10' : 'bg-cyan-500/10'} rounded-full blur-[100px] opacity-20 animate-pulse-slow`} />
-                <div className={`absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] ${isCouple ? 'bg-cyan-500/10' : 'bg-pink-500/10'} rounded-full blur-[100px] opacity-20 animate-pulse-slow delay-1000`} />
+                <div
+                    className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full blur-[100px] opacity-20 animate-pulse-slow"
+                    style={{
+                        backgroundColor: isCouple
+                            ? (RELATIONSHIP_COLORS[result.coupleData?.relationshipType as keyof typeof RELATIONSHIP_COLORS]?.a || RELATIONSHIP_COLORS.romantic.a)
+                            : '#22d3ee'
+                    }}
+                />
+                <div
+                    className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full blur-[100px] opacity-20 animate-pulse-slow delay-1000"
+                    style={{
+                        backgroundColor: isCouple
+                            ? (RELATIONSHIP_COLORS[result.coupleData?.relationshipType as keyof typeof RELATIONSHIP_COLORS]?.b || RELATIONSHIP_COLORS.romantic.b)
+                            : '#ec4899'
+                    }}
+                />
             </div>
 
             <div className="relative z-10 w-full px-4 py-20 md:py-48 space-y-32 flex flex-col items-center text-center">
@@ -396,7 +419,7 @@ export default function ResultPage() {
                     </Link>
                     <div className="relative pt-4">
                         <h1 className={`text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r ${isCouple ? 'from-pink-400 to-pink-200' : 'from-cyan-400 to-cyan-200'} drop-shadow-[0_0_15px_${isCouple ? 'rgba(236,72,153,0.5)' : 'rgba(34,211,238,0.5)'}] uppercase tracking-widest`}>
-                            {isCouple ? 'Resonance Report' : 'Identity Audit'}
+                            {isCouple ? 'Duo Resonance' : 'Identity Audit'}
                         </h1>
                         <div className={`absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-12 h-0.5 ${isCouple ? 'bg-pink-500' : 'bg-cyan-500'} rounded-full blur-[1px]`} />
                     </div>
@@ -421,7 +444,7 @@ export default function ResultPage() {
                 {(displayStage === 'metrics' || displayStage === 'full') && (
                     <div className="animate-fade-in w-full space-y-24 md:space-y-40 pt-12 flex flex-col items-center">
                         {isSpyMode ? (
-                            <div className="w-full max-w-lg mx-auto">
+                            <div className="w-full max-w-lg mx-auto px-4">
                                 <SpyReportCard
                                     typeCode={result.typeCode}
                                     spyMetadata={result.spyMetadata!}
@@ -438,7 +461,7 @@ export default function ResultPage() {
                                 />
                             </div>
                         ) : (
-                            displayStage === 'full' && !isSpyMode && (
+                            <>
                                 <div className="animate-slide-up space-y-24 md:space-y-40 w-full flex flex-col items-center">
 
                                     {/* 1. IDENTITY CARD (The "Reward") */}
@@ -453,6 +476,7 @@ export default function ResultPage() {
                                             <DuoIdentityCard
                                                 userA={result.coupleData.userA as any}
                                                 userB={result.coupleData.userB as any}
+                                                relationshipType={result.coupleData.relationshipType}
                                                 resultId={result.id}
                                                 onImageGenerated={setCardImageUrl}
                                             />
@@ -500,311 +524,247 @@ export default function ResultPage() {
                                         </div>
                                     )}
 
-                                    {/* 3. PREMIUM CTA (The "Conversion Trigger") */}
-                                    {!isPremium && (
-                                        <div className="w-full max-w-md mx-auto px-4 text-center">
-                                            <button
-                                                onClick={() => handleCheckout(diagnosticType)}
-                                                disabled={checkoutLoading}
-                                                className="group relative w-full bg-white text-black font-black text-sm px-8 py-6 rounded-2xl uppercase tracking-widest hover:bg-cyan-400 hover:shadow-[0_20px_40px_rgba(34,211,238,0.3)] transition-all transform active:scale-95 disabled:opacity-50"
-                                            >
-                                                <div className="flex flex-col items-center">
-                                                    <span className="text-[10px] opacity-40 mb-1">Deep Intelligence Access</span>
-                                                    <span className="flex items-center gap-2">
-                                                        Unlock Full Neural Audit
-                                                        <span className="text-lg">🔓</span>
-                                                    </span>
-                                                </div>
-                                                <div className="absolute inset-x-0 bottom-[-40px] text-[8px] text-gray-600 font-bold uppercase tracking-[0.5em] opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    Authorized Personnel Only
-                                                </div>
-                                            </button>
 
-                                            {/* Report Clarity Section */}
-                                            <div className="mt-12 mb-2 glass rounded-2xl p-6 border border-white/5 text-left max-w-sm mx-auto">
-                                                <h4 className="text-[10px] text-cyan-400 font-black uppercase tracking-[0.3em] mb-4">Included in this Audit:</h4>
-                                                <ul className="space-y-3">
-                                                    {diagnosticType === 'couple' ? (
-                                                        <>
-                                                            <li className="flex items-center gap-3 text-[11px] text-gray-300 font-bold">
-                                                                <span className="text-cyan-500">◈</span> Neural Sync & Resonance Matrix
-                                                            </li>
-                                                            <li className="flex items-center gap-3 text-[11px] text-gray-300 font-bold">
-                                                                <span className="text-cyan-500">◈</span> Dominance vs Passive Interaction Scale
-                                                            </li>
-                                                            <li className="flex items-center gap-3 text-[11px] text-gray-300 font-bold">
-                                                                <span className="text-cyan-500">◈</span> AI-Synthesized Relationship Roast
-                                                            </li>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <li className="flex items-center gap-3 text-[11px] text-gray-300 font-bold">
-                                                                <span className="text-cyan-500">◈</span> Identity Gap Analysis (Vocal vs Psych)
-                                                            </li>
-                                                            <li className="flex items-center gap-3 text-[11px] text-gray-300 font-bold">
-                                                                <span className="text-cyan-500">◈</span> Deep Psychological Archetype Report
-                                                            </li>
-                                                            <li className="flex items-center gap-3 text-[11px] text-gray-300 font-bold">
-                                                                <span className="text-cyan-500">◈</span> Acoustic Biometric Calibration Data
-                                                            </li>
-                                                        </>
-                                                    )}
-                                                </ul>
-                                            </div>
-
-                                            <button
-                                                onClick={async () => {
-                                                    setCheckoutLoading(true);
-                                                    const data = await getResult(resultId);
-                                                    if (data?.isPremium) {
-                                                        setResult(data);
-                                                    }
-                                                    setCheckoutLoading(false);
-                                                }}
-                                                className="mt-6 py-3 px-4 text-xs text-gray-400 hover:text-white underline uppercase tracking-widest font-black transition-colors block mx-auto z-50 relative touch-manipulation"
-                                            >
-                                                Already purchased? Refresh status
-                                            </button>
-
-                                            <div className="mt-8 flex flex-col items-center gap-4">
-                                                <Link
-                                                    href="/?restore=true"
-                                                    className="text-[10px] text-gray-500 hover:text-cyan-400 underline uppercase tracking-widest font-bold transition-colors"
-                                                >
-                                                    Lost access? Restore via Email
-                                                </Link>
-                                                <a
-                                                    href="mailto:info@etchvox.com"
-                                                    className="text-[9px] text-gray-600 hover:text-white uppercase tracking-[0.2em] font-bold transition-colors"
-                                                >
-                                                    Questions? Contact Support
-                                                </a>
-                                            </div>
-
-                                            <div className="mt-12 text-[9px] text-gray-500 uppercase tracking-widest font-black">
-                                                Scroll for Acoustic Metrics
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* 4. METRICS & BIO (The "Evidence") */}
-                                    <div className="space-y-32 md:space-y-48 w-full flex flex-col items-center">
-                                        {/* Summary & Meters Card */}
-                                        <div
-                                            className="animate-fade-in glass rounded-3xl p-8 md:p-12 relative overflow-hidden border border-white/10 w-full max-w-4xl mx-auto"
-                                            style={{ boxShadow: `0 0 60px ${colors.primary}10` }}
-                                        >
-                                            <div className="flex flex-col items-center border-b border-white/5 pb-8 mb-8 text-center">
-                                                <span className="text-6xl mb-6 filter drop-shadow-[0_0_25px_rgba(255,255,255,0.15)]">
-                                                    {voiceType.icon}
-                                                </span>
-                                                <div className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-white">
-                                                    {result.typeCode}
-                                                </div>
-                                                <h1 className="text-2xl md:text-4xl font-bold uppercase tracking-tight mb-8 text-white/90">
-                                                    {voiceType.name}
-                                                </h1>
-                                                <div className="max-w-2xl">
-                                                    <p className="text-gray-400 leading-relaxed text-base md:text-lg font-medium italic">
-                                                        "{voiceType.roast}"
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            {/* Meters Grid */}
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12 w-full text-left">
-                                                {/* Left Column: Meters */}
-                                                <div className="space-y-12">
-                                                    <h3 className="text-xs font-black uppercase tracking-[0.4em] text-cyan-400 mb-8 border-l-2 border-cyan-400 pl-4">Acoustic Calibration</h3>
-                                                    {result.logV2 ? (
-                                                        <HighFidelityMetrics log={result.logV2} />
-                                                    ) : (
-                                                        <div className="text-gray-500 text-xs italic">High-fidelity metrics unavailable for this legacy record.</div>
-                                                    )}
-                                                </div>
-
-                                                {/* Right Column: Comparative Data */}
-                                                <div className="space-y-12">
-                                                    <h3 className="text-xs font-black uppercase tracking-[0.4em] text-pink-400 mb-8 border-l-2 border-pink-400 pl-4">Biological Variance</h3>
-                                                    <div className="grid grid-cols-2 gap-8">
-                                                        <DriftStat label="Neural Latency" value="2.4ms" />
-                                                        <DriftStat label="Variance" value={(safeMetrics.pitchVar || 0).toFixed(1)} />
-                                                        <DriftStat label="HNR Ratio" value={(safeMetrics.hnr || 0).toFixed(1)} />
-                                                        <DriftStat label="Noise Floor" value="-72dB" />
-                                                    </div>
-
-                                                    <div className="pt-8">
-                                                        <VoiceTimelineGraph history={fullHistory} />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Compatibility Matrix (Solo Only) */}
-                                        {!isCouple && !isSpyMode && (
-                                            <div className="w-full max-w-4xl px-4 pb-20">
-                                                <div className="flex flex-col md:flex-row items-start justify-between mb-12 gap-8">
-                                                    <div>
-                                                        <h2 className="text-3xl font-black uppercase tracking-tighter mb-2">Social Signal Matrix</h2>
-                                                        <p className="text-gray-500 font-mono text-xs uppercase tracking-widest">Cross-Reference Compatibility Index</p>
-                                                    </div>
-                                                    <div className="flex items-center gap-4 bg-white/5 rounded-2xl p-4 border border-white/10 backdrop-blur-sm">
-                                                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Tier:</span>
-                                                        <span className={`text-xl font-black uppercase italic ${getCompatibilityTier(75).tier === 'Soulmates' ? 'text-yellow-400' :
-                                                            getCompatibilityTier(75).tier === 'Best Friends' ? 'text-pink-400' :
-                                                                'text-white'
-                                                            }`}>
-                                                            {getCompatibilityTier(75).tier}
-                                                        </span>
-                                                    </div>
-                                                </div>
-
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-                                                    <div className="glass rounded-3xl p-8 border border-cyan-500/20">
-                                                        <h3 className="text-xs font-black text-cyan-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-                                                            Best Signal Match
-                                                        </h3>
-                                                        <div className="flex flex-wrap gap-3">
-                                                            {bestMatches.map(match => (
-                                                                <div key={match.type} className="bg-black/40 border border-white/5 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-300">
-                                                                    {match.type}
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="glass rounded-3xl p-8 border border-red-500/20">
-                                                        <h3 className="text-xs font-black text-red-500 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                                                            Interference Risk
-                                                        </h3>
-                                                        <div className="flex flex-wrap gap-3">
-                                                            {worstMatches.map(match => (
-                                                                <div key={match.type} className="bg-black/40 border border-white/5 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-400">
-                                                                    {match.type}
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Neural Drift Analysis Segment (Show if history exists) */}
-                                                {drift && (
-                                                    <div className="mb-32">
-                                                        <div className="flex items-center gap-4 mb-8">
-                                                            <div className="h-px flex-grow bg-white/10" />
-                                                            <h2 className="text-xs font-black uppercase tracking-[0.5em] text-gray-500">Neural Drift Analysis</h2>
-                                                            <div className="h-px flex-grow bg-white/10" />
-                                                        </div>
-                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-                                                            <div className="glass rounded-3xl p-8 border border-white/5">
-                                                                <div className="text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Drift Score</div>
-                                                                <div className="text-4xl font-black text-white italic">{drift.driftRate}%</div>
-                                                            </div>
-                                                            <div className="md:col-span-2 glass rounded-3xl p-8 border border-white/5 relative overflow-hidden group">
-                                                                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-20 transition-opacity">
-                                                                    <span className="text-8xl">📊</span>
-                                                                </div>
-                                                                <p className="text-sm font-medium leading-relaxed text-gray-300 italic relative z-10 text-left">
-                                                                    "{getDriftNarrative(drift)}"
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                <ShareButtons
-                                                    resultId={resultId}
-                                                    typeName={voiceType.name}
-                                                    typeIcon={voiceType.icon}
-                                                    catchphrase={voiceType.catchphrase}
-                                                    typeCode={result.typeCode}
-                                                    cardImageUrl={cardImageUrl}
-                                                />
-                                            </div>
-                                        )}
-
-                                        {/* 5. AI AUDIT REPORT (PREMIUM GATING) */}
-                                        {isPremium && (
-                                            <div className="w-full mb-32 max-w-4xl px-4">
-                                                <div className="flex items-center gap-3 mb-12">
-                                                    <div className={`w-1 h-6 ${isCouple ? 'bg-pink-500' : isSpyMode ? 'bg-red-500' : 'bg-cyan-500'}`} />
-                                                    <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em]">
-                                                        {isCouple ? 'Resonance Map' : isSpyMode ? 'Intel Dossier' : 'Identity Archive'}
-                                                    </h2>
-                                                </div>
-
-                                                {result.aiAnalysis ? (
-                                                    <div className={`bg-black/50 border ${isCouple ? 'border-pink-500/30' : isSpyMode ? 'border-red-500/30 font-mono' : 'border-cyan-500/30'} rounded-2xl p-6 md:p-10 text-left space-y-6 shadow-[0_0_30px_rgba(6,182,212,0.15)]`}>
-                                                        <div className="prose prose-invert prose-sm max-w-none">
-                                                            <ReactMarkdown
-                                                                components={{
-                                                                    h1: ({ node, ...props }) => <h1 className={`text-2xl font-bold ${isSpyMode ? 'text-red-500 font-mono' : 'text-cyan-400'} uppercase tracking-widest mb-4`} {...props} />,
-                                                                    h2: ({ node, ...props }) => <h2 className="text-xl font-bold text-white uppercase tracking-wide mt-8 mb-4" {...props} />,
-                                                                    p: ({ node, ...props }) => <p className="text-gray-300 leading-relaxed mb-4" {...props} />,
-                                                                    ul: ({ node, ...props }) => <ul className="list-disc list-inside space-y-3 text-gray-300 ml-2" {...props} />,
-                                                                    li: ({ node, ...props }) => <li className="text-gray-300 leading-relaxed" {...props} />,
-                                                                    strong: ({ node, ...props }) => <strong className={`${isSpyMode ? 'text-red-400' : 'text-cyan-400'} font-bold`} {...props} />,
-                                                                }}
-                                                            >
-                                                                {result.aiAnalysis}
-                                                            </ReactMarkdown>
-                                                        </div>
-                                                    </div>
+                                    {/* 4. METRICS SECTION */}
+                                    <div className="w-full text-left">
+                                        <div className="grid grid-cols-1 gap-12">
+                                            <div>
+                                                {result.logV2 ? (
+                                                    <HighFidelityMetrics
+                                                        log={result.logV2}
+                                                        logA={isCouple ? result.coupleData?.userA?.logV2 : undefined}
+                                                        logB={isCouple ? result.coupleData?.userB?.logV2 : undefined}
+                                                        relationshipType={isCouple ? result.coupleData?.relationshipType : undefined}
+                                                    />
                                                 ) : (
-                                                    <div className="text-center p-12 border border-dashed border-cyan-500/30 rounded-xl bg-gradient-to-br from-cyan-500/5 to-transparent">
-                                                        <div className="w-16 h-16 mx-auto mb-4 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-                                                        <div className="text-sm font-bold text-cyan-400 uppercase tracking-widest mb-3">🧬 Neural Analysis In Progress</div>
-                                                        <div className="text-gray-400 text-xs max-w-xs mx-auto leading-relaxed">
-                                                            Your vocal DNA is being decoded by the AI engine. This typically takes 10-20 seconds.
-                                                        </div>
-                                                    </div>
+                                                    <div className="text-gray-500 text-xs italic">High-fidelity metrics unavailable for this legacy record.</div>
                                                 )}
-                                            </div>
-                                        )}
 
-                                        {/* 6. PURGE PROTOCOL (The "End") */}
-                                        <div className="w-full max-w-2xl px-4 py-32 md:py-48 flex flex-col items-center gap-12 border-t border-white/5">
-                                            <div className="text-center space-y-8">
-                                                <div className="inline-block px-4 py-1 rounded-full border border-red-900/50 bg-red-950/20 text-[10px] text-red-500 font-black uppercase tracking-widest mb-4">
-                                                    Danger Zone // Privacy Protocol
-                                                </div>
-                                                <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter">Hard Purge</h2>
-                                                <p className="text-gray-500 text-sm max-w-sm mx-auto leading-relaxed italic">
-                                                    Permanently delete this vocal fingerprint and all associated neural data. This action is irreversible.
-                                                </p>
-                                                <div className="flex flex-col items-center gap-6">
-                                                    <div className="relative group">
-                                                        <div className="absolute -inset-1 bg-red-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200" />
-                                                        <button
-                                                            onClick={() => {
-                                                                if (window.confirm("ARE YOU SURE? This will permanently delete your biometric data and redirect you to the home page.")) {
-                                                                    setIsHoldingPurge(true);
-                                                                    setTimeout(() => {
-                                                                        removeFromHistory(resultId);
-                                                                        window.location.href = '/';
-                                                                    }, 2000);
-                                                                }
-                                                            }}
-                                                            disabled={isHoldingPurge}
-                                                            className="relative btn-metallic border-red-500/50 bg-black px-12 py-5 rounded-2xl text-[10px] text-red-500 hover:text-white transition-all disabled:opacity-50"
-                                                        >
-                                                            {isHoldingPurge ? 'INITIATING SCRUB...' : '[ EXECUTE DATA PURGE ]'}
-                                                        </button>
+                                                <div className="w-full max-w-lg mx-auto py-20">
+                                                    <div className="flex items-center gap-4 mb-12">
+                                                        <div className="h-px flex-grow bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
+                                                        <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-cyan-500/50">Identity Kit</h2>
+                                                        <div className="h-px flex-grow bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
                                                     </div>
-                                                    <p className="text-[9px] text-zinc-600 uppercase tracking-widest max-w-sm mx-auto leading-relaxed">
-                                                        You have the right to be forgotten. Purging removes all traces of this analysis from both your device and our secure cloud.
-                                                    </p>
+                                                    <PremiumExporter
+                                                        metadata={{
+                                                            archetypeCode: result.typeCode || 'UNKNOWN',
+                                                            mbti: result.mbti || 'Void',
+                                                            roast: voiceType.roast || voiceType.catchphrase || 'Echo in the void',
+                                                            isCouple: isCouple,
+                                                            price: isCouple ? 5 : 3,
+                                                            partnerA: isCouple ? result.coupleData?.userA?.name : undefined,
+                                                            partnerB: isCouple ? result.coupleData?.userB?.name : undefined,
+                                                            relationshipLabel: isCouple ? result.coupleData?.relationshipType : undefined
+                                                        }}
+                                                    />
                                                 </div>
-                                                <Link href="/" className="inline-block text-[11px] text-gray-600 hover:text-white transition-colors uppercase tracking-[0.3em] border-b border-transparent hover:border-gray-500 pb-1 font-black">
-                                                    [ START NEW ANALYSIS ]
-                                                </Link>
+                                            </div>
+                                        </div>
+
+                                        <div className="w-full max-w-4xl px-4 py-20 mx-auto">
+                                            <div className="flex items-center gap-4 mb-20">
+                                                <div className="h-px flex-grow bg-white/10" />
+                                                <h4 className="text-[10px] font-black uppercase tracking-[0.5em] text-gray-600">Compatibility Index</h4>
+                                                <div className="h-px flex-grow bg-white/10" />
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            )
+
+                                {/* 5. COMPATIBILITY MATRIX (Solo Only) */}
+                                {!isCouple && !isSpyMode && (
+                                    <div className="w-full max-w-4xl px-4 pb-20 mt-32">
+                                        <div className="flex flex-col md:flex-row items-baseline justify-between mb-12 gap-4">
+                                            <div>
+                                                <h2 className="text-3xl font-black uppercase tracking-tighter mb-2">Social Signal Matrix</h2>
+                                                <p className="text-gray-500 font-mono text-xs uppercase tracking-widest">Cross-Reference Compatibility Index</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                                            <div className="glass rounded-3xl p-8 border border-cyan-500/20">
+                                                <h3 className="text-xs font-black text-cyan-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                                                    Best Signal Match
+                                                </h3>
+                                                <div className="grid grid-cols-1 gap-4">
+                                                    {bestMatches.map(match => {
+                                                        const matchedVoiceType = voiceTypes[match.type];
+                                                        return (
+                                                            <div
+                                                                key={match.type}
+                                                                className="glass rounded-2xl p-4 border border-cyan-500/20 hover:border-cyan-500/40 transition-all group"
+                                                            >
+                                                                <div className="flex items-center gap-3 mb-2">
+                                                                    <span className="text-2xl group-hover:scale-110 transition-transform">{matchedVoiceType.icon}</span>
+                                                                    <div className="flex-1">
+                                                                        <div className="text-sm font-black text-white uppercase tracking-wider">
+                                                                            {matchedVoiceType.name}
+                                                                        </div>
+                                                                        <div className="text-[9px] text-cyan-500/60 font-mono font-bold">
+                                                                            {match.type}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="text-[10px] text-gray-500 italic leading-relaxed pl-9">
+                                                                    "{matchedVoiceType.catchphrase}"
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            <div className="glass rounded-3xl p-8 border border-red-500/20">
+                                                <h3 className="text-xs font-black text-red-500 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                                    Interference Risk
+                                                </h3>
+                                                <div className="grid grid-cols-1 gap-4">
+                                                    {worstMatches.map(match => {
+                                                        const matchedVoiceType = voiceTypes[match.type];
+                                                        return (
+                                                            <div
+                                                                key={match.type}
+                                                                className="glass rounded-2xl p-4 border border-red-500/10 hover:border-red-500/30 transition-all group"
+                                                            >
+                                                                <div className="flex items-center gap-3 mb-2">
+                                                                    <span className="text-2xl grayscale group-hover:grayscale-0 transition-all">{matchedVoiceType.icon}</span>
+                                                                    <div className="flex-1">
+                                                                        <div className="text-sm font-black text-gray-300 uppercase tracking-wider">
+                                                                            {matchedVoiceType.name}
+                                                                        </div>
+                                                                        <div className="text-[10px] text-red-500/40 font-mono font-bold">
+                                                                            {match.type}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="text-[10px] text-gray-600 italic leading-relaxed pl-9">
+                                                                    "{matchedVoiceType.catchphrase}"
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Neural Drift Analysis Segment (Duo Only or Complex Audit Only) */}
+                                        {isCouple && drift && (
+                                            <div className="mb-32">
+                                                <div className="flex items-center gap-4 mb-8">
+                                                    <div className="h-px flex-grow bg-white/10" />
+                                                    <h2 className="text-xs font-black uppercase tracking-[0.5em] text-gray-500">Neural Drift Analysis</h2>
+                                                    <div className="h-px flex-grow bg-white/10" />
+                                                </div>
+                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+                                                    <div className="glass rounded-3xl p-8 border border-white/5">
+                                                        <div className="text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Drift Score</div>
+                                                        <div className="text-4xl font-black text-white italic">{drift.driftRate}%</div>
+                                                    </div>
+                                                    <div className="md:col-span-2 glass rounded-3xl p-8 border border-white/5 relative overflow-hidden group">
+                                                        <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-20 transition-opacity">
+                                                            <span className="text-8xl">📊</span>
+                                                        </div>
+                                                        <p className="text-sm font-medium leading-relaxed text-gray-300 italic relative z-10 text-left">
+                                                            "{getDriftNarrative(drift)}"
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+
+                                        <ShareButtons
+                                            resultId={resultId}
+                                            typeName={voiceType.name}
+                                            typeIcon={voiceType.icon}
+                                            catchphrase={voiceType.catchphrase}
+                                            typeCode={result.typeCode}
+                                            cardImageUrl={cardImageUrl}
+                                        />
+                                    </div>
+                                )}
+
+                                {/* 6. AI AUDIT REPORT (PREMIUM GATING) */}
+                                {isPremium && (
+                                    <div className="w-full mb-32 max-w-4xl px-4">
+                                        <div className="flex items-center gap-3 mb-12">
+                                            <div className={`w-1 h-6 ${isCouple ? 'bg-pink-500' : isSpyMode ? 'bg-red-500' : 'bg-cyan-500'}`} />
+                                            <h2 className="text-lg font-bold text-white uppercase tracking-[0.2em]">
+                                                {isCouple ? 'Resonance Map' : isSpyMode ? 'Intel Dossier' : 'Identity Archive'}
+                                            </h2>
+                                        </div>
+
+                                        {result.aiAnalysis ? (
+                                            <div className={`bg-black/50 border ${isCouple ? 'border-pink-500/30' : isSpyMode ? 'border-red-500/30 font-mono' : 'border-cyan-500/30'} rounded-2xl p-6 md:p-10 text-left space-y-6 shadow-[0_0_30px_rgba(6,182,212,0.15)]`}>
+                                                <div className="prose prose-invert prose-sm max-w-none">
+                                                    <ReactMarkdown
+                                                        components={{
+                                                            h1: ({ node, ...props }) => <h1 className={`text-2xl font-bold ${isSpyMode ? 'text-red-500 font-mono' : 'text-cyan-400'} uppercase tracking-widest mb-4`} {...props} />,
+                                                            h2: ({ node, ...props }) => <h2 className="text-xl font-bold text-white uppercase tracking-wide mt-8 mb-4" {...props} />,
+                                                            p: ({ node, ...props }) => <p className="text-gray-300 leading-relaxed mb-4" {...props} />,
+                                                            ul: ({ node, ...props }) => <ul className="list-disc list-inside space-y-3 text-gray-300 ml-2" {...props} />,
+                                                            li: ({ node, ...props }) => <li className="text-gray-300 leading-relaxed" {...props} />,
+                                                            strong: ({ node, ...props }) => <strong className={`${isSpyMode ? 'text-red-400' : 'text-cyan-400'} font-bold`} {...props} />,
+                                                        }}
+                                                    >
+                                                        {result.aiAnalysis}
+                                                    </ReactMarkdown>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="text-center p-12 border border-dashed border-cyan-500/30 rounded-xl bg-gradient-to-br from-cyan-500/5 to-transparent">
+                                                <div className="w-16 h-16 mx-auto mb-4 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+                                                <div className="text-sm font-bold text-cyan-400 uppercase tracking-widest mb-3">🧬 Neural Analysis In Progress</div>
+                                                <div className="text-gray-400 text-xs max-w-xs mx-auto leading-relaxed">
+                                                    Your vocal DNA is being decoded by the AI engine. This typically takes 10-20 seconds.
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* 7. PURGE PROTOCOL (The "End") */}
+                                <div className="w-full max-w-2xl px-4 py-32 md:py-48 flex flex-col items-center gap-12 border-t border-white/5">
+                                    <div className="text-center space-y-8">
+                                        <div className="inline-block px-4 py-1 rounded-full border border-red-900/50 bg-red-950/20 text-[10px] text-red-500 font-black uppercase tracking-widest mb-4">
+                                            Danger Zone // Privacy Protocol
+                                        </div>
+                                        <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter">Hard Purge</h2>
+                                        <p className="text-gray-500 text-sm max-w-sm mx-auto leading-relaxed italic">
+                                            Permanently delete this vocal fingerprint and all associated neural data. This action is irreversible.
+                                        </p>
+                                        <div className="flex flex-col items-center gap-6">
+                                            <div className="relative group">
+                                                <div className="absolute -inset-1 bg-red-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200" />
+                                                <button
+                                                    onClick={() => {
+                                                        if (window.confirm("ARE YOU SURE? This will permanently delete your biometric data and redirect you to the home page.")) {
+                                                            setIsHoldingPurge(true);
+                                                            setTimeout(() => {
+                                                                removeFromHistory(resultId);
+                                                                window.location.href = '/';
+                                                            }, 2000);
+                                                        }
+                                                    }}
+                                                    disabled={isHoldingPurge}
+                                                    className="relative btn-metallic border-red-500/50 bg-black px-12 py-5 rounded-2xl text-[10px] text-red-500 hover:text-white transition-all disabled:opacity-50"
+                                                >
+                                                    {isHoldingPurge ? 'INITIATING SCRUB...' : '[ EXECUTE DATA PURGE ]'}
+                                                </button>
+                                            </div>
+                                            <p className="text-[9px] text-zinc-600 uppercase tracking-widest max-w-sm mx-auto leading-relaxed">
+                                                You have the right to be forgotten. Purging removes all traces of this analysis from both your device and our secure cloud.
+                                            </p>
+                                        </div>
+                                        <Link href="/" className="inline-block text-[11px] text-gray-600 hover:text-white transition-colors uppercase tracking-[0.3em] border-b border-transparent hover:border-gray-500 pb-1 font-black">
+                                            [ START NEW ANALYSIS ]
+                                        </Link>
+                                    </div>
+                                </div>
+                            </>
                         )}
                     </div>
                 )}

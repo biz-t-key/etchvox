@@ -9,13 +9,13 @@ import { TypeCode } from '@/lib/types';
  */
 export async function POST(req: NextRequest) {
     try {
-        const { typeCodeA, typeCodeB } = await req.json();
+        const { typeCodeA, typeCodeB, relationshipType } = await req.json();
 
         if (!typeCodeA || !typeCodeB) {
             return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
         }
 
-        const identity = getDuoIdentity(typeCodeA as TypeCode, typeCodeB as TypeCode);
+        const identity = getDuoIdentity(typeCodeA as TypeCode, typeCodeB as TypeCode, relationshipType);
 
         return NextResponse.json({
             label: identity.label,

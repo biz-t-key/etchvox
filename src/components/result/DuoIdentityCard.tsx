@@ -12,11 +12,12 @@ const NOISE_DATA_URL = "data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='h
 interface DuoIdentityCardProps {
     userA: { name: string; job: string; metrics: AnalysisMetrics; typeCode: TypeCode };
     userB: { name: string; job: string; metrics: AnalysisMetrics; typeCode: TypeCode };
+    relationshipType?: string;
     resultId: string;
     onImageGenerated?: (url: string) => void;
 }
 
-export default function DuoIdentityCard({ userA, userB, resultId, onImageGenerated }: DuoIdentityCardProps) {
+export default function DuoIdentityCard({ userA, userB, relationshipType = 'romantic', resultId, onImageGenerated }: DuoIdentityCardProps) {
     const cardRef = useRef<HTMLDivElement>(null);
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [generating, setGenerating] = useState(false);
@@ -32,7 +33,11 @@ export default function DuoIdentityCard({ userA, userB, resultId, onImageGenerat
                 const res = await fetch('/api/identity/duo', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ typeCodeA: userA.typeCode, typeCodeB: userB.typeCode })
+                    body: JSON.stringify({
+                        typeCodeA: userA.typeCode,
+                        typeCodeB: userB.typeCode,
+                        relationshipType
+                    })
                 });
                 const data = await res.json();
                 setIdentityData(data);
@@ -42,7 +47,7 @@ export default function DuoIdentityCard({ userA, userB, resultId, onImageGenerat
             }
         }
         fetchDuoIdentity();
-    }, [userA.typeCode, userB.typeCode]);
+    }, [userA.typeCode, userB.typeCode, relationshipType]);
 
     // ✅ STEP 2: Capture Engine
     useEffect(() => {

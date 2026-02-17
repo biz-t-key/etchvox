@@ -84,6 +84,7 @@ export interface VoiceLogV2 {
         dtw_score: number;
         mfcc_mean: number[]; // 13 dimensions
         mfcc_var: number[];  // 13 dimensions
+        biometric_vector?: number[]; // 30 dimensions
     };
 
     environment: {
@@ -501,7 +502,7 @@ export const voiceTypes: Record<TypeCode, VoiceType> = {
         code: 'COUPLE_MIX' as any,
         name: 'The Binary Stars',
         nameJa: 'バイナリースター',
-        icon: '💫',
+        icon: '👥',
         group: 'special',
         catchphrase: 'Two voices, one resonance. A cosmic collision of souls.',
         catchphraseJa: '二つの声、一つの共鳴。魂の宇宙的衝突。',

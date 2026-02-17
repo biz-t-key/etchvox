@@ -62,7 +62,7 @@ export function getCompatibilityTier(score: number): {
     emoji: string;
 } {
     if (score >= 90) return { tier: 'Soulmates', tierJa: 'ソウルメイト', color: '#FFD700', emoji: '💫' };
-    if (score >= 75) return { tier: 'Best Friends', tierJa: '親友', color: '#FF00FF', emoji: '💕' };
+    if (score >= 75) return { tier: 'Best Friends', tierJa: '親友', color: '#FF00FF', emoji: '🤝' };
     if (score >= 60) return { tier: 'Good Match', tierJa: '良い相性', color: '#00F0FF', emoji: '✨' };
     if (score >= 45) return { tier: 'Neutral', tierJa: '普通', color: '#808080', emoji: '➖' };
     if (score >= 30) return { tier: 'Friction', tierJa: '摩擦', color: '#FFA500', emoji: '⚡' };

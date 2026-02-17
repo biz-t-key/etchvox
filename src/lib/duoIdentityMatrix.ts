@@ -269,20 +269,35 @@ export const duoIdentityMatrix: DuoIdentity[] = [
     { typeA: 'LSCD', typeB: 'LSCD', label: 'The Crushing Abyss', tagline: 'Two massive engines of power drowning in the same dark wa...', roast: 'Two massive engines of power drowning in the same dark water. You aren\'t in love; you’re just a geological event.' },
 ];
 
-export function getDuoIdentity(typeA: string, typeB: string): DuoIdentity {
-    const match = duoIdentityMatrix.find(d => 
-        (d.typeA === typeA && d.typeB === typeB) || 
+export function getDuoIdentity(typeA: string, typeB: string, relationshipType: string = 'romantic'): DuoIdentity {
+    const match = duoIdentityMatrix.find(d =>
+        (d.typeA === typeA && d.typeB === typeB) ||
         (d.typeA === typeB && d.typeB === typeA)
     );
 
-    if (match) return match;
+    if (!match) {
+        return {
+            typeA,
+            typeB,
+            label: 'The Unknown Pairing',
+            tagline: 'An unexplored combination.',
+            roast: 'No analysis available for this exotic pairing.'
+        };
+    }
 
-    // Fallback (should never happen with complete matrix)
-    return {
-        typeA,
-        typeB,
-        label: 'The Unknown Pairing',
-        tagline: 'An unexplored combination.',
-        roast: 'No analysis available for this exotic pairing.'
-    };
+    // Clone to avoid mutating the matrix
+    const result = { ...match };
+
+    // Contextual Modifiers for Roasts
+    if (relationshipType === 'rival') {
+        result.label = result.label.replace('The ', 'The Rivaling ');
+        result.roast = `[COMPETITIVE ANALYSIS] ${result.roast?.replace('love', 'rivalry').replace('partnership', 'contest')}`;
+    } else if (relationshipType === 'friend') {
+        result.label = result.label.replace('The ', 'The Platonic ');
+        result.roast = `[PLATONIC AUDIT] ${result.roast?.replace('love', 'friendship').replace('dating', 'hanging out')}`;
+    } else {
+        result.roast = `[ROMANTIC AUDIT] ${result.roast}`;
+    }
+
+    return result;
 }

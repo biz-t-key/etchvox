@@ -58,27 +58,35 @@ export default function ShareButtons({ resultId, typeName, typeIcon, catchphrase
 
     return (
         <div className="glass rounded-xl p-6">
-            {/* Tagline */}
-            <p className="text-center text-gray-300 text-base sm:text-lg font-semibold mb-6">
-                ✨ Perfect for your Bio, Slack status, or just to warn people.
-            </p>
+            {/* Bio Copy Section */}
+            <div className="mb-10">
+                <div className="flex items-center justify-between mb-3 px-1">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-cyan-400">
+                        📋 Copy To Bio
+                    </span>
+                    <span className="text-[9px] text-gray-500 italic opacity-80">
+                        Perfect for Bio, Slack, or just to warn people
+                    </span>
+                </div>
 
-            {/* Bio Copy Box */}
-            <div className="bg-black/50 rounded-lg p-4 mb-4 relative border border-white/5">
-                <pre className="text-xs whitespace-pre-wrap text-gray-400 mono">
-                    {bioText}
-                </pre>
-                <button
-                    onClick={() => copyToClipboard(bioText, 'bio')}
-                    className="absolute top-2 right-2 px-3 py-1 text-[10px] bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded transition-colors uppercase font-black"
-                >
-                    {copied === 'bio' ? '✓ Copied!' : '📋 Copy To Bio'}
-                </button>
+                <div className="bg-black/50 rounded-2xl p-5 relative border border-white/5 group hover:border-cyan-500/20 transition-colors">
+                    <pre className="text-xs whitespace-pre-wrap text-gray-300 mono leading-relaxed">
+                        {bioText}
+                    </pre>
+                    <button
+                        onClick={() => copyToClipboard(bioText, 'bio')}
+                        className="absolute top-3 right-3 px-3 py-1.5 text-[9px] bg-cyan-500/10 hover:bg-cyan-500 text-cyan-400 hover:text-black rounded-lg transition-all uppercase font-black tracking-widest"
+                    >
+                        {copied === 'bio' ? '✓ Copied' : 'Copy'}
+                    </button>
+                </div>
             </div>
 
-            {/* Share Title */}
-            <div className="text-center text-xs text-gray-500 mb-4 mono">
-                ────── SHARE YOUR VOICE ID ──────
+            {/* Share Title with lines */}
+            <div className="flex items-center gap-4 mb-8 opacity-40">
+                <div className="h-px flex-grow bg-white/10" />
+                <span className="text-[8px] font-black uppercase tracking-[0.5em] whitespace-nowrap">Broadcast Protocol</span>
+                <div className="h-px flex-grow bg-white/10" />
             </div>
 
             {/* Social Buttons - Enhanced Size */}
