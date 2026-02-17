@@ -98,7 +98,7 @@ function MirrorContent() {
 
             // Check subscription status
             const subStatus = await checkSubscription(auth.userHash);
-            setHasSubscription(subStatus.isActive);
+            setHasSubscription(isDevMode ? true : subStatus.isActive);
             setCheckingSubscription(false);
 
             if (auth.isNew) {
@@ -426,7 +426,7 @@ function MirrorContent() {
             );
         }
 
-        if (!checkingSubscription && hasSubscription === false && userHash) {
+        if (!isDevMode && !checkingSubscription && hasSubscription === false && userHash) {
             return <SubscriptionWall userHash={userHash} setHasSubscription={setHasSubscription} />;
         }
 

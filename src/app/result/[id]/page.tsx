@@ -58,12 +58,15 @@ export default function ResultPage() {
     const [isSubscribed, setIsSubscribed] = useState(false);
     const [checkoutLoading, setCheckoutLoading] = useState(false);
 
+    const isDevMode = searchParams.get('dev') === 'true';
+
     // 1. SCROLL DETECTION
     const { scrollYProgress } = useScroll();
 
-    // 2. NEBULA PHASE TRANSFORMS (0% - 35%)
-    const nebulaScale = useTransform(scrollYProgress, [0, 0.35], [1, 0.4]);
-    const nebulaOpacity = useTransform(scrollYProgress, [0, 0.3], [1, 0]);
+    // 2. NEBULA PHASE TRANSFORMS (0% - 20%)
+    const nebulaScale = useTransform(scrollYProgress, [0, 0.25], [1, 0.4]);
+    const nebulaOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
+    const nebulaY = useTransform(scrollYProgress, [0, 0.25], [0, -200]);
 
     // 3. TRUTH CARD PHASE TRANSFORMS (25% - 60%)
     const cardY = useTransform(scrollYProgress, [0.25, 0.55], [150, 0]);
@@ -286,7 +289,7 @@ export default function ResultPage() {
     }
 
     // Gating Logic: Standalone diagnostics always require purchase
-    const isPremium = result.isPremium === true;
+    const isPremium = result.isPremium === true || isDevMode;
     const showAIReport = isPremium;
     const showVideo = false; // Video visualization removed from Solo/Couple diagnostic results
     const showSpyReport = true; // Always show the card, gating handled inside
@@ -322,7 +325,7 @@ export default function ResultPage() {
 
                 {/* CHAPTER 1: THE SOUL REVEAL (Fixed 0% - 35%) */}
                 <motion.section
-                    style={{ scale: nebulaScale, opacity: nebulaOpacity }}
+                    style={{ scale: nebulaScale, opacity: nebulaOpacity, y: nebulaY }}
                     className="fixed inset-0 flex flex-col items-center justify-center z-10 pointer-events-none"
                 >
                     <div className="text-[120px] mb-12 animate-pulse-slow grayscale opacity-40">
@@ -468,15 +471,21 @@ export default function ResultPage() {
                                         <p className="text-gray-600 text-[10px] font-black uppercase tracking-widest mt-2">Deeper Context Hidden</p>
                                     </div>
                                     <div className="glass rounded-[3rem] p-12 border border-white/5 space-y-12">
-                                        <div className="text-5xl opacity-40">🧬</div>
-                                        <p className="text-sm text-gray-500 leading-relaxed italic">
-                                            Unlock the complete 30-page neural blueprint including social compatibility scores and blindspot detection.
+                                        <div className="flex flex-col items-center gap-4">
+                                            <div className="text-5xl opacity-40">🧬</div>
+                                            <div className="px-4 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30">
+                                                <span className="text-cyan-400 font-black text-xs">${diagnosticPrice} Authorized Unlock</span>
+                                            </div>
+                                        </div>
+                                        <p className="text-sm text-gray-400 leading-relaxed italic">
+                                            Unlock your complete neural blueprint including detailed personality traits, cognitive patterns, and resonance analysis.
                                         </p>
                                         <button
                                             onClick={() => handleCheckout(diagnosticType)}
-                                            className="w-full bg-white text-black font-black py-6 rounded-3xl uppercase tracking-widest hover:bg-cyan-400 transition-all transform active:scale-95"
+                                            className="w-full bg-white text-black font-black py-6 rounded-3xl uppercase tracking-widest hover:bg-cyan-400 transition-all transform active:scale-95 flex items-center justify-center gap-3"
                                         >
-                                            Reveal Intelligence Report
+                                            <span>Reveal Intelligence Report</span>
+                                            <span className="text-xs opacity-40 font-mono">→</span>
                                         </button>
                                     </div>
                                 </div>

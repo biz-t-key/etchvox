@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { getAudioBlob, getAllAudioBlobs } from '@/lib/mirrorDb';
 import { loadVoiceLogHistory, type VoiceLog } from '@/lib/mirrorEngine';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface MirrorRecapProps {
     userHash: string;
@@ -21,6 +22,8 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
     const [audioBuffers, setAudioBuffers] = useState<AudioBuffer[]>([]);
     const [exportUrl, setExportUrl] = useState<string | null>(null);
     const [exportMode, setExportMode] = useState<'full' | 'sns'>('full');
+    const [revealPhase, setRevealPhase] = useState<'IDLE' | 'RECALLING' | 'SYNCING' | 'STITCHING' | 'FINALIZING' | 'SUCCESS'>('IDLE');
+    const [revealLogs, setRevealLogs] = useState<string[]>([]);
 
     const THEMES: Record<string, any> = {
         OPTIMIZER: {
@@ -311,16 +314,49 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
         }
     }
 
-    const startExport = (mode: 'full' | 'sns' = 'full') => {
+    const startExport = async (mode: 'full' | 'sns' = 'full') => {
         if (audioUrls.length === 0) return;
         setExportMode(mode);
-        setIsRecording(true);
-        setIsPlaying(true);
-        recordedChunksRef.current = [];
+        setIsRecording(false); // Disabling client-side recorder
+        setRevealPhase('RECALLING');
+        setRevealLogs([]);
 
-        const firstIndex = mode === 'sns' ? 0 : 0; // In SNS mode, we start at 0 (Day 1)
-        setCurrentIndex(firstIndex);
-        playTrack(firstIndex, true);
+        // 1. RECALLING (0s - 1s)
+        setTimeout(() => {
+            setRevealLogs(prev => [...prev, 'RECALLING RESONANCE FROM THE VOID...', 'FETCHING 7 FRAGMENTS FROM CLOUDFLARE R2...']);
+            setRevealPhase('SYNCING');
+        }, 1000);
+
+        // 2. SYNCING (1.0s - 2.5s)
+        setTimeout(() => {
+            setRevealLogs(prev => [...prev, 'DAY 1: THE INITIAL IMPULSE... SYNCED.', 'DAY 4: THE MID-WEEK TURBULENCE... ALIGNED.', 'DAY 7: THE FINAL RESOLUTION... ETCHED.']);
+            setRevealPhase('STITCHING');
+        }, 2500);
+
+        // 3. STITCHING (2.5s - 4.0s)
+        setTimeout(() => {
+            setRevealLogs(prev => [...prev, 'WEAVING NARRATIVE ARCS... [||||||||||] 100%', 'APPLYING MASTER EQ & LOUDNORM...']);
+            setRevealPhase('FINALIZING');
+        }, 4000);
+
+        // Triggers server-side generation
+        try {
+            const response = await fetch('/api/mirror/recap/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userHash, archetype, mode })
+            });
+            const data = await response.json();
+
+            // 4. FINALIZING (Wait for both timer and API)
+            setTimeout(() => {
+                setRevealPhase('SUCCESS');
+                if (data.url) setExportUrl(data.url);
+            }, 5000);
+        } catch (e) {
+            console.error('Recap generation failed:', e);
+            setRevealPhase('IDLE');
+        }
     };
 
     const startPlayback = () => {
@@ -728,7 +764,30 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
                 </div>
 
                 <div className="flex flex-col items-center gap-6">
-                    {!isPlaying && !isRecording ? (
+                    {revealPhase !== 'IDLE' && revealPhase !== 'SUCCESS' ? (
+                        <div className="flex flex-col items-center gap-6 animate-in fade-in duration-700">
+                            <div className="w-64 h-1 bg-white/10 rounded-full overflow-hidden">
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: "100%" }}
+                                    transition={{ duration: 5, ease: "linear" }}
+                                    className="h-full bg-cyan-500"
+                                />
+                            </div>
+                            <div className="text-center space-y-2 font-mono">
+                                {revealLogs.map((log, i) => (
+                                    <motion.p
+                                        key={i}
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1 - (revealLogs.length - 1 - i) * 0.3, x: 0 }}
+                                        className="text-[10px] uppercase tracking-[0.2em] text-cyan-400"
+                                    >
+                                        {log}
+                                    </motion.p>
+                                ))}
+                            </div>
+                        </div>
+                    ) : !isPlaying && !isRecording ? (
                         <div className="flex flex-col items-center gap-4">
                             {!exportUrl ? (
                                 <div className="flex flex-col sm:flex-row items-center gap-4">
@@ -736,26 +795,36 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
                                         onClick={() => startExport('sns')}
                                         className="px-8 py-3 bg-gradient-to-r from-cyan-600 to-blue-700 text-white rounded-full font-serif italic text-sm transition shadow-lg flex items-center gap-3 border border-white/10 hover:shadow-cyan-500/20"
                                     >
-                                        <span>📱</span> Generate 90s SNS Highlight
+                                        <span>📱</span> Encode 90s SNS Highlight
                                     </button>
                                     <button
                                         onClick={() => startExport('full')}
                                         className="px-8 py-3 rounded-full font-serif italic text-sm transition shadow-lg flex items-center gap-3"
                                         style={{ backgroundColor: pageTheme.color, color: pageTheme.bg }}
                                     >
-                                        <span>🎞️</span> Export Full 7-Day Journey
+                                        <span>🎞️</span> Stitch Full 7-Day Dossier
                                     </button>
                                 </div>
                             ) : (
-                                <button
-                                    onClick={downloadVideo}
-                                    className="px-10 py-5 bg-green-600 text-white rounded-full font-serif italic text-lg hover:bg-green-700 transition shadow-2xl flex items-center gap-4 animate-bounce"
-                                >
-                                    <span>💾</span> Download {exportMode === 'sns' ? 'SNS Recap' : 'Full Movie'}
-                                </button>
+                                <div className="flex flex-col items-center gap-6">
+                                    <div className="flex flex-col items-center gap-2">
+                                        <div className="bg-green-500/20 border border-green-500/30 px-6 py-2 rounded-full">
+                                            <span className="text-green-400 text-[10px] font-black uppercase tracking-[0.3em]">Identity Integration Complete</span>
+                                        </div>
+                                        <p className="text-[9px] text-white/40 uppercase tracking-[0.2em] font-mono">
+                                            Ephemeral Archive: This video and all source fragments will be purged in 24h for your privacy.
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={downloadVideo}
+                                        className="px-10 py-5 bg-white text-black rounded-full font-black uppercase tracking-widest text-xs hover:scale-105 transition-transform shadow-2xl flex items-center gap-4"
+                                    >
+                                        <span>💾</span> Download Your Movie
+                                    </button>
+                                </div>
                             )}
 
-                            {!exportUrl && (
+                            {!exportUrl && revealPhase === 'IDLE' && (
                                 <button
                                     onClick={startPlayback}
                                     className="px-12 py-4 rounded-full font-serif italic text-lg transition shadow-lg flex items-center gap-3 opacity-60 hover:opacity-100"

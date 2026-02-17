@@ -191,9 +191,9 @@ export default function PremiumExporter({ metadata }: { metadata: ExportMetadata
                         className="space-y-6"
                     >
                         <div className="text-center">
-                            <div className="inline-block px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/30 mb-2">
-                                <span className="text-cyan-400 font-black text-lg">${metadata.price}</span>
-                                <span className="text-white/40 text-[10px] ml-2 uppercase tracking-widest font-black">Authorized Export</span>
+                            <div className="inline-block px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-2">
+                                <span className="text-cyan-400 font-mono text-xs">${metadata.price}</span>
+                                <span className="text-white/30 text-[9px] ml-2 uppercase tracking-[0.2em] font-black">Authorized Export</span>
                             </div>
                         </div>
 
@@ -211,16 +211,6 @@ export default function PremiumExporter({ metadata }: { metadata: ExportMetadata
                             </div>
                         </button>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-white/5 rounded-2xl p-4 border border-white/10 flex flex-col items-center gap-2">
-                                <span className="text-xl">🖨️</span>
-                                <span className="text-[9px] font-black uppercase tracking-widest text-white/40">High-Res Image (PNG)</span>
-                            </div>
-                            <div className="bg-white/5 rounded-2xl p-4 border border-white/10 flex flex-col items-center gap-2">
-                                <span className="text-xl">🎬</span>
-                                <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Animated BG (MP4)</span>
-                            </div>
-                        </div>
                     </motion.div>
                 )}
 
@@ -289,7 +279,7 @@ export default function PremiumExporter({ metadata }: { metadata: ExportMetadata
                                 <h3 className="text-2xl font-serif italic mb-4 text-white">The Mirror reveals more...</h3>
                                 <p className="text-gray-400 text-sm mb-8 leading-relaxed">
                                     Your visual card is just the surface. <br />
-                                    We detected an <span className="text-cyan-400 font-bold italic">unusual frequency pattern</span> in your voice. Unlock the 30-page Deep Insight Report to decode your hidden traits.
+                                    We detected an <span className="text-cyan-400 font-bold italic">unusual frequency pattern</span> in your voice. Unlock the Deep Insight Report to decode your hidden traits.
                                 </p>
 
                                 <button
