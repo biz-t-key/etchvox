@@ -80,6 +80,10 @@ export class VoiceAnalyzer {
         return this.audioContext;
     }
 
+    getFrequencyData(): Uint8Array | null {
+        return this.frequencyArray;
+    }
+
     // Connect microphone stream to analyzer
     connectStream(stream: MediaStream): void {
         if (!this.audioContext || !this.analyser) {

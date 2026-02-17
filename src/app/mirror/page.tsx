@@ -4,13 +4,15 @@ import { useState, useRef, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { VoiceAnalyzer } from '@/lib/analyzer';
 import { initializeAuth, loadUserHash } from '@/lib/authService';
-import { getScenariosByGenre, getReadingText, getProgressLevel, getScenarioById, type Genre, type Mood, type Scenario, type Archetype } from '@/lib/mirrorContent';
+import { getScenariosByGenre, getReadingText, getProgressLevel, getScenarioById, type Genre, type Mood, type Scenario, type Archetype, GENRE_THEMES } from '@/lib/mirrorContent';
 import { saveVoiceLog, loadVoiceLogHistory } from '@/lib/mirrorEngine';
 import { saveAudioBlob } from '@/lib/mirrorDb';
 import { uploadMirrorBlob } from '@/lib/storage';
 import { polishAudio } from '@/lib/audioPolisher';
 import MirrorDashboard from '@/components/mirror/MirrorDashboard';
 import StorySelector from '@/components/mirror/StorySelector';
+import BackgroundLayer from '@/components/mirror/BackgroundLayer';
+import { motion, AnimatePresence } from 'framer-motion';
 import SubscriptionWall from '@/components/mirror/SubscriptionWall';
 import { checkSubscription } from '@/lib/subscription';
 import { isFirebaseConfigured, getDb } from '@/lib/firebase';
@@ -66,6 +68,7 @@ function MirrorContent() {
     const [capturedBlob, setCapturedBlob] = useState<Blob | null>(null);
     const [legalAccepted, setLegalAccepted] = useState(false);
     const [researchAccepted, setResearchAccepted] = useState(false);
+    const [analyserData, setAnalyserData] = useState<Uint8Array | null>(null);
 
     // Recorder refs
     const chunksRef = useRef<Blob[]>([]);
@@ -249,6 +252,10 @@ function MirrorContent() {
             const collectLoop = () => {
                 if (analyzerRef.current) {
                     analyzerRef.current.collectSample();
+                    const freqData = analyzerRef.current.getFrequencyData();
+                    if (freqData) {
+                        setAnalyserData(new Uint8Array(freqData));
+                    }
 
                     // VAD End-point detection
                     const rms = analyzerRef.current.getLatestRMS();
@@ -528,50 +535,100 @@ function MirrorContent() {
 
         if (phase === 'calibration' || phase === 'reading') {
             const isCalibration = phase === 'calibration';
-            const displayText = isCalibration ? CALIBRATION_TEXT : readingText;
+            const displayText = isCalibration ? 'Establish your vocal baseline. Speak clearly into the void.' : readingText;
+            const theme = isCalibration
+                ? { color: 'text-zinc-400', font: "'Inter', sans-serif", tracking: 'tracking-normal', archetype: 'OPTIMIZER' }
+                : (selectedGenre ? GENRE_THEMES[selectedGenre] : GENRE_THEMES.philosophy);
+
+            // Calculate simple amplitude for reactive pulse
+            const amplitude = analyserData ? Array.from(analyserData).reduce((a, b) => a + b, 0) / analyserData.length : 0;
+            const pulseScale = 1 + (amplitude / 255) * 0.2;
 
             return (
-                <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
-                    <div className="max-w-2xl w-full text-center space-y-12">
-                        <div className="space-y-4">
-                            <h2 className="text-sm font-black uppercase tracking-widest text-cyan-400">
-                                {isCalibration ? '🎯 Calibration' : `📖 Day ${currentDayIndex} Reading ${alreadyRecordedToday ? '(Overwrite)' : ''}`}
-                            </h2>
-                            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 space-y-4">
-                                {!isCalibration && selectedScenario && (
-                                    <div className="text-cyan-400 text-[10px] font-black uppercase tracking-[0.3em] pb-4 border-b border-white/5">
-                                        Direction: {selectedScenario.tone_instruction}
-                                    </div>
-                                )}
-                                <p className="text-2xl text-white leading-relaxed font-serif pt-2">
-                                    {displayText}
+                <div className="relative min-h-screen w-full flex items-center justify-center p-6 overflow-hidden bg-black">
+                    {/* Atmospheric Background */}
+                    <BackgroundLayer
+                        readingVector={[0.5, 0.5, 0.5, 0.5, 0.5]}
+                        showInsight={true}
+                        themeOverride={theme.archetype}
+                    />
+
+                    <div className="relative z-20 max-w-4xl w-full flex flex-col items-center justify-center space-y-16">
+                        <header className="text-center space-y-2 opacity-50">
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="flex items-center justify-center gap-3"
+                            >
+                                <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+                                <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/60 font-mono">
+                                    {isCalibration ? 'Identity Synchronization' : 'Resonance Reading'}
+                                </h2>
+                            </motion.div>
+                            {!isCalibration && selectedScenario && (
+                                <p className="text-[9px] uppercase tracking-widest text-cyan-400/80 font-mono">
+                                    Direction: {selectedScenario.tone_instruction}
                                 </p>
-                            </div>
+                            )}
+                        </header>
+
+                        <div className="relative w-full text-center py-12">
+                            <motion.div
+                                animate={{ scale: pulseScale }}
+                                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                                className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none"
+                            >
+                                <div className="w-[120%] h-64 bg-white/20 blur-[100px] rounded-full" />
+                            </motion.div>
+
+                            <motion.p
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className={`text-3xl md:text-5xl lg:text-6xl text-white leading-[1.3] font-medium selection:bg-white/20`}
+                                style={{
+                                    fontFamily: theme.font,
+                                    letterSpacing: theme.tracking === 'tracking-widest' ? '0.1em' : 'normal'
+                                }}
+                            >
+                                {displayText}
+                            </motion.p>
                         </div>
 
-                        <div className="flex items-center justify-center">
-                            <div className="relative w-32 h-32">
-                                <div className="absolute inset-0 rounded-full border-4 border-cyan-500/30" />
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <span className="text-5xl font-black text-cyan-400">{timeLeft}</span>
-                                </div>
-                                <div className="absolute inset-0 rounded-full border-4 border-cyan-500 animate-ping" />
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col items-center justify-center gap-6">
-                            <div className="flex items-center justify-center gap-3">
-                                <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-                                <span className="text-red-400 font-mono text-sm">RECORDING</span>
+                        <div className="flex flex-col items-center space-y-8">
+                            <div className="relative w-24 h-24 flex items-center justify-center">
+                                <svg className="absolute inset-0 w-full h-full -rotate-90">
+                                    <circle
+                                        cx="48" cy="48" r="44"
+                                        stroke="currentColor" strokeWidth="2"
+                                        fill="transparent"
+                                        className="text-white/10"
+                                    />
+                                    <motion.circle
+                                        cx="48" cy="48" r="44"
+                                        stroke="currentColor" strokeWidth="2"
+                                        fill="transparent"
+                                        strokeDasharray="276"
+                                        animate={{ strokeDashoffset: 276 * (1 - timeLeft / (isCalibration ? 6 : 15)) }}
+                                        className="text-white"
+                                    />
+                                </svg>
+                                <span className="text-2xl font-light font-mono text-white/40">{timeLeft}</span>
                             </div>
 
                             {!isCalibration && (
-                                <button
+                                <motion.button
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
                                     onClick={() => finishRecording(false)}
-                                    className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white text-xs font-black uppercase tracking-[0.2em] rounded-full border border-white/20 transition-all active:scale-95"
+                                    className="group flex flex-col items-center gap-3"
                                 >
-                                    Finish Recording & Analyze →
-                                </button>
+                                    <span className="px-8 py-4 bg-white/5 backdrop-blur-md border border-white/10 text-white text-[10px] font-black uppercase tracking-[0.5em] rounded-full hover:bg-white/10 hover:border-white/30 transition-all active:scale-95">
+                                        End Reading
+                                    </span>
+                                    <span className="text-[8px] text-white/20 uppercase tracking-[0.2em] opacity-0 group-hover:opacity-100 transition-opacity">
+                                        Analyze Arc →
+                                    </span>
+                                </motion.button>
                             )}
                         </div>
                     </div>
