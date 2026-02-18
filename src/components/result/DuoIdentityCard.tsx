@@ -4,8 +4,8 @@ import { useRef, useEffect, useState } from 'react';
 import { toPng } from 'html-to-image';
 import { trackEv } from '@/lib/analytics';
 
-import { voiceTypes, TypeCode } from '@/lib/types';
-import { AnalysisMetrics } from '@/lib/types';
+import { voiceTypes, TypeCode, AnalysisMetrics } from '@/lib/types';
+import { getDuoIdentity } from '@/lib/duoIdentityMatrix';
 
 // Inlined noise SVG to avoid CORS issues with html2canvas
 const NOISE_DATA_URL = "data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E";
@@ -22,33 +22,13 @@ export default function DuoIdentityCard({ userA, userB, relationshipType = 'roma
     const cardRef = useRef<HTMLDivElement>(null);
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [generating, setGenerating] = useState(false);
-    const [identityData, setIdentityData] = useState<{ label: string, roast: string } | null>(null);
+
+    // Compute identity data synchronously
+    const identityData = getDuoIdentity(userA.typeCode, userB.typeCode, relationshipType);
 
     const voiceA = voiceTypes[userA.typeCode] || voiceTypes['HFCC'];
     const voiceB = voiceTypes[userB.typeCode] || voiceTypes['LSCD'];
 
-    // ✅ STEP 1: Fetch Duo Roast from API
-    useEffect(() => {
-        async function fetchDuoIdentity() {
-            try {
-                const res = await fetch('/api/identity/duo', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        typeCodeA: userA.typeCode,
-                        typeCodeB: userB.typeCode,
-                        relationshipType
-                    })
-                });
-                const data = await res.json();
-                setIdentityData(data);
-            } catch (err) {
-                console.error("Failed to fetch duo roast:", err);
-                setIdentityData({ label: "ASYMMETRIC SYNC", roast: "Analyzing the complex interference pattern..." });
-            }
-        }
-        fetchDuoIdentity();
-    }, [userA.typeCode, userB.typeCode, relationshipType]);
 
     // ✅ STEP 2: Capture Engine
     useEffect(() => {
@@ -217,65 +197,65 @@ export default function DuoIdentityCard({ userA, userB, relationshipType = 'roma
                     <div className="text-center py-4">
                         <div className="text-[10px] md:text-[12px] font-black text-white/40 uppercase tracking-[0.5em] mb-4 font-mono">Resonance ID</div>
                         <div className="text-4xl md:text-5xl font-black text-white uppercase italic tracking-tighter leading-none mb-2">
-                            "{identityData?.label || 'SYNCING...'}"
+                            "{identityData.label}"
                         </div>
+                    </div>
+
+                    {/* ROAST BOX (Fixed clipping by increasing internal margins) */}
+                    <div className="rounded-[2rem] p-8 border mt-auto mx-6 mb-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)', borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+                        <p className="text-[11px] md:text-[13px] text-gray-400 leading-relaxed text-center font-medium italic opacity-90 px-4 line-clamp-3">
+                            {identityData.roast}
+                        </p>
+                    </div>
+
+                    {/* FOOTER - Increased items spacing and bounds (Fixed clipping) */}
+                    <div className="relative z-10 flex justify-between items-center opacity-30 mt-auto px-10 pb-10">
+                        <div className="text-[9px] font-black tracking-widest uppercase"></div>
+                        <div className="text-[9px] font-mono text-white"></div>
                     </div>
                 </div>
 
-                {/* ROAST BOX (Fixed clipping by increasing internal margins) */}
-                <div className="rounded-[2rem] p-8 border mt-auto mx-6 mb-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)', borderColor: 'rgba(255, 255, 255, 0.1)' }}>
-                    <p className="text-[11px] md:text-[13px] text-gray-400 leading-relaxed text-center font-medium italic opacity-90 px-4 line-clamp-3">
-                        {identityData?.roast || 'Calculating resonance dynamics...'}
-                    </p>
+                {/* 2. INTERACTION AREA */}
+                <div className="mt-10 flex flex-col items-center gap-6">
+
+                    {/* STATUS INDICATOR */}
+                    <div className="flex items-center gap-2 text-[10px] text-gray-500 uppercase tracking-widest border border-white/5 px-4 py-2 rounded-full bg-black/40 backdrop-blur-sm">
+                        <span className={`w-1.5 h-1.5 rounded-full ${imageUrl ? 'bg-pink-500' : generating ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'}`} />
+                        {generating ? 'Capturing Duo Identity...' : imageUrl ? 'Matrix Synced' : 'Analysis Pattern Lost'}
+                    </div>
+
+                    {/* DOWNLOAD BUTTON */}
+                    <button
+                        onClick={() => {
+                            if (!imageUrl) return;
+                            trackEv('3.0', 'card_download', { type: 'duo', result_id: resultId });
+                            const link = document.createElement('a');
+                            link.download = `etchvox-duo-card-${resultId}.png`;
+                            link.href = imageUrl;
+                            link.click();
+                        }}
+                        disabled={!imageUrl}
+                        className="group relative w-full flex items-center justify-center gap-3 bg-white text-black px-8 py-5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:scale-100 shadow-[0_20px_40px_rgba(255,255,255,0.1)]"
+                    >
+                        <span className="relative z-10">
+                            {imageUrl ? '📥 Download Duo Identity Card' : generating ? 'Encoding Signal...' : 'Retry Capture'}
+                        </span>
+                        {imageUrl && (
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                        )}
+                    </button>
+
                 </div>
 
-                {/* FOOTER - Increased items spacing and bounds (Fixed clipping) */}
-                <div className="relative z-10 flex justify-between items-center opacity-30 mt-auto px-10 pb-10">
-                    <div className="text-[9px] font-black tracking-widest uppercase"></div>
-                    <div className="text-[9px] font-mono text-white"></div>
-                </div>
+                {/* 3. INVISIBLE OVERLAY FOR MOBILE SAVE */}
+                {imageUrl && (
+                    <img
+                        src={imageUrl}
+                        alt="Duo Identity Card Overlay"
+                        className="absolute inset-0 w-full h-[calc(100%-140px)] opacity-0 cursor-pointer z-50 select-none touch-none"
+                    />
+                )}
             </div>
-
-            {/* 2. INTERACTION AREA */}
-            <div className="mt-10 flex flex-col items-center gap-6">
-
-                {/* STATUS INDICATOR */}
-                <div className="flex items-center gap-2 text-[10px] text-gray-500 uppercase tracking-widest border border-white/5 px-4 py-2 rounded-full bg-black/40 backdrop-blur-sm">
-                    <span className={`w-1.5 h-1.5 rounded-full ${imageUrl ? 'bg-pink-500' : generating ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'}`} />
-                    {generating ? 'Capturing Duo Identity...' : imageUrl ? 'Matrix Synced' : 'Analysis Pattern Lost'}
-                </div>
-
-                {/* DOWNLOAD BUTTON */}
-                <button
-                    onClick={() => {
-                        if (!imageUrl) return;
-                        trackEv('3.0', 'card_download', { type: 'duo', result_id: resultId });
-                        const link = document.createElement('a');
-                        link.download = `etchvox-duo-card-${resultId}.png`;
-                        link.href = imageUrl;
-                        link.click();
-                    }}
-                    disabled={!imageUrl}
-                    className="group relative w-full flex items-center justify-center gap-3 bg-white text-black px-8 py-5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:scale-100 shadow-[0_20px_40px_rgba(255,255,255,0.1)]"
-                >
-                    <span className="relative z-10">
-                        {imageUrl ? '📥 Download Duo Identity Card' : generating ? 'Encoding Signal...' : 'Retry Capture'}
-                    </span>
-                    {imageUrl && (
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-                    )}
-                </button>
-
-            </div>
-
-            {/* 3. INVISIBLE OVERLAY FOR MOBILE SAVE */}
-            {imageUrl && (
-                <img
-                    src={imageUrl}
-                    alt="Duo Identity Card Overlay"
-                    className="absolute inset-0 w-full h-[calc(100%-140px)] opacity-0 cursor-pointer z-50 select-none touch-none"
-                />
-            )}
         </div>
     );
 }

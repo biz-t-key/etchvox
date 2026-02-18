@@ -5,7 +5,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown'; // ✅ Markdown Renderer
 import { voiceTypes, TypeCode, groupColors } from '@/lib/types';
-import { getResult, VoiceResult, removeFromHistory } from '@/lib/storage';
+import { getResult, VoiceResult, removeFromHistory, linkResultToEmail } from '@/lib/storage';
 import { getBestMatches, getWorstMatches, getCompatibilityTier } from '@/lib/compatibilityMatrix';
 import ShareButtons from '@/components/result/ShareButtons';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
@@ -60,6 +60,9 @@ export default function ResultPage() {
     const [isHoldingPurge, setIsHoldingPurge] = useState(false);
     const [isSubscribed, setIsSubscribed] = useState(false);
     const [checkoutLoading, setCheckoutLoading] = useState(false);
+    const [syncEmail, setSyncEmail] = useState('');
+    const [syncStatus, setSyncStatus] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
+    const [isSyncing, setIsSyncing] = useState(false);
 
     const isCouple = result ? (result.typeCode === 'COUPLE_MIX' || !!result.coupleData) : false;
     const isElonMode = result?.mode === 'elon';
@@ -373,6 +376,9 @@ You are currently optimized for **Hard-Core Engineering** and **Rapid Iteration*
                         typeCode={result.typeCode}
                         cardImageUrl={cardImageUrl}
                         onDelete={handleManualPurge}
+                        onSync={async (email) => {
+                            await linkResultToEmail(resultId, email);
+                        }}
                         onDownloadCard={() => {
                             // Find and trigger the download button inside SoloIdentityCard
                             const btn = document.querySelector('#identity-card-download') as HTMLButtonElement;
@@ -675,15 +681,63 @@ You are currently optimized for **Hard-Core Engineering** and **Rapid Iteration*
                                     />
                                 </section>
 
-                                {/* 6. NEW MISSION / HOME */}
-                                <div className="w-full py-32 flex flex-col items-center">
-                                    <Link
-                                        href="/"
-                                        className="px-12 py-5 rounded-full border border-white/20 text-white font-black uppercase tracking-[0.4em] text-[10px] hover:bg-white hover:text-black transition-all active:scale-95"
-                                    >
-                                        {isSpyMode ? 'NEW MISSION' : 'NEW ANALYSIS'}
-                                    </Link>
-                                </div>
+                                {/* 6. IDENTITY SYNC (Backup) */}
+                                <section className="w-full py-32 border-t border-white/5">
+                                    <div className="max-w-md mx-auto text-center space-y-8">
+                                        <div className="space-y-4">
+                                            <h2 className="text-sm font-black text-cyan-500 uppercase tracking-[0.4em] italic">Identity Sync</h2>
+                                            <p className="text-[9px] text-gray-500 uppercase tracking-widest leading-relaxed">
+                                                Secure this diagnostic record to the cloud. Enter your email to create a persistent cryptographic link (PII-free).
+                                            </p>
+                                        </div>
+
+                                        <form
+                                            onSubmit={async (e) => {
+                                                e.preventDefault();
+                                                if (!syncEmail) return;
+                                                setIsSyncing(true);
+                                                setSyncStatus(null);
+                                                try {
+                                                    await linkResultToEmail(resultId, syncEmail);
+                                                    setSyncStatus({ type: 'success', msg: 'Record successfully linked to your identity.' });
+                                                } catch (err) {
+                                                    setSyncStatus({ type: 'error', msg: 'Sync failed. Terminal error.' });
+                                                } finally {
+                                                    setIsSyncing(false);
+                                                }
+                                            }}
+                                            className="relative group"
+                                        >
+                                            <input
+                                                type="email"
+                                                placeholder="Enter email to sync..."
+                                                value={syncEmail}
+                                                onChange={(e) => setSyncEmail(e.target.value)}
+                                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-4 text-xs focus:border-cyan-500/50 outline-none transition-all pr-32 font-medium"
+                                                required
+                                            />
+                                            <button
+                                                type="submit"
+                                                disabled={isSyncing}
+                                                className="absolute right-1.5 top-1.5 bottom-1.5 px-6 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all disabled:opacity-50"
+                                            >
+                                                {isSyncing ? 'Linking...' : 'Sync Record'}
+                                            </button>
+                                        </form>
+
+                                        {syncStatus && (
+                                            <p className={`text-[9px] uppercase font-bold tracking-widest text-center ${syncStatus.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                                                {syncStatus.msg}
+                                            </p>
+                                        )}
+
+                                        <div className="pt-8 border-t border-white/5">
+                                            <p className="text-[8px] font-mono text-gray-700 uppercase tracking-[0.3em] leading-relaxed max-w-xs mx-auto italic">
+                                                Notice: Vocal fingerprints are cryptographically shredded (SHA-256). Administrators cannot see or recover your email. Recovery is strictly via automated OTP. Do not request manual retrieval.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </section>
 
                                 {/* 7. PURGE PROTOCOL */}
                                 <div className="w-full py-32 flex flex-col items-center gap-12 opacity-30 hover:opacity-100 transition-opacity duration-1000">
@@ -704,17 +758,18 @@ You are currently optimized for **Hard-Core Engineering** and **Rapid Iteration*
                                 </div>
                             </div>
                         </div>
-                    </>
-                )}
-                </main>
-            );
+                    </div>
+                </>
+            )}
+        </main>
+    );
 }
 
-            function DriftStat({label, value, color = "text-white"}: {label: string, value: string | number, color?: string }) {
+function DriftStat({ label, value, color = "text-white" }: { label: string, value: string | number, color?: string }) {
     return (
-            <div className="space-y-1">
-                <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">{label}</p>
-                <p className={`text-xl font-mono font-black ${color}`}>{value}</p>
-            </div>
-            );
+        <div className="space-y-1">
+            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">{label}</p>
+            <p className={`text-xl font-mono font-black ${color}`}>{value}</p>
+        </div>
+    );
 }

@@ -6,6 +6,7 @@ import { trackEv } from '@/lib/analytics';
 
 import { MBTIType, mbtiTypes, calculateGapLevel } from '@/lib/mbti';
 import { voiceTypes, TypeCode, AnalysisMetrics } from '@/lib/types';
+import { getSoloIdentity } from '@/lib/soloIdentityMatrix';
 
 interface SoloIdentityCardProps {
     mbti: MBTIType;
@@ -22,33 +23,14 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
     const cardRef = useRef<HTMLDivElement>(null);
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [generating, setGenerating] = useState(false);
-    const [identityData, setIdentityData] = useState<{ brandName: string, roast: string } | null>(null);
+
+    // Compute identity data synchronously
+    const identityData = getSoloIdentity(mbti, voiceTypeCode);
 
     const mbtiInfo = mbtiTypes[mbti];
     const voiceInfo = voiceTypes[voiceTypeCode];
     const gapLevel = calculateGapLevel(mbti, metrics);
 
-    // ✅ STEP 1: Fetch ROAST from Server-side API (Hide from client-side bundle)
-    useEffect(() => {
-        async function fetchIdentity() {
-            try {
-                const res = await fetch('/api/identity/solo', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ mbti, voiceTypeCode })
-                });
-                const data = await res.json();
-                setIdentityData(data);
-            } catch (err) {
-                console.error("Failed to fetch server-side roast:", err);
-                setIdentityData({
-                    brandName: "THE ENIGMA",
-                    roast: "Your combination is so rare, even our AI is trying to figure you out."
-                });
-            }
-        }
-        fetchIdentity();
-    }, [mbti, voiceTypeCode]);
 
     // ✅ STEP 2: Update Image Capture Engine
     useEffect(() => {
@@ -241,11 +223,11 @@ export default function SoloIdentityCard({ mbti, voiceTypeCode, userName, metric
                             WebkitTextFillColor: voiceTypeCode === 'ELON' ? 'transparent' : 'currentColor',
                             filter: voiceTypeCode === 'ELON' ? 'drop-shadow(0 2px 4px rgba(0,0,0,0.6))' : 'none'
                         }}>
-                        "{identityData?.brandName || 'PROCESSING...'}"
+                        "{identityData.brandName}"
                     </div>
                     <p className="text-[11px] md:text-[13px] font-medium italic leading-relaxed text-center px-6"
                         style={{ color: voiceTypeCode === 'ELON' ? '#cbd5e1' : '#9ca3af' }}>
-                        {identityData?.roast || 'Decoding vocal signature...'}
+                        {identityData.roast}
                     </p>
                     <div className="mt-8 text-[8px] uppercase tracking-[0.4em] text-center"
                         style={{ color: voiceTypeCode === 'ELON' ? 'rgba(226, 232, 240, 0.4)' : 'rgba(255, 255, 255, 0.4)' }}>

@@ -255,6 +255,40 @@ export async function unlockResult(resultId: string, email?: string): Promise<vo
 }
 
 /**
+ * Link a specific result to an email hash (Identity Sync)
+ */
+export async function linkResultToEmail(resultId: string, email: string): Promise<void> {
+    if (!isFirebaseConfigured() || !email) return;
+
+    try {
+        const { hashEmail } = await import('./auth');
+        const emailHash = hashEmail(email);
+        const db = getDb();
+        const resultRef = doc(db, 'results', resultId);
+
+        await updateDoc(resultRef, {
+            emailHash,
+            updatedAt: Timestamp.now()
+        });
+
+        // Update local storage cache
+        if (typeof window !== 'undefined') {
+            const localData = localStorage.getItem(`etchvox_result_${resultId}`);
+            if (localData) {
+                const result = JSON.parse(localData);
+                result.emailHash = emailHash;
+                localStorage.setItem(`etchvox_result_${resultId}`, JSON.stringify(result));
+            }
+        }
+
+        console.log(`✓ Result ${resultId} linked to identity hash.`);
+    } catch (error) {
+        console.error('Failed to link result to email:', error);
+        throw error;
+    }
+}
+
+/**
  * Revoke premium access for a result (e.g., on refund)
  */
 export async function lockResult(resultId: string): Promise<void> {

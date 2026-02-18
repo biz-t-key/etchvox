@@ -296,12 +296,12 @@ export default function HomePage() {
             <div className="flex items-center gap-3">
               <div className="w-1.5 h-6 bg-cyan-500 rounded-full" />
               <h2 className="text-xl md:text-2xl font-black uppercase tracking-[0.3em] neon-text-cyan italic">
-                The Vault
+                Biometric Records
               </h2>
               <div className="w-1.5 h-6 bg-cyan-500 rounded-full" />
             </div>
             <p className="text-gray-500 text-[10px] uppercase tracking-[0.2em] font-bold">
-              Access your vocal identity archives
+              Identity Sync & Archive Management
             </p>
           </div>
 
@@ -322,7 +322,7 @@ export default function HomePage() {
                   disabled={isRestoring}
                   className="absolute right-1.5 top-1.5 bottom-1.5 px-6 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all disabled:opacity-50"
                 >
-                  {isRestoring ? 'Sending...' : 'Sync Vault'}
+                  {isRestoring ? 'Sending...' : 'Restore History'}
                 </button>
               </form>
             ) : (
@@ -358,6 +358,12 @@ export default function HomePage() {
                 {restoreStatus.msg}
               </p>
             )}
+
+            <div className="mt-12 pt-8 border-t border-white/5 opacity-50">
+              <p className="text-[8px] font-mono text-gray-700 uppercase tracking-[0.3em] leading-relaxed max-w-xs mx-auto italic">
+                Notice: Vocal fingerprints are cryptographically shredded (SHA-256). Administrators cannot see or recover your email. Recovery is strictly via automated OTP. Do not request manual retrieval.
+              </p>
+            </div>
           </div>
 
           {/* History Grid */}

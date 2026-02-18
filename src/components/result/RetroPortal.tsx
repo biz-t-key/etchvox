@@ -22,13 +22,18 @@ interface RetroPortalProps {
     resultId: string;
     onDelete: () => void;
     onDownloadCard: () => void;
+    onSync: (email: string) => Promise<void>;
     voiceType: { name: string; icon: string; catchphrase: string };
     typeCode: string;
     cardImageUrl?: string | null;
 }
 
-export const RetroPortal = ({ resultId, onDelete, onDownloadCard, voiceType, typeCode, cardImageUrl }: RetroPortalProps) => {
+export const RetroPortal = ({ resultId, onDelete, onDownloadCard, onSync, voiceType, typeCode, cardImageUrl }: RetroPortalProps) => {
     const [accessCount, setAccessCount] = useState(1234);
+    const [showSync, setShowSync] = useState(false);
+    const [email, setEmail] = useState('');
+    const [syncStatus, setSyncStatus] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
+    const [isSyncing, setIsSyncing] = useState(false);
 
     useEffect(() => {
         const fetchCount = async () => {
@@ -241,6 +246,12 @@ export const RetroPortal = ({ resultId, onDelete, onDownloadCard, voiceType, typ
                         <span>帰還 / HOME</span>
                     </Link>
 
+                    {/* 5. SYNC */}
+                    <button className="retro-btn btn-cyan" onClick={() => setShowSync(!showSync)}>
+                        <span className="text-2xl">💾</span>
+                        <span>保存 / SYNC</span>
+                    </button>
+
                     {/* 3. PURGE */}
                     <button className="retro-btn btn-red" onClick={() => {
                         if (confirm('この診断結果を抹消しますか？\n(消去されたデータは宇宙の塵になります)')) {
@@ -256,6 +267,63 @@ export const RetroPortal = ({ resultId, onDelete, onDownloadCard, voiceType, typ
                         <span className="text-xs">STATUS: ONLINE</span>
                     </div>
                 </div>
+
+                {/* 5. SYNC FORM (Retro Style) */}
+                {showSync && (
+                    <div className="w-full max-w-md mt-12 p-6 bg-[#000080] border-4 border-[#c0c0c0] text-white">
+                        <div className="bg-[#c0c0c0] text-[#000080] px-2 py-1 flex justify-between items-center mb-4 font-bold text-xs">
+                            <span>IDENT_SYNC.EXE</span>
+                            <button onClick={() => setShowSync(false)}>X</button>
+                        </div>
+                        <div className="space-y-6">
+                            <p className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest">
+                                Enter address to anchor identity:
+                            </p>
+                            <form
+                                onSubmit={async (e) => {
+                                    e.preventDefault();
+                                    if (!email) return;
+                                    setIsSyncing(true);
+                                    setSyncStatus(null);
+                                    try {
+                                        await onSync(email);
+                                        setSyncStatus({ type: 'success', msg: 'IDENTITY ANCHORED SUCCESSFULLY.' });
+                                    } catch (err) {
+                                        setSyncStatus({ type: 'error', msg: 'LINKAGE FAILED.' });
+                                    } finally {
+                                        setIsSyncing(false);
+                                    }
+                                }}
+                                className="space-y-4"
+                            >
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="ARCHIVE@IDENTITY.COM"
+                                    className="w-full bg-black border-2 border-[#fff] text-white px-4 py-2 font-mono text-sm uppercase outline-none focus:bg-[#333]"
+                                    required
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={isSyncing}
+                                    className="w-full bg-[#c0c0c0] text-black font-bold py-2 border-4 outset px-4 active:border-inset disabled:opacity-50"
+                                >
+                                    {isSyncing ? 'ANCHORING...' : 'ANCHOR IDENTITY'}
+                                </button>
+                            </form>
+                            {syncStatus && (
+                                <p className={`text-[10px] font-bold ${syncStatus.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                                    {syncStatus.msg}
+                                </p>
+                            ) || (
+                                    <p className="text-[8px] opacity-70 leading-relaxed font-bold">
+                                        NOTICE: EMAIL DATA IS SHREDDED (SHA-256). ADMINS CANNOT RECOVER LOST RECORDS. RECOVERY ONLY VIA OTP.
+                                    </p>
+                                )}
+                        </div>
+                    </div>
+                )}
 
                 {/* 2. SHARE */}
                 <div className="w-full max-w-md retro-share-container mt-12">
