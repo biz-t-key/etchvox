@@ -19,7 +19,7 @@ import { isFirebaseConfigured, getDb } from '@/lib/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 import Link from 'next/link';
 
-type Phase = 'auth' | 'calibration' | 'archetype' | 'genre' | 'scenario' | 'mood' | 'reading' | 'analyzing' | 'polishing' | 'result' | 'recap';
+type Phase = 'auth' | 'legal' | 'menu' | 'calibration' | 'archetype' | 'genre' | 'scenario' | 'mood' | 'reading' | 'analyzing' | 'polishing' | 'result' | 'recap';
 
 const CALIBRATION_TEXT = 'Hello, world.';
 const GENRE_LOCK_DAYS = 7;
@@ -75,8 +75,6 @@ function MirrorContent() {
 
     const analyzerRef = useRef<VoiceAnalyzer | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-    const audioCtxRef = useRef<AudioContext | null>(null);
-    const gainNodeRef = useRef<GainNode | null>(null);
     const animationFrameRef = useRef<number | null>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const lastSpeakingTimeRef = useRef<number>(0);
@@ -104,7 +102,7 @@ function MirrorContent() {
             if (auth.isNew && !isDevMode) {
                 setShowMnemonic(true);
             } else {
-                setPhase('calibration');
+                setPhase('menu');
             }
         } catch (error) {
             console.error('Auth initialization failed:', error);
@@ -210,10 +208,18 @@ function MirrorContent() {
     }
 
     async function startRecording(isCalibration: boolean) {
-        try {
-            setPhase(isCalibration ? 'calibration' : 'reading');
-            chunksRef.current = [];
+        // --- SECURE CONTEXT VALIDATION ---
+        if (typeof window !== 'undefined' && !window.isSecureContext && window.location.hostname !== 'localhost') {
+            alert('⚠️ DEVICE SECURITY ERROR: Microphone access requires a Secure Context (HTTPS). Since you are testing via IP, please use localhost or an HTTPS tunnel (ngrok).');
+            return;
+        }
 
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            alert('⚠️ HARDWARE ERROR: MediaDevices API not found in this browser.');
+            return;
+        }
+
+        try {
             const stream = await navigator.mediaDevices.getUserMedia({
                 audio: {
                     echoCancellation: false,
@@ -223,26 +229,19 @@ function MirrorContent() {
                 },
             });
 
-            analyzerRef.current = new VoiceAnalyzer();
-            await analyzerRef.current.initialize();
+            // Transition phase ONLY after successful stream capture
+            setPhase(isCalibration ? 'calibration' : 'reading');
+            chunksRef.current = [];
+
+            // Initialize Analyzer (This now handles its own AudioContext correctly)
+            if (!analyzerRef.current) {
+                analyzerRef.current = new VoiceAnalyzer();
+            }
+            const analyserNode = await analyzerRef.current.initialize();
             analyzerRef.current.connectStream(stream);
 
-            // Setup Audio Graph for Luxury Transitions
-            const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
-            audioCtxRef.current = new AudioContextClass();
-            const source = audioCtxRef.current!.createMediaStreamSource(stream);
-            gainNodeRef.current = audioCtxRef.current!.createGain();
-            const destination = audioCtxRef.current!.createMediaStreamDestination();
-
-            // Initial state: silent
-            gainNodeRef.current.gain.setValueAtTime(0, audioCtxRef.current!.currentTime);
-            // Start Fade: 0.5s ramp to 1.0
-            gainNodeRef.current.gain.linearRampToValueAtTime(1.0, audioCtxRef.current!.currentTime + 0.5);
-
-            source.connect(gainNodeRef.current);
-            gainNodeRef.current.connect(destination);
-
-            mediaRecorderRef.current = new MediaRecorder(destination.stream);
+            // Connect MediaRecorder to the same stream (or a filtered one if we wanted to)
+            mediaRecorderRef.current = new MediaRecorder(stream);
             mediaRecorderRef.current.ondataavailable = (e) => {
                 if (e.data.size > 0) chunksRef.current.push(e.data);
             };
@@ -281,6 +280,7 @@ function MirrorContent() {
             }, 1000);
         } catch (err) {
             console.error('Microphone access denied:', err);
+            alert('Microphone access denied. Please check your browser settings and try again.');
         }
     }
 
@@ -293,17 +293,6 @@ function MirrorContent() {
             cancelAnimationFrame(animationFrameRef.current);
         }
 
-        // Luxury Fade-out (1.0s)
-        if (!isCalibration && gainNodeRef.current && audioCtxRef.current) {
-            const now = audioCtxRef.current.currentTime;
-            gainNodeRef.current.gain.cancelScheduledValues(now);
-            gainNodeRef.current.gain.setValueAtTime(gainNodeRef.current.gain.value, now);
-            gainNodeRef.current.gain.linearRampToValueAtTime(0, now + 1.0);
-
-            // Wait for fade to complete before stopping recorder
-            await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
             mediaRecorderRef.current.stop();
             // Ensure all tracks from original stream are stopped
@@ -311,8 +300,9 @@ function MirrorContent() {
             tracks.forEach(track => track.stop());
         }
 
-        if (audioCtxRef.current) {
-            audioCtxRef.current.close().catch(console.error);
+        // Clean up analyzer resources
+        if (analyzerRef.current) {
+            analyzerRef.current.close().catch(console.error);
         }
 
         setPhase('analyzing');
@@ -444,9 +434,10 @@ function MirrorContent() {
                         {isNewUser && showMnemonic ? (
                             <div className="space-y-6">
                                 <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 space-y-3">
-                                    <h2 className="text-red-400 font-bold text-sm uppercase tracking-wider">⚠️ Critical: Save Your Recovery Phrase</h2>
+                                    <h2 className="text-red-400 font-bold text-sm uppercase tracking-wider">⚠️ Zero-Knowledge Security Warning</h2>
                                     <p className="text-gray-300 text-sm leading-relaxed">
-                                        This 12-word phrase is your ONLY way to access your data on a new device.
+                                        This 12-word phrase is your <strong>ONLY</strong> way to access your data.
+                                        EtchVox uses end-to-end encryption: we do not store your phrase and <strong>cannot recover your account</strong> if lost.
                                     </p>
                                 </div>
 
@@ -464,11 +455,11 @@ function MirrorContent() {
                                 <button
                                     onClick={() => {
                                         setShowMnemonic(false);
-                                        setPhase('calibration');
+                                        setPhase('legal');
                                     }}
-                                    className="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold rounded-xl hover:shadow-[0_0_20px_rgba(34,211,238,0.5)] transition-all"
+                                    className="w-full py-4 bg-gradient-to-r from-red-500 to-rose-600 text-white font-bold rounded-xl hover:shadow-[0_0_20px_rgba(244,63,94,0.5)] transition-all uppercase tracking-widest text-xs"
                                 >
-                                    I've Saved It Securely →
+                                    I Understaned & Saved It →
                                 </button>
                             </div>
                         ) : (
@@ -482,6 +473,93 @@ function MirrorContent() {
             );
         }
 
+        if (phase === 'legal') {
+            return (
+                <div className="min-h-screen bg-black flex items-center justify-center p-6 text-white bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-900 via-black to-black">
+                    <div className="max-w-md w-full space-y-8">
+                        <header className="text-center space-y-2">
+                            <h1 className="text-3xl font-bold tracking-tighter uppercase italic">Legal Calibration</h1>
+                            <p className="text-cyan-500/60 text-[8px] uppercase tracking-[0.4em] font-mono">Precision & Compliance v2.0</p>
+                        </header>
+
+                        <div className="space-y-4">
+                            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-5 backdrop-blur-xl">
+                                <label className="flex gap-4 cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        className="mt-1 w-5 h-5 rounded border-white/20 bg-black text-cyan-500 focus:ring-cyan-500"
+                                        defaultChecked
+                                        onChange={(e) => setLegalAccepted(e.target.checked)}
+                                    />
+                                    <div className="space-y-1">
+                                        <p className="font-bold text-sm">Biometric Data Processing</p>
+                                        <p className="text-xs text-gray-400 leading-relaxed font-light">
+                                            I consent to the collection and processing of my voice-derived biometric vectors for acoustic analysis (GDPR/CCPA/BIPA compliant).
+                                        </p>
+                                    </div>
+                                </label>
+
+                                <label className="flex gap-4 cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        className="mt-1 w-5 h-5 rounded border-white/20 bg-black text-cyan-500 focus:ring-cyan-500"
+                                        defaultChecked
+                                    />
+                                    <div className="space-y-1">
+                                        <p className="font-bold text-sm">AI Wellness Disclaimer</p>
+                                        <p className="text-xs text-gray-400 leading-relaxed font-light">
+                                            I acknowledge that Oracle insights and biometric trends are for wellness purposes <strong>ONLY</strong> and do NOT constitute medical diagnosis.
+                                        </p>
+                                    </div>
+                                </label>
+
+                                <label className="flex gap-4 cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        className="mt-1 w-5 h-5 rounded border-white/20 bg-black text-cyan-500 focus:ring-cyan-500"
+                                        defaultChecked
+                                    />
+                                    <div className="space-y-1">
+                                        <p className="font-bold text-sm">Age Verification (13+)</p>
+                                        <p className="text-xs text-gray-400 leading-relaxed font-light">
+                                            I confirm that I am at least 13 years of age (or the minimum age of consent in my jurisdiction).
+                                        </p>
+                                    </div>
+                                </label>
+
+                                <label className="flex gap-4 cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        className="mt-1 w-5 h-5 rounded border-white/20 bg-black text-cyan-500 focus:ring-cyan-500"
+                                        defaultChecked
+                                        onChange={(e) => setResearchAccepted(e.target.checked)}
+                                    />
+                                    <div className="space-y-1">
+                                        <p className="font-bold text-sm">Terms & Privacy Policy</p>
+                                        <p className="text-xs text-gray-400 leading-relaxed font-light">
+                                            I agree to the <a href="/terms" target="_blank" className="text-cyan-400 hover:underline">Terms of Service</a> and <a href="/privacy" target="_blank" className="text-cyan-400 hover:underline">Privacy Policy</a>.
+                                        </p>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <p className="text-[9px] text-center text-gray-500 uppercase tracking-widest leading-loose font-mono">
+                                [ Self-Custody Notice ]<br />
+                                Your data is encrypted with your 12-word phrase.
+                                Loss of this phrase results in total data loss.
+                            </p>
+                        </div>
+
+                        <button
+                            onClick={() => setPhase('menu')}
+                            className="w-full py-4 bg-white text-black font-bold rounded-xl hover:bg-cyan-400 transition-all uppercase tracking-[0.3em] text-[10px]"
+                        >
+                            Accept & Initialize Mirror →
+                        </button>
+                    </div>
+                </div>
+            );
+        }
         if (phase === 'result' && calibrationVector && readingVector && selectedMood) {
             return (
                 <MirrorDashboard
@@ -768,40 +846,58 @@ function MirrorContent() {
             );
         }
 
+        if (phase === 'menu') {
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
+                    <div className="max-w-md w-full space-y-8 bg-white/5 backdrop-blur-sm p-10 rounded-2xl border border-white/10 text-center">
+                        <div className="space-y-4">
+                            <div className="flex justify-center mb-2">
+                                <span className="text-[10px] bg-cyan-500 text-black px-2 py-0.5 font-bold tracking-widest uppercase">Secured Session</span>
+                            </div>
+                            <h1 className="text-4xl font-black text-white uppercase tracking-widest">Mirror</h1>
+                            <div className="flex items-center justify-center gap-2">
+                                <div className="px-3 py-1 bg-cyan-500/10 border border-cyan-500/50 rounded text-cyan-400 text-[10px] font-black uppercase tracking-widest">
+                                    {progressLevel.toUpperCase()} LEVEL
+                                </div>
+                                <div className="px-3 py-1 bg-blue-500/10 border border-blue-500/50 rounded text-blue-400 text-[10px] font-black uppercase tracking-widest">
+                                    DAY {currentDayIndex}/7
+                                </div>
+                            </div>
+                            <p className="text-gray-400 text-xs leading-relaxed max-w-[280px] mx-auto font-light">
+                                Authorized recording session for AI resonance training and tactical biometric feedback.
+                            </p>
+                        </div>
+
+                        <div className="space-y-6">
+                            <button
+                                onClick={() => startRecording(true)}
+                                disabled={!legalAccepted || (alreadyRecordedToday && !isDevMode)}
+                                className="w-full py-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xl font-black uppercase tracking-widest rounded-3xl hover:shadow-[0_0_40px_rgba(34,211,238,0.4)] transition-all disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed transform active:scale-95"
+                            >
+                                <span className="mr-3">🎤</span>
+                                {(alreadyRecordedToday && !isDevMode) ? 'Session Locked' : 'INITIATE CALIBRATION'}
+                            </button>
+
+                            <div className="text-center">
+                                <Link href="/" className="text-gray-500 hover:text-white text-[10px] uppercase tracking-[0.3em] font-black transition-all">
+                                    ← RETURN TO SYSTEM HOME
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Fallback for unexpected states
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-6">
-                <div className="max-w-md w-full space-y-8 bg-white/5 backdrop-blur-sm p-10 rounded-2xl border border-white/10 text-center">
-                    <div className="space-y-4">
-                        <h1 className="text-4xl font-black text-white uppercase tracking-widest">Mirror</h1>
-                        <div className="flex items-center justify-center gap-2">
-                            <div className="px-3 py-1 bg-cyan-500/10 border border-cyan-500/50 rounded text-cyan-400 text-[10px] font-black uppercase tracking-widest">
-                                {progressLevel.toUpperCase()} LEVEL
-                            </div>
-                            <div className="px-3 py-1 bg-blue-500/10 border border-blue-500/50 rounded text-blue-400 text-[10px] font-black uppercase tracking-widest">
-                                DAY {currentDayIndex}/7
-                            </div>
-                        </div>
-                        <p className="text-gray-400 text-sm leading-relaxed">
-                            Authorized recording session for AI resonance training and tactical biometric feedback.
-                        </p>
-                    </div>
-
-                    <div className="space-y-6">
-                        <button
-                            onClick={() => startRecording(true)}
-                            disabled={!legalAccepted || (alreadyRecordedToday && !isDevMode)}
-                            className="w-full py-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xl font-black uppercase tracking-widest rounded-3xl hover:shadow-[0_0_40px_rgba(34,211,238,0.4)] transition-all disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed transform active:scale-95"
-                        >
-                            <span className="mr-3">🎤</span>
-                            {(alreadyRecordedToday && !isDevMode) ? 'Session Locked' : 'INITIATE CALIBRATION'}
-                        </button>
-
-                        <div className="text-center">
-                            <Link href="/" className="text-gray-500 hover:text-white text-[10px] uppercase tracking-[0.3em] font-black transition-all">
-                                ← RETURN TO SYSTEM HOME
-                            </Link>
-                        </div>
-                    </div>
+            <div className="min-h-screen bg-black flex items-center justify-center">
+                <div className="text-center space-y-4">
+                    <div className="w-12 h-12 mx-auto border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    <p className="text-white/40 font-mono text-[10px] uppercase tracking-widest">Resuming Session...</p>
+                    <button onClick={() => setPhase('menu')} className="text-cyan-500 text-[9px] uppercase tracking-widest hover:underline">
+                        Force Menu Reset
+                    </button>
                 </div>
             </div>
         );

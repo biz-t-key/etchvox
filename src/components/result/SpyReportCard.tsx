@@ -224,12 +224,9 @@ const SpyReportCard: React.FC<SpyReportCardProps> = ({ typeCode, spyMetadata, re
                             [ INTEL_LOCKED: neural_signature_required ]
                         </div>
 
-                        {/* Report Contents Description */}
+                        {/* Simplified Report Description */}
                         <div className="w-full max-w-xs mx-auto text-left space-y-3 py-2">
                             <div className="text-[8px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Dossier Inclusion:</div>
-                            <div className="flex items-center gap-2 text-[9px] text-zinc-600 font-black uppercase">
-                                <span className="text-red-700">▶</span> Loyalty & Deception Leakage Audit
-                            </div>
                             <div className="flex items-center gap-2 text-[9px] text-zinc-600 font-black uppercase">
                                 <span className="text-red-700">▶</span> Tactical Sector & Aptitude Assignment
                             </div>

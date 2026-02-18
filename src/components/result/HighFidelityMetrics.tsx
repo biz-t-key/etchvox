@@ -66,10 +66,10 @@ export default function HighFidelityMetrics({ log, logA, logB, relationshipType 
     const resonance = log?.resonance || logA?.resonance;
 
     return (
-        <div className="space-y-16 animate-fade-in py-12">
+        <div className="space-y-16 animate-fade-in py-12 w-full">
             <div className="flex items-center gap-4 mb-12">
                 <div className="h-px flex-grow bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
-                <h3 className="text-xl font-black text-cyan-400 uppercase tracking-[0.5em] italic">Metric Analysis</h3>
+                <h3 className="text-xl font-black text-cyan-400 uppercase tracking-[0.5em] italic">Biometric Resonance Map</h3>
                 <div className="h-px flex-grow bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
             </div>
             <div className="text-center space-y-2 mb-8">
@@ -150,26 +150,6 @@ export default function HighFidelityMetrics({ log, logA, logB, relationshipType 
                 )}
             </div>
 
-            {/* Relational Layer (Existing) */}
-            {resonance && (
-                <div className="glass rounded-[2rem] p-8 md:p-12 border border-pink-500/30 bg-pink-500/5 space-y-10">
-                    <div className="flex items-center gap-4 border-b border-white/5 pb-6">
-                        <span className="text-3xl">💞</span>
-                        <div>
-                            <h4 className="font-black text-lg text-white uppercase tracking-[0.2em]">Interpersonal Sync</h4>
-                            <p className="text-[10px] text-pink-400 font-bold uppercase tracking-widest">Mimicry & Signal Harmony</p>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-                        <MetricItem label="Sync" value={(resonance.pitch_overlap * 100).toFixed(0)} unit="%" percent={resonance.pitch_overlap * 100} color="bg-pink-500" />
-                        <MetricItem label="Rhythm" value={resonance.pause_entropy.toFixed(2)} unit="" percent={resonance.pause_entropy * 100} color="bg-pink-500" />
-                        <MetricItem label="Latency" value={resonance.turn_taking_latency} unit="ms" percent={(resonance.turn_taking_latency / 500) * 100} color="bg-pink-500" />
-                        <MetricItem label="Harmony" value={(resonance.spectral_convergence * 100).toFixed(0)} unit="%" percent={resonance.spectral_convergence * 100} color="bg-pink-500" />
-                        <MetricItem label="Stress" value={(resonance.stress_covariance * 100).toFixed(0)} unit="%" percent={resonance.stress_covariance * 100} color="bg-pink-500" />
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState } from 'react';
 import { toPng } from 'html-to-image';
+import { trackEv } from '@/lib/analytics';
 
 import { voiceTypes, TypeCode } from '@/lib/types';
 import { AnalysisMetrics } from '@/lib/types';
@@ -241,13 +242,14 @@ export default function DuoIdentityCard({ userA, userB, relationshipType = 'roma
                 {/* STATUS INDICATOR */}
                 <div className="flex items-center gap-2 text-[10px] text-gray-500 uppercase tracking-widest border border-white/5 px-4 py-2 rounded-full bg-black/40 backdrop-blur-sm">
                     <span className={`w-1.5 h-1.5 rounded-full ${imageUrl ? 'bg-pink-500' : generating ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'}`} />
-                    {generating ? 'Capturing Duo Identity...' : imageUrl ? 'Matrix Synced' : 'Capture Failed'}
+                    {generating ? 'Capturing Duo Identity...' : imageUrl ? 'Matrix Synced' : 'Analysis Pattern Lost'}
                 </div>
 
                 {/* DOWNLOAD BUTTON */}
                 <button
                     onClick={() => {
                         if (!imageUrl) return;
+                        trackEv('3.0', 'card_download', { type: 'duo', result_id: resultId });
                         const link = document.createElement('a');
                         link.download = `etchvox-duo-card-${resultId}.png`;
                         link.href = imageUrl;
@@ -257,7 +259,7 @@ export default function DuoIdentityCard({ userA, userB, relationshipType = 'roma
                     className="group relative w-full flex items-center justify-center gap-3 bg-white text-black px-8 py-5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:scale-100 shadow-[0_20px_40px_rgba(255,255,255,0.1)]"
                 >
                     <span className="relative z-10">
-                        {imageUrl ? '📥 Download Duo Identity Card' : generating ? 'Generating Image...' : 'Retry Capture'}
+                        {imageUrl ? '📥 Download Duo Identity Card' : generating ? 'Encoding Signal...' : 'Retry Capture'}
                     </span>
                     {imageUrl && (
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />

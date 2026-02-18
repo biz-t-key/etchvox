@@ -13,16 +13,17 @@ import ParticleVisualizer from '@/components/recording/ParticleVisualizer';
 import AccentSelector from '@/components/recording/AccentSelector';
 import ToxicitySelector from '@/components/recording/ToxicitySelector';
 import MBTISelector from '@/components/result/MBTISelector';
+import { trackEv } from '@/lib/analytics';
 
 type RecordingStep = 1 | 2 | 3 | 4 | 5 | 6;
 type Phase = 'ready' | 'recording' | 'analyzing' | 'spy-metadata' | 'calibration' | 'mbti' | 'toxicity' | 'accent' | 'complete';
 
-const SCRIPTS: Record<string, Record<RecordingStep, { ui: string, script: string, duration: number, context?: string, direction?: string, icon?: string }>> = {
+const SCRIPTS: Record<string, Record<RecordingStep, { ui: string, script: string, duration: number, prepDuration?: number, context?: string, direction?: string, icon?: string }>> = {
     solo: {
-        1: { ui: 'Step 1: Baseline', script: '"Testing my voice in a neutral state."', duration: 6 },
-        2: { ui: 'Step 2: Conviction', script: '"I know exactly what I\'m doing."', duration: 6 },
-        3: { ui: 'Step 3: Vulnerability', script: '"I\'m terrified of being wrong."', duration: 6 },
-        4: { ui: 'Step 4: Acceptance', script: '"I\'m fine just the way I am."', duration: 7 },
+        1: { ui: 'Step 1: Baseline', script: '"Testing my voice in a neutral state."', duration: 6, prepDuration: 3 },
+        2: { ui: 'Step 2: Conviction', script: '"I know exactly what I\'m doing."', duration: 6, prepDuration: 3 },
+        3: { ui: 'Step 3: Vulnerability', script: '"I\'m terrified of being wrong."', duration: 6, prepDuration: 3 },
+        4: { ui: 'Step 4: Acceptance', script: '"I\'m fine just the way I am."', duration: 7, prepDuration: 3 },
         5: { ui: 'N/A', script: '', duration: 0 },
         6: { ui: 'N/A', script: '', duration: 0 },
     },
@@ -30,7 +31,8 @@ const SCRIPTS: Record<string, Record<RecordingStep, { ui: string, script: string
         1: {
             ui: 'Level 1: The Exploding Visionary',
             script: 'I think it is... [pause] ...very important that we... [stutter] ...become a multi-planetary species. Otherwise... consciousness as we know it... might just disappear.',
-            duration: 18,
+            duration: 20,
+            prepDuration: 8,
             context: 'You are on stage. Your [REDACTED] rocket just turned into $400 million worth of fireworks 4 seconds after launch. The shareholders of [CENSORED CORP] are screaming. Convince them this is actually a victory.',
             direction: 'Look at the horizon, not the audience. Stutter confidently. You are not making excuses; you are seeing a future on M***s.',
             icon: '💥'
@@ -38,7 +40,8 @@ const SCRIPTS: Record<string, Record<RecordingStep, { ui: string, script: string
         2: {
             ui: 'Level 2: The Advertiser War',
             script: 'If somebody is going to try to blackmail me with advertising... blackmail me with money? ...Go. F**k. Yourself. ...Go. F**k. Yourself. Is that clear?',
-            duration: 14,
+            duration: 16,
+            prepDuration: 8,
             context: "You bought a certain 'Bird App' for $[REDACTED] Billion. Now, the CEO of [MOUSE COMPANY] is blackmailing you with money. You don't care about revenue. You care about sending a message.",
             direction: 'Dead eyes. No blinking. Do not shout; whisper the insult like it\'s a fact of nature. Treat the interviewer like a buggy line of code.',
             icon: '🖕'
@@ -46,7 +49,8 @@ const SCRIPTS: Record<string, Record<RecordingStep, { ui: string, script: string
         3: {
             ui: 'Level 3: The 3AM Physicist',
             script: 'Well, I operate on the physics approach to analysis. You boil things down to the first principles or fundamental truths in a particular area and then you reason up from there.',
-            duration: 18,
+            duration: 22,
+            prepDuration: 8,
             context: 'It is 3:00 AM at the factory. Your lead engineer wants to go home to see his family. You want to explain why this [$5 SCREW] should cost $0.03 based on atomic weight.',
             direction: 'Speed up, then slow down. Mumble. You are not talking to a human; you are downloading the laws of the universe directly from the cloud.',
             icon: '🧪'
@@ -99,6 +103,7 @@ function RecordPageContent() {
     const [spyOrigin, setSpyOrigin] = useState<string>('UNKNOWN');
     const [spyTarget, setSpyTarget] = useState<string>('MI6_LONDON');
     const [stepVectors, setStepVectors] = useState<Record<string, number[]>>({});
+    const [isPrepping, setIsPrepping] = useState(false);
     const lastSpeakingTimeRef = useRef<number>(0);
     const finishedTimestampRef = useRef<number | null>(null);
 
@@ -107,6 +112,13 @@ function RecordPageContent() {
     const animationFrameRef = useRef<number | null>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const chunksRef = useRef<Blob[]>([]);
+
+    // Analytics: Consent View
+    useEffect(() => {
+        if (phase === 'ready') {
+            trackEv('0.1', 'consent_view');
+        }
+    }, [phase]);
 
     // Cleanup on unmount
     useEffect(() => {
@@ -166,6 +178,8 @@ function RecordPageContent() {
                 },
             });
 
+            trackEv('0.2', 'mic_access', { status: 'granted' });
+
             // Initialize analyzer
             analyzerRef.current = new VoiceAnalyzer();
             await analyzerRef.current.initialize();
@@ -186,7 +200,15 @@ function RecordPageContent() {
             mediaRecorderRef.current.start(100);
             setPhase('recording');
             setStep(1);
-            setTimeLeft(activeScripts[1].duration * 1000);
+
+            const startDuration = activeScripts[1].prepDuration || 0;
+            if (startDuration > 0) {
+                setIsPrepping(true);
+                setTimeLeft(startDuration * 1000);
+            } else {
+                setIsPrepping(false);
+                setTimeLeft(activeScripts[1].duration * 1000);
+            }
 
             // Start collecting samples
             const collectLoop = () => {
@@ -208,6 +230,7 @@ function RecordPageContent() {
             startTimer();
         } catch (err) {
             console.error('Microphone access denied:', err);
+            trackEv('0.2', 'mic_access', { status: 'denied', error_detail: (err as Error).message });
             setError('Microphone access denied. Please allow microphone access and try again.');
         }
     };
@@ -223,6 +246,13 @@ function RecordPageContent() {
                 if (prev <= interval) {
                     // Step completion logic
                     setStep((currentStep) => {
+                        if (isPrepping) {
+                            // Briefing finished, start recording this step
+                            setIsPrepping(false);
+                            setTimeLeft(activeScripts[currentStep].duration * 1000);
+                            return currentStep;
+                        }
+
                         if (analyzerRef.current) {
                             const vector = analyzerRef.current.get30DVector();
                             setStepVectors(v => ({ ...v, [currentStep]: vector }));
@@ -238,7 +268,15 @@ function RecordPageContent() {
                             return currentStep;
                         } else {
                             const nextStep = (currentStep + 1) as RecordingStep;
-                            setTimeLeft(activeScripts[nextStep].duration * 1000);
+                            const nextPrep = activeScripts[nextStep].prepDuration || 0;
+
+                            if (nextPrep > 0) {
+                                setIsPrepping(true);
+                                setTimeLeft(nextPrep * 1000);
+                            } else {
+                                setIsPrepping(false);
+                                setTimeLeft(activeScripts[nextStep].duration * 1000);
+                            }
                             return nextStep;
                         }
                     });
@@ -262,12 +300,17 @@ function RecordPageContent() {
 
     const handleToxicitySelect = (profile: ToxicityProfile) => {
         setToxicity(profile);
-        setPhase('accent'); // Go directly to Accent
+        if (mode === 'spy') {
+            handleAccentSelect('UNKNOWN'); // Skip Accent for Spy
+        } else {
+            setPhase('accent');
+        }
     };
 
     const handleAccentSelect = async (accent: string) => {
         setSelectedAccent(accent);
         setPhase('analyzing');
+        trackEv('0.3', 'analysis_start');
 
         if (analyzerRef.current) {
             const spyMd = mode === 'spy' ? { origin: spyOrigin, target: spyTarget } : null;
@@ -363,7 +406,7 @@ function RecordPageContent() {
             const result: VoiceResult = {
                 id: resultId,
                 sessionId,
-                typeCode: mode === 'elon' ? analysisResult.typeCode : mode === 'spy' ? analysisResult.typeCode : analysisResult.typeCode,
+                typeCode: analysisResult.typeCode,
                 spyMetadata: mode === 'spy' ? { origin: spyOrigin, target: spyTarget } : undefined,
                 metrics: analysisResult.metrics,
                 accentOrigin: accent,
@@ -562,17 +605,27 @@ function RecordPageContent() {
                         )}
 
                         {/* UI Text */}
-                        <div className={`mono ${mode === 'spy' ? 'text-white text-3xl font-black uppercase mb-8' : 'text-base text-cyan-400 animate-pulse'}`}>
-                            {mode === 'spy' ? `MISSION 0${step}: "${activeScripts[step].script}"` : activeScripts[step].ui}
+                        <div className={`mono mb-4 ${mode === 'spy' ? 'text-white text-3xl font-black uppercase' : (isPrepping ? 'text-orange-500 font-black tracking-widest' : 'text-cyan-400 animate-pulse')}`}>
+                            {mode === 'spy'
+                                ? `MISSION 0${step}: "${activeScripts[step].script}"`
+                                : isPrepping ? 'BRIEFING / SCENE SETUP' : activeScripts[step].ui
+                            }
                         </div>
 
-                        {/* Visualizer - Hidden in Spy Mode */}
-                        {mode !== 'spy' && (
+                        {/* Visualizer - Hidden in Spy Mode and during Prep */}
+                        {mode !== 'spy' && !isPrepping && (
                             <div className="my-16">
                                 <ParticleVisualizer
                                     analyser={analyzerRef.current?.getAnalyser() || null}
                                     isActive={phase === 'recording'}
                                 />
+                            </div>
+                        )}
+
+                        {/* Prep Message - Visualizer replacement during Prep */}
+                        {mode !== 'spy' && isPrepping && (
+                            <div className="my-16 h-[200px] flex items-center justify-center">
+                                <p className="text-gray-600 font-black uppercase tracking-[1em] text-[10px] animate-pulse">Waiting for Action...</p>
                             </div>
                         )}
 
@@ -591,8 +644,8 @@ function RecordPageContent() {
                                     </div>
                                 )}
 
-                                <div className="glass rounded-xl p-8 relative overflow-hidden group">
-                                    <div className="absolute top-0 left-0 w-1 h-full bg-cyan-500" />
+                                <div className={`glass rounded-xl p-8 relative overflow-hidden transition-all duration-500 ${isPrepping ? 'opacity-20 blur-md pointer-events-none scale-95' : 'opacity-100 blur-0 scale-100 group'}`}>
+                                    <div className={`absolute top-0 left-0 w-1 h-full ${isPrepping ? 'bg-orange-500' : 'bg-cyan-500'}`} />
                                     <p className="text-xl md:text-2xl font-medium leading-relaxed">
                                         "{activeScripts[step].script}"
                                     </p>
@@ -616,8 +669,8 @@ function RecordPageContent() {
                                     {Math.floor(timeLeft / 1000).toString().padStart(2, '0')}:{Math.floor((timeLeft % 1000) / 10).toString().padStart(2, '0')}
                                 </div>
                             ) : (
-                                <div className="w-20 h-20 rounded-full border-4 border-cyan-500 flex items-center justify-center">
-                                    <span className="mono text-3xl font-bold">{Math.floor(timeLeft / 1000)}</span>
+                                <div className={`w-20 h-20 rounded-full border-4 flex items-center justify-center transition-colors duration-500 ${isPrepping ? 'border-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.3)]' : 'border-cyan-500'}`}>
+                                    <span className={`mono text-3xl font-bold ${isPrepping ? 'text-orange-500' : 'text-white'}`}>{Math.floor(timeLeft / 1000)}</span>
                                 </div>
                             )}
 
@@ -632,9 +685,15 @@ function RecordPageContent() {
                         </div>
 
                         {/* Recording Indicator */}
-                        <div className="flex items-center justify-center gap-3 pt-6">
-                            <span className={`w-3 h-3 bg-red-500 rounded-full ${mode === 'spy' ? '' : 'animate-pulse'}`} />
-                            <span className="text-red-400 mono text-base">REC</span>
+                        <div className="flex items-center justify-center gap-3 pt-6 min-h-[24px]">
+                            {isPrepping ? (
+                                <span className="text-orange-500/50 mono text-[10px] uppercase font-black tracking-[0.3em]">Standby...</span>
+                            ) : (
+                                <div className="flex items-center gap-3">
+                                    <span className={`w-3 h-3 bg-red-500 rounded-full ${mode === 'spy' ? '' : 'animate-pulse'}`} />
+                                    <span className="text-red-400 mono text-base">REC</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -695,7 +754,11 @@ function RecordPageContent() {
                             </div>
                         </div>
                         <button
-                            onClick={() => setPhase('calibration')}
+                            onClick={() => {
+                                // Tempo Optimization: Skip MBTI, Toxicity, and Accent for Spy
+                                handleMBTISelect(null);
+                                handleToxicitySelect({ nicotine: 'none', ethanol: 'none', sleep: 'human' });
+                            }}
                             className="btn-metallic w-full py-5 rounded-2xl font-black text-xl uppercase tracking-[0.2em] border-red-500/30"
                         >
                             Finalize Profile →
@@ -713,7 +776,7 @@ function RecordPageContent() {
                 )}
 
                 {/* MBTI Selection Phase */}
-                {phase === 'mbti' && (
+                {phase === 'mbti' && mode !== 'spy' && (
                     <div className="space-y-8">
                         <div className="text-center space-y-2">
                             <h2 className="text-2xl font-black neon-text-magenta uppercase italic tracking-tighter">Psychological Baseline</h2>
@@ -724,7 +787,7 @@ function RecordPageContent() {
                 )}
 
                 {/* Toxicity Selection Phase */}
-                {phase === 'toxicity' && (
+                {phase === 'toxicity' && mode !== 'spy' && (
                     <ToxicitySelector onComplete={handleToxicitySelect} />
                 )}
 

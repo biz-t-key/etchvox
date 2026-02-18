@@ -6,6 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import SoloIdentityCard from '@/components/result/SoloIdentityCard';
 import DuoIdentityCard from '@/components/result/DuoIdentityCard';
 import SpyReportCard from '@/components/result/SpyReportCard';
+import DuoResonanceHook from '@/components/result/DuoResonanceHook';
 import MirrorRecap from '@/components/mirror/MirrorRecap';
 import { TypeCode, AnalysisMetrics } from '@/lib/types';
 
@@ -42,23 +43,21 @@ You sound so consistently correct that people are afraid to tell you when you're
 `;
 
 const MOCK_COUPLE_ANALYSIS = `
-# Resonance Report: Alpha & Beta
+# Biometric Resonance Map: Alpha & Beta
 
-## 🎬 The Relationship Title: The Control Tower
-**"A high-precision partnership built on strategic synchronization."**
+## 🔍 The Audit: "The Echo Chamber"
+> *"A symbiotic loop where individual identity has been merged into a single, high-fidelity signal."*
 
-## 🎭 The Cast (Vocal Personas)
-- **Alpha as "The Efficient Strategist"**: Your voice exhibits high spectral stability and a targeted cadence. You provide the logical backbone of the duo.
-- **Beta as "The Charismatic Ideal"**: You balance Alpha's precision with a resonant frequency that projects warmth and authority simultaneously.
+## 🧬 Vocal Interference Patterns
+- **Alpha**: Providing the percussive backbone. High spectral definition in the 3.5kHz range suggests a protective, steering role.
+- **Beta**: Carrying the emotional resonance. The 180ms delay in response shows deep processing of Alpha's frequency before emission.
 
-## 🔬 The Acoustic Chemistry (Deep Dive)
-- **Synchronization (88%)**: You possess a "Telepathic Rhythm." Your waveforms mirror each other with such precision (Sync: 88%) that you often finish each other's sentences via predictive vocal timing.
-- **Power Dynamics**: Alpha holds the "Logical Floor" (high competence indicators), while Beta steers the "Emotional Direction" (high warmth/resonance). It is a perfectly balanced audit of authority and empathy.
+## 👁️ Hidden Dynamics
+The 82% pitch overlap is not a coincidence; it's a defensive formation. You protect each other by speaking in perfectly synced harmonics, leaving no gaps for external interference. 
 
-## 🥂 Tonight's Conversation Menu (Date Night Kit)
-1. **The "Volume" Check**: Alpha, ask Beta: "Do I sometimes drown out your ideas without realizing it?"
-2. **The "Rhythm" Experiment**: Try swapping roles for 5 minutes. Alpha speaks slowly, Beta speaks fast. How does it feel?
-3. **The "Feedback" Loop**: Discuss: Which part of this report made you laugh because it was too true?
+## 🍷 Deep Intelligence
+1. **The Silence**: Why do you both stop breathing at exactly the same moment during pauses?
+2. **The Mirror**: Alpha, you are currently mimicking 14% more of Beta's intonation than you did 3 minutes ago.
 `;
 
 const MOCK_SPY_REPORT = `
@@ -116,10 +115,10 @@ export default function SamplePage() {
                 <section className="space-y-12">
                     <div className="flex items-center gap-4">
                         <div className="w-2 h-8 bg-cyan-500 rounded-full" />
-                        <h2 className="text-2xl font-black uppercase tracking-widest">01 // Solo Identity Report</h2>
+                        <h2 className="text-2xl font-black uppercase tracking-widest">01 // Solo Identity Audit</h2>
                     </div>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-                        <div className="sticky top-32">
+                    <div className="flex flex-col items-center gap-24">
+                        <div className="w-full max-w-2xl">
                             <SoloIdentityCard
                                 userName="SAMPLE_USER"
                                 voiceTypeCode="HFCD"
@@ -127,7 +126,7 @@ export default function SamplePage() {
                                 mbti="INTJ"
                             />
                         </div>
-                        <div className="prose prose-invert max-w-none glass p-8 rounded-3xl border border-white/5">
+                        <div className="w-full max-w-2xl prose prose-invert glass p-8 md:p-12 rounded-[3rem] border border-white/5">
                             <div className="markdown-content">
                                 <ReactMarkdown>{MOCK_AI_ANALYSIS}</ReactMarkdown>
                             </div>
@@ -135,14 +134,14 @@ export default function SamplePage() {
                     </div>
                 </section>
 
-                {/* Couple Section */}
+                {/* Couple (Duo) Section */}
                 <section className="space-y-12">
                     <div className="flex items-center gap-4">
                         <div className="w-2 h-8 bg-magenta-500 rounded-full" />
-                        <h2 className="text-2xl font-black uppercase tracking-widest">02 // Couple Resonance Report</h2>
+                        <h2 className="text-2xl font-black uppercase tracking-widest">02 // Duo Resonance Audit</h2>
                     </div>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-                        <div className="sticky top-32">
+                    <div className="flex flex-col items-center gap-24">
+                        <div className="w-full max-w-2xl">
                             <DuoIdentityCard
                                 userA={{
                                     name: "Alpha",
@@ -159,7 +158,16 @@ export default function SamplePage() {
                                 resultId="SAMPLE-RESONANCE"
                             />
                         </div>
-                        <div className="prose prose-invert max-w-none glass p-8 rounded-3xl border border-white/5">
+
+                        <DuoResonanceHook resonance={{
+                            pitch_overlap: 0.82,
+                            pause_entropy: 0.45,
+                            turn_taking_latency: 180,
+                            spectral_convergence: 0.88,
+                            stress_covariance: 0.12
+                        }} />
+
+                        <div className="w-full max-w-2xl prose prose-invert glass p-8 md:p-12 rounded-[3rem] border border-white/5">
                             <div className="markdown-content">
                                 <ReactMarkdown>{MOCK_COUPLE_ANALYSIS}</ReactMarkdown>
                             </div>
@@ -167,23 +175,25 @@ export default function SamplePage() {
                     </div>
                 </section>
 
-                {/* Spy Section */}
+                {/* Agency Spy Section */}
                 <section className="space-y-12">
                     <div className="flex items-center gap-4">
                         <div className="w-2 h-8 bg-red-600 rounded-full" />
                         <h2 className="text-2xl font-black uppercase tracking-widest">03 // Agency Spy Audit</h2>
                     </div>
-                    <div className="max-w-md mx-auto transform hover:scale-105 transition-transform duration-500">
-                        <SpyReportCard
-                            typeCode="HIRED"
-                            spyMetadata={{
-                                origin: "London_Sector_Q",
-                                target: "Global_Resource_Grid"
-                            }}
-                            reportMessage={MOCK_SPY_REPORT}
-                            score={94}
-                            isPremium={true}
-                        />
+                    <div className="w-full max-w-2xl mx-auto">
+                        <div className="transform hover:scale-[1.02] transition-transform duration-500">
+                            <SpyReportCard
+                                typeCode="HIRED"
+                                spyMetadata={{
+                                    origin: "London_Sector_Q",
+                                    target: "Global_Resource_Grid"
+                                }}
+                                reportMessage={MOCK_SPY_REPORT}
+                                score={94}
+                                isPremium={true}
+                            />
+                        </div>
                     </div>
                 </section>
 
@@ -191,64 +201,46 @@ export default function SamplePage() {
                 <section className="space-y-12">
                     <div className="flex items-center gap-4">
                         <div className="w-2 h-8 bg-yellow-500 rounded-full" />
-                        <h2 className="text-2xl font-black uppercase tracking-widest">04 // Voice Mirror Resonance Dossier</h2>
+                        <h2 className="text-2xl font-black uppercase tracking-widest">04 // 30-Day Mirror Resonance Dossier</h2>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-                        <div className="space-y-8">
-                            <div className="glass p-10 rounded-3xl border border-yellow-500/20 space-y-8 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 p-4 opacity-10 text-6xl">🪞</div>
-                                <div className="space-y-2">
-                                    <h3 className="text-sm font-black text-yellow-500 uppercase tracking-widest">Neural Summary: Day 07</h3>
-                                    <h2 className="text-3xl font-black italic text-white">The Harmonic Architect</h2>
-                                </div>
+                    <div className="w-full max-w-2xl mx-auto space-y-12">
+                        {/* Mock Dashboard Card */}
+                        <div className="glass p-10 md:p-16 rounded-[3rem] border border-yellow-500/20 space-y-16 relative overflow-hidden bg-gradient-to-br from-yellow-500/10 to-transparent">
+                            <header className="space-y-6">
+                                <p className="text-[10px] tracking-[0.5em] opacity-40 uppercase font-mono">Mirror: Maverick Lens</p>
+                                <h1 className="text-4xl md:text-6xl font-black italic tracking-tighter uppercase text-white leading-none">
+                                    THE HARMONIC ARCHITECT
+                                </h1>
+                                <p className="max-w-md text-sm leading-relaxed text-zinc-400">
+                                    Your 7-day resonance cycle reveals a significant shift from "Static Turbulence" to "Architectural Clarity." The jitter modulation in your lower frequencies stabilized by 18%.
+                                </p>
+                            </header>
 
-                                <div className="space-y-6 text-zinc-400 text-sm leading-relaxed">
-                                    <p>
-                                        Your 7-day resonance cycle reveals a significant shift from <span className="text-white italic">"Static Turbulence"</span> to <span className="text-yellow-500 italic">"Architectural Clarity."</span> By Day 4, the jitter modulation in your lower frequencies stabilized by 18%, correlating with the "Maverick" protocol.
-                                    </p>
-                                    <div className="bg-white/5 p-4 rounded-xl border border-white/5">
-                                        <p className="font-mono text-[10px] uppercase text-zinc-500 mb-2">Oracle Prediction:</p>
-                                        <p className="text-white italic">"The clarity attained this week is not a fluke; it is a structural reinforcement. In high-stakes negotiation, this tone will be your primary shield."</p>
-                                    </div>
-                                </div>
+                            <div className="space-y-4">
+                                <p className="text-[8px] tracking-[0.3em] opacity-30 uppercase font-mono">Acoustic Oracle Prediction</p>
+                                <p className="text-xl md:text-2xl italic border-l border-yellow-500/30 pl-8 py-2 text-zinc-200">
+                                    "The clarity attained this week is not a fluke; it is a structural reinforcement. In high-stakes negotiation, this tone will be your primary shield."
+                                </p>
+                            </div>
 
-                                <div className="pt-4">
-                                    <button
-                                        onClick={() => setShowRecapDemo(true)}
-                                        className="w-full py-4 bg-yellow-500 text-black font-black uppercase text-xs rounded-xl hover:bg-yellow-400 transition-all shadow-lg shadow-yellow-500/10"
-                                    >
-                                        Play 7-Day Cinematic Recap →
-                                    </button>
+                            <div className="grid grid-cols-2 gap-8 pt-8 border-t border-white/10">
+                                <div className="space-y-1">
+                                    <p className="text-[10px] tracking-[0.4em] opacity-40 uppercase font-mono">Narrative Progress</p>
+                                    <p className="text-3xl font-black italic">07 <span className="text-sm opacity-30 tracking-widest">/ 252</span></p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[10px] tracking-[0.4em] opacity-40 uppercase font-mono">Biometric Stability</p>
+                                    <p className="text-3xl font-black italic text-yellow-500">94.2% <span className="text-[10px] text-green-400 ml-2">↑ Optimal</span></p>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="space-y-6">
-                            <div className="flex flex-col gap-4">
-                                <h3 className="text-xs font-black text-zinc-500 uppercase tracking-widest">Biometric Trend (Sample)</h3>
-                                <div className="h-48 glass rounded-2xl border border-white/5 flex items-end justify-between p-8 gap-2">
-                                    {[65, 72, 68, 85, 82, 89, 94].map((v, i) => (
-                                        <div key={i} className="flex-1 flex flex-col items-center gap-2">
-                                            <div
-                                                className="w-full bg-gradient-to-t from-yellow-600 to-yellow-400 rounded-t-sm transition-all duration-1000"
-                                                style={{ height: `${v}%` }}
-                                            />
-                                            <span className="text-[8px] font-mono text-zinc-600">D{i + 1}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-white/5 p-4 rounded-xl border border-white/5">
-                                    <div className="text-[10px] text-zinc-500 uppercase font-bold mb-1">Average Alignment</div>
-                                    <div className="text-2xl font-black text-yellow-500 italic">82.4%</div>
-                                </div>
-                                <div className="bg-white/5 p-4 rounded-xl border border-white/5">
-                                    <div className="text-[10px] text-zinc-500 uppercase font-bold mb-1">Stability Gain</div>
-                                    <div className="text-2xl font-black text-cyan-500 italic">+18.2%</div>
-                                </div>
-                            </div>
+                            <button
+                                onClick={() => setShowRecapDemo(true)}
+                                className="w-full py-6 bg-yellow-500 text-black font-black uppercase text-xs rounded-2xl hover:bg-yellow-400 transition-all shadow-[0_20px_40px_rgba(234,179,8,0.2)] tracking-[0.2em]"
+                            >
+                                Play 7-Day Cinematic Recap →
+                            </button>
                         </div>
                     </div>
                 </section>
@@ -266,9 +258,9 @@ export default function SamplePage() {
             )}
 
             {/* Footer */}
-            <footer className="border-t border-white/5 py-20 text-center">
-                <p className="text-[10px] text-zinc-600 uppercase tracking-widest font-black italic">
-                    © 2026 Etchvox Archives // Authorized Demo Only
+            <footer className="border-t border-white/5 py-32 text-center">
+                <p className="text-[10px] text-zinc-600 uppercase tracking-[0.5em] font-black italic">
+                    © 2026 Etchvox Intelligence Archives // Authorized Demo Only
                 </p>
             </footer>
 

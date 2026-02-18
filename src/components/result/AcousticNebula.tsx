@@ -6,6 +6,7 @@ import { shaderMaterial } from '@react-three/drei';
 import * as THREE from 'three';
 import { motion } from 'framer-motion';
 import { useMirror, MirrorConfig } from '@/context/MirrorContext';
+import { trackEv } from '@/lib/analytics';
 
 // --- Shader Definition (Existing Couple) ---
 const CouplesNebulaMaterial = shaderMaterial(
@@ -274,6 +275,11 @@ const CoupleParticles = ({ dataA, dataB, relationshipType, particleCount }: any)
 
 export default function AcousticNebula({ dataA, dataB, isCouple, relationshipType = 'romantic' }: NebulaProps) {
     const { type, config, isFallback } = useMirror();
+
+    // Analytics: Nebula Success
+    React.useEffect(() => {
+        trackEv('1.0', 'nebula_success', { isCouple, type: isCouple ? relationshipType : type });
+    }, [isCouple, relationshipType, type]);
 
     const performanceTier = useMemo(() => {
         if (typeof navigator === 'undefined') return { count: 12000, label: 'High' };

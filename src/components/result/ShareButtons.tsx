@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { trackEv } from '@/lib/analytics';
 
 interface ShareButtonsProps {
     resultId: string;
@@ -34,6 +35,8 @@ export default function ShareButtons({ resultId, typeName, typeIcon, catchphrase
     const fullShareText = `I just discovered I'm ${typeIcon} ${typeName.toUpperCase()}! "${catchphrase}" What's YOUR voice type? #etchvox @etchvox`;
 
     const copyToClipboard = async (text: string, type: 'bio' | 'link') => {
+        // Analytics: Share Click (Clipboard)
+        trackEv('3.1', 'share_click', { platform: `clipboard_${type}`, result_id: resultId });
         try {
             await navigator.clipboard.writeText(text);
             setCopied(type);
@@ -52,6 +55,8 @@ export default function ShareButtons({ resultId, typeName, typeIcon, catchphrase
     };
 
     const shareToTwitter = () => {
+        // Analytics: Share Click (Twitter)
+        trackEv('3.1', 'share_click', { platform: 'twitter', result_id: resultId });
         const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(fullShareText)}&url=${encodeURIComponent(shareUrl)}`;
         window.open(url, '_blank', 'width=550,height=420');
     };
@@ -93,6 +98,8 @@ export default function ShareButtons({ resultId, typeName, typeIcon, catchphrase
             <div className="flex justify-center gap-6 mb-6">
                 <button
                     onClick={() => {
+                        // Analytics: Share Click (Instagram)
+                        trackEv('3.1', 'share_click', { platform: 'instagram', result_id: resultId });
                         // Instagram: Can't directly share, open profile
                         alert('Save the result image and share it on Instagram Stories!');
                     }}
@@ -112,6 +119,8 @@ export default function ShareButtons({ resultId, typeName, typeIcon, catchphrase
 
                 <button
                     onClick={() => {
+                        // Analytics: Share Click (TikTok)
+                        trackEv('3.1', 'share_click', { platform: 'tiktok', result_id: resultId });
                         // TikTok: Can't directly share
                         alert('Save the result video (Premium) and share it on TikTok!');
                     }}
@@ -125,6 +134,8 @@ export default function ShareButtons({ resultId, typeName, typeIcon, catchphrase
                 {canShare && (
                     <button
                         onClick={async () => {
+                            // Analytics: Share Click (Native)
+                            trackEv('3.1', 'share_click', { platform: 'native', result_id: resultId });
                             try {
                                 const shareData: ShareData = {
                                     title: 'My EtchVox Voice ID',

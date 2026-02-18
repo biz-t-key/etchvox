@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { POLAR_CONFIG } from '@/config/features';
 import { checkSubscription } from '@/lib/subscription';
+import { trackEv } from '@/lib/analytics';
 
 interface SubscriptionWallProps {
     userHash: string;
@@ -15,14 +16,21 @@ export default function SubscriptionWall({ userHash, setHasSubscription }: Subsc
     const [error, setError] = useState<string | null>(null);
     const [activeStep, setActiveStep] = useState(0);
 
-    useState(() => {
+    useEffect(() => {
         async function fetchSubscription() {
-            const sub = await checkSubscription(userHash);
-            setHasSubLocally(sub.isActive);
-            setCurrentPlan(sub.plan as 'weekly' | 'monthly' | null);
+            try {
+                const sub = await checkSubscription(userHash);
+                setHasSubLocally(sub.isActive);
+                setCurrentPlan(sub.plan as 'weekly' | 'monthly' | null);
+            } catch (err) {
+                console.error('Initial sub check failed:', err);
+            }
         }
         fetchSubscription();
-    });
+
+        // Analytics: Offer Impression
+        trackEv('1.1', 'offer_impression', { context: 'mirror_subscription_wall' });
+    }, [userHash]);
 
     const onboardingSteps = [
         {
@@ -48,6 +56,12 @@ export default function SubscriptionWall({ userHash, setHasSubscription }: Subsc
     async function handleCheckout(plan: 'weekly' | 'monthly' | 'upgrade') {
         setIsLoading(true);
         setError(null);
+
+        // Analytics: Checkout Intent
+        trackEv('2.0', 'checkout_intent', {
+            plan_type: plan,
+            price: plan === 'weekly' ? POLAR_CONFIG.WEEKLY_PRICE : plan === 'monthly' ? POLAR_CONFIG.MONTHLY_PRICE : POLAR_CONFIG.UPGRADE_PRICE
+        });
 
         try {
             const response = await fetch('/api/checkout/polar', {

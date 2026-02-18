@@ -58,9 +58,16 @@ export class VoiceAnalyzer {
     }
 
     async initialize(): Promise<AnalyserNode> {
-        this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
-            sampleRate: 16000,
-        });
+        if (!this.audioContext) {
+            const AudioContextClass = (window.AudioContext || (window as any).webkitAudioContext);
+            this.audioContext = new AudioContextClass({
+                sampleRate: 16000,
+            });
+        }
+
+        if (this.audioContext.state === 'suspended') {
+            await this.audioContext.resume();
+        }
 
         this.analyser = this.audioContext.createAnalyser();
         this.analyser.fftSize = 2048;
@@ -70,6 +77,14 @@ export class VoiceAnalyzer {
         this.frequencyArray = new Uint8Array(this.analyser.frequencyBinCount);
 
         return this.analyser;
+    }
+
+    async close(): Promise<void> {
+        if (this.audioContext && this.audioContext.state !== 'closed') {
+            await this.audioContext.close();
+            this.audioContext = null;
+            this.analyser = null;
+        }
     }
 
     getAnalyser(): AnalyserNode | null {

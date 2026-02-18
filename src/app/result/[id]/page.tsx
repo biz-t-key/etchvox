@@ -24,9 +24,11 @@ import { calculateDrift, getDriftNarrative } from '@/lib/drift';
 import { DriftAnalysis } from '@/lib/types';
 import VoiceTimelineGraph from '@/components/result/VoiceTimelineGraph';
 import SpyReportCard from '@/components/result/SpyReportCard';
+import DuoResonanceHook from '@/components/result/DuoResonanceHook';
 import { generateFinalReport } from '@/lib/analyzer';
 import { POLAR_CONFIG } from '@/config/features';
 import { checkSubscription } from '@/lib/subscription';
+import { trackEv } from '@/lib/analytics';
 
 
 type DisplayStage = 'label' | 'metrics' | 'full';
@@ -58,6 +60,16 @@ export default function ResultPage() {
     const [isSubscribed, setIsSubscribed] = useState(false);
     const [checkoutLoading, setCheckoutLoading] = useState(false);
 
+    const isCouple = result ? (result.typeCode === 'COUPLE_MIX' || !!result.coupleData) : false;
+    const isElonMode = result?.mode === 'elon';
+    const isSpyMode = result?.typeCode === 'HIRED' ||
+        result?.typeCode === 'SUSP' ||
+        result?.typeCode === 'REJT' ||
+        result?.typeCode === 'BURN' ||
+        !!result?.spyMetadata ||
+        result?.mode === 'spy' ||
+        isElonMode;
+
     const isDevMode = searchParams.get('dev') === 'true';
 
     // 1. SCROLL DETECTION
@@ -68,19 +80,12 @@ export default function ResultPage() {
     const nebulaOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
     const nebulaY = useTransform(scrollYProgress, [0, 0.25], [0, -200]);
 
-    // 3. TRUTH CARD PHASE TRANSFORMS (25% - 60%)
-    const cardY = useTransform(scrollYProgress, [0.25, 0.55], [150, 0]);
-    const cardOpacity = useTransform(scrollYProgress, [0.3, 0.5], [0, 1]);
-    const cardBlur = useTransform(scrollYProgress, [0.3, 0.5], ["blur(20px)", "blur(0px)"]);
-    const cardScale = useTransform(scrollYProgress, [0.3, 0.55], [0.95, 1]);
+    // 3. TRUTH CARD PHASE TRANSFORMS (25% - 65%)
+    const cardY = useTransform(scrollYProgress, [0.25, 0.5, 0.65, 0.75], [150, 0, 0, -100]);
+    const cardOpacity = useTransform(scrollYProgress, [0.3, 0.5, 0.65, 0.75], [0, 1, 1, 0]);
+    const cardBlur = useTransform(scrollYProgress, [0.3, 0.5, 0.65, 0.75], ["blur(20px)", "blur(0px)", "blur(0px)", "blur(10px)"]);
+    const cardScale = useTransform(scrollYProgress, [0.3, 0.55, 0.65, 0.75], [0.95, 1, 1, 0.9]);
 
-    const isSpyMode = result?.typeCode === 'HIRED' ||
-        result?.typeCode === 'SUSP' ||
-        result?.typeCode === 'REJT' ||
-        result?.typeCode === 'BURN' ||
-        !!result?.spyMetadata ||
-        result?.mode === 'spy' ||
-        result?.mode === 'elon';
 
     function executeHardPurge() {
         if (typeof window === 'undefined') return;
@@ -125,7 +130,25 @@ export default function ResultPage() {
             }
         }
         loadResult();
-    }, [resultId]);
+
+        // Analytics: Purchase Complete Detection
+        if (typeof window !== 'undefined' && searchParams.get('thanks') === 'true') {
+            trackEv('2.1', 'purchase_complete', {
+                result_id: resultId,
+                context: searchParams.get('mode') || 'diagnostic'
+            });
+        }
+    }, [resultId, searchParams]);
+
+    // Analytics: Offer Impression (if not premium)
+    useEffect(() => {
+        if (displayStage === 'full' && result && !result.isPremium) {
+            trackEv('1.1', 'offer_impression', {
+                context: 'result_page_unlocked',
+                type: isCouple ? 'couple' : 'solo'
+            });
+        }
+    }, [displayStage, result, isCouple]);
 
     // Real-time updates
     useEffect(() => {
@@ -155,8 +178,23 @@ export default function ResultPage() {
         return () => unsubscribeResult();
     }, [resultId]);
 
-    const handleCheckout = async (type: 'solo' | 'couple' | 'spy') => {
+    const handleCheckout = async (type: 'solo' | 'couple' | 'spy' | 'identity_solo' | 'identity_duo') => {
         setCheckoutLoading(true);
+
+        const priceMap = {
+            solo: POLAR_CONFIG.SOLO_PRICE,
+            couple: POLAR_CONFIG.COUPLE_PRICE,
+            spy: POLAR_CONFIG.SPY_PRICE,
+            identity_solo: POLAR_CONFIG.IDENTITY_SOLO_PRICE,
+            identity_duo: POLAR_CONFIG.IDENTITY_DUO_PRICE
+        };
+
+        // Analytics: Checkout Intent
+        trackEv('2.0', 'checkout_intent', {
+            plan_type: type,
+            price: priceMap[type as keyof typeof priceMap]
+        });
+
         try {
             const plan = type;
             const userHash = localStorage.getItem('etchvox_user_hash') || '';
@@ -178,7 +216,7 @@ export default function ResultPage() {
 
     // ✅ Save MBTI to Firestore when selected
     const handleMBTISelect = async (mbti: MBTIType | null) => {
-        if (!mbti) return; // Guard against null
+        if (!mbti || isSpyMode) return; // Skip for Spy Mode
 
         setSelectedMBTI(mbti);
         setMbtiSkipped(false);
@@ -271,7 +309,6 @@ export default function ResultPage() {
         );
     }
 
-    const isCouple = result.typeCode === 'COUPLE_MIX' || !!result.coupleData;
     const voiceType = voiceTypes[result.typeCode] || voiceTypes['HFCC']; // Robust fallback
 
     // Re-check after possible fallback
@@ -331,10 +368,10 @@ export default function ResultPage() {
                     <div className="text-[120px] mb-12 animate-pulse-slow grayscale opacity-40">
                         {voiceType.icon}
                     </div>
-                    <h2 className="text-5xl md:text-9xl font-black uppercase text-white mb-6 tracking-[-0.05em] leading-none opacity-80">
+                    <h2 className="text-3xl md:text-9xl font-black uppercase text-white mb-6 tracking-[-0.05em] leading-none opacity-20 md:opacity-80 px-8 text-center">
                         {voiceType.name}
                     </h2>
-                    <div className="text-[11px] font-black text-white tracking-[1.2em] uppercase opacity-30 pl-[1.2em]">
+                    <div className="text-[10px] md:text-[11px] font-black text-white tracking-[1.2em] uppercase opacity-10 md:opacity-30 pl-[1.2em]">
                         {result.typeCode}
                     </div>
                     <div className="absolute bottom-20 flex flex-col items-center gap-4 opacity-20">
@@ -347,17 +384,17 @@ export default function ResultPage() {
                     </div>
                 </motion.section>
 
-                {/* CHAPTER 2: TRUTH CARD REVEAL (Fixed 25% - 60%) */}
                 <motion.section
                     style={{
                         opacity: cardOpacity,
                         y: cardY,
                         filter: cardBlur,
-                        scale: cardScale
+                        scale: cardScale,
+                        pointerEvents: scrollYProgress.get() > 0.3 && scrollYProgress.get() < 0.65 ? 'auto' : 'none'
                     }}
-                    className="fixed inset-0 flex items-center justify-center z-20 px-4 pointer-events-auto"
+                    className="fixed inset-0 flex items-center justify-center z-20 px-4"
                 >
-                    <div className="w-full max-w-lg mx-auto relative group">
+                    <div className="w-full max-w-2xl mx-auto relative group">
                         {/* Film Grain Jitter Overlay on Card */}
                         <motion.div
                             animate={{ x: [0, -1, 1, -1], y: [0, 1, -1, 1] }}
@@ -390,10 +427,10 @@ export default function ResultPage() {
 
                 {/* CHAPTER 3: ANALYSIS & EXPORT (Scrollable 60% - 100%) */}
                 <div className="relative z-30 pt-[250vh] pb-32 flex flex-col items-center bg-transparent">
-                    <div className="w-full max-w-4xl px-4 flex flex-col items-center">
+                    <div className="w-full max-w-2xl px-4 flex flex-col items-center">
 
-                        {/* 1. LOGICAL ANALYSIS */}
-                        <section className="w-full flex flex-col items-center py-64 border-t border-white/5">
+                        {/* 1. BIOMETRIC RESONANCE MAP (Logical Analysis) */}
+                        <section className="w-full flex flex-col items-center py-64">
                             <div className="w-full">
                                 {result.logV2 ? (
                                     <HighFidelityMetrics
@@ -408,12 +445,12 @@ export default function ResultPage() {
                             </div>
                         </section>
 
-                        {/* 2. SOCIAL SIGNAL MATRIX */}
+                        {/* 2. SOCIAL SIGNAL MATRIX (Hidden for Spy Mode) */}
                         {!isCouple && !isSpyMode && (
                             <section className="w-full flex flex-col items-center py-64 border-t border-white/5">
                                 <div className="text-center mb-32 space-y-6">
                                     <h2 className="text-xl font-black text-white uppercase tracking-[0.6em] italic opacity-80">Social Signal Matrix</h2>
-                                    <p className="text-gray-600 font-mono text-[10px] uppercase tracking-[0.4em]">Global Compatibility Index</p>
+                                    <p className="text-cyan-400 font-mono text-[10px] uppercase tracking-[0.4em] font-black">Global Compatibility Index</p>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12 w-full">
                                     <div className="space-y-8">
@@ -444,76 +481,88 @@ export default function ResultPage() {
                             </section>
                         )}
 
-                        {/* 3. AI REPORT / PAYWALL */}
-                        <section className="w-full flex flex-col items-center py-64 border-t border-white/5">
-                            {result.isPremium && result.aiAnalysis ? (
-                                <div className="w-full max-w-3xl">
-                                    <div className="text-center mb-32 opacity-80">
-                                        <h2 className="text-xl font-black text-white uppercase tracking-[0.6em] italic">Full Intelligence Audit</h2>
-                                    </div>
-                                    <div className="prose prose-invert prose-sm max-w-none text-left leading-loose opacity-80">
-                                        <ReactMarkdown
-                                            components={{
-                                                h1: ({ node, ...props }) => <h1 className="text-2xl font-black text-white uppercase tracking-widest mb-12 border-b border-white/10 pb-4" {...props} />,
-                                                h2: ({ node, ...props }) => <h2 className="text-xl font-black text-white uppercase tracking-wide mt-16 mb-6" {...props} />,
-                                                p: ({ node, ...props }) => <p className="text-gray-400 leading-relaxed mb-8" {...props} />,
-                                                strong: ({ node, ...props }) => <strong className="text-cyan-400 font-black" {...props} />,
-                                            }}
-                                        >
-                                            {result.aiAnalysis}
-                                        </ReactMarkdown>
-                                    </div>
+                        {/* 2.5 DUO RESONANCE HOOK */}
+                        {isCouple && result.logV2?.resonance && (
+                            <DuoResonanceHook resonance={result.logV2.resonance} />
+                        )}
+
+                        {/* 3. IDENTITY KIT (Physical Assets) */}
+                        {!isElonMode && (
+                            <section className="w-full flex flex-col items-center py-64 border-t border-white/5">
+                                <div className="text-center mb-32">
+                                    <h2 className="text-xl font-black text-white uppercase tracking-[0.6em] italic">Identity Kit</h2>
+                                    <p className="text-gray-500 text-[10px] uppercase font-black tracking-[0.4em] mt-6 opacity-50">Authorized Metadata Distribution</p>
                                 </div>
-                            ) : (
-                                <div className="w-full max-w-lg text-center space-y-12">
-                                    <div className="text-center mb-12">
-                                        <h3 className="text-xl font-black text-cyan-400 uppercase tracking-[0.5em] italic">The Full Archive</h3>
-                                        <p className="text-gray-600 text-[10px] font-black uppercase tracking-widest mt-2">Deeper Context Hidden</p>
-                                    </div>
-                                    <div className="glass rounded-[3rem] p-12 border border-white/5 space-y-12">
-                                        <div className="flex flex-col items-center gap-4">
-                                            <div className="text-5xl opacity-40">🧬</div>
-                                            <div className="px-4 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30">
-                                                <span className="text-cyan-400 font-black text-xs">${diagnosticPrice} Authorized Unlock</span>
-                                            </div>
+                                <PremiumExporter
+                                    metadata={{
+                                        archetypeCode: result.typeCode || 'UNKNOWN',
+                                        mbti: result.mbti || 'Void',
+                                        roast: voiceType.roast || voiceType.catchphrase || 'Echo in the void',
+                                        isCouple: isCouple,
+                                        price: isCouple ? POLAR_CONFIG.IDENTITY_DUO_PRICE : POLAR_CONFIG.IDENTITY_SOLO_PRICE,
+                                        partnerA: isCouple ? result.coupleData?.userA?.name : undefined,
+                                        partnerB: isCouple ? result.coupleData?.userB?.name : undefined,
+                                        relationshipLabel: isCouple ? result.coupleData?.relationshipType : undefined,
+                                        isPaid: result.isPremium
+                                    }}
+                                    onCheckout={() => handleCheckout(isCouple ? 'identity_duo' : 'identity_solo')}
+                                    onUpgrade={() => handleCheckout(isCouple ? 'couple' : 'solo')}
+                                />
+                            </section>
+                        )}
+
+                        {/* 4. AI REPORT (The Core Audit) */}
+                        {!isElonMode && (
+                            <section className="w-full flex flex-col items-center py-64 border-t border-white/5">
+                                {result.isPremium && result.aiAnalysis ? (
+                                    <div className="w-full max-w-2xl">
+                                        <div className="text-center mb-32 opacity-80">
+                                            <h2 className="text-xl font-black text-white uppercase tracking-[0.6em] italic">Full Intelligence Audit</h2>
                                         </div>
-                                        <p className="text-sm text-gray-400 leading-relaxed italic">
-                                            Unlock your complete neural blueprint including detailed personality traits, cognitive patterns, and resonance analysis.
-                                        </p>
-                                        <button
-                                            onClick={() => handleCheckout(diagnosticType)}
-                                            className="w-full bg-white text-black font-black py-6 rounded-3xl uppercase tracking-widest hover:bg-cyan-400 transition-all transform active:scale-95 flex items-center justify-center gap-3"
-                                        >
-                                            <span>Reveal Intelligence Report</span>
-                                            <span className="text-xs opacity-40 font-mono">→</span>
-                                        </button>
+                                        <div className="prose prose-invert prose-sm max-w-none text-left leading-loose opacity-80">
+                                            <ReactMarkdown
+                                                components={{
+                                                    h1: ({ node, ...props }) => <h1 className="text-2xl font-black text-white uppercase tracking-widest mb-12 border-b border-white/10 pb-4" {...props} />,
+                                                    h2: ({ node, ...props }) => <h2 className="text-xl font-black text-white uppercase tracking-wide mt-16 mb-6" {...props} />,
+                                                    p: ({ node, ...props }) => <p className="text-gray-400 leading-relaxed mb-8" {...props} />,
+                                                    strong: ({ node, ...props }) => <strong className="text-cyan-400 font-black" {...props} />,
+                                                }}
+                                            >
+                                                {result.aiAnalysis}
+                                            </ReactMarkdown>
+                                        </div>
                                     </div>
-                                </div>
-                            )}
-                        </section>
+                                ) : (
+                                    <div className="w-full max-w-md text-center space-y-12">
+                                        <div className="text-center mb-12">
+                                            <h3 className="text-xl font-black text-cyan-400 uppercase tracking-[0.5em] italic">The Full Archive</h3>
+                                            <p className="text-cyan-400 font-mono text-[10px] uppercase tracking-widest mt-2 font-black">Deeper Context Hidden</p>
+                                        </div>
+                                        <div className="glass rounded-[3rem] p-12 border border-white/5 space-y-12">
+                                            <div className="flex flex-col items-center gap-4">
+                                                <div className="text-5xl opacity-40">🧬</div>
+                                                <div className="px-4 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30">
+                                                    <span className="text-cyan-400 font-black text-xs">${diagnosticPrice} Authorized Unlock</span>
+                                                </div>
+                                            </div>
+                                            <p className="text-sm text-gray-400 leading-relaxed italic">
+                                                Unlock your complete neural blueprint including detailed personality traits, cognitive patterns, and resonance analysis.
+                                            </p>
+                                            <button
+                                                onClick={() => handleCheckout(diagnosticType)}
+                                                className="w-full bg-white text-black font-black py-6 rounded-3xl uppercase tracking-widest hover:bg-cyan-400 transition-all transform active:scale-95 flex items-center justify-center gap-3"
+                                            >
+                                                <span>Reveal Intelligence Report</span>
+                                                <span className="text-xs opacity-40 font-mono">→</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </section>
+                        )}
 
-                        {/* 4. IDENTITY KIT */}
-                        <section className="w-full flex flex-col items-center py-64 bg-white/[0.02] rounded-[4rem] px-8">
-                            <div className="text-center mb-32">
-                                <h2 className="text-xl font-black text-white uppercase tracking-[0.6em] italic">Identity Kit</h2>
-                                <p className="text-gray-500 text-[10px] uppercase font-black tracking-[0.4em] mt-6 opacity-50">Authorized Metadata Distribution</p>
-                            </div>
-                            <PremiumExporter
-                                metadata={{
-                                    archetypeCode: result.typeCode || 'UNKNOWN',
-                                    mbti: result.mbti || 'Void',
-                                    roast: voiceType.roast || voiceType.catchphrase || 'Echo in the void',
-                                    isCouple: isCouple,
-                                    price: isCouple ? 5 : 3,
-                                    partnerA: isCouple ? result.coupleData?.userA?.name : undefined,
-                                    partnerB: isCouple ? result.coupleData?.userB?.name : undefined,
-                                    relationshipLabel: isCouple ? result.coupleData?.relationshipType : undefined
-                                }}
-                            />
-                        </section>
-
-                        {/* 5. BROADCAST */}
-                        <section className="w-full py-64 flex flex-col items-center">
+                        {/* 5. BROADCAST (Moved to bottom of content) */}
+                        <section className="w-full py-64 flex flex-col items-center border-t border-white/5">
                             <div className="text-center mb-16 opacity-30">
                                 <h2 className="text-[11px] font-black text-white uppercase tracking-[1.2em] pl-[1.2em]">Broadcast</h2>
                             </div>
@@ -527,7 +576,17 @@ export default function ResultPage() {
                             />
                         </section>
 
-                        {/* 6. PURGE PROTOCOL */}
+                        {/* 6. NEW MISSION / HOME */}
+                        <div className="w-full py-32 flex flex-col items-center">
+                            <Link
+                                href="/"
+                                className="px-12 py-5 rounded-full border border-white/20 text-white font-black uppercase tracking-[0.4em] text-[10px] hover:bg-white hover:text-black transition-all active:scale-95"
+                            >
+                                {isSpyMode ? 'NEW MISSION' : 'NEW ANALYSIS'}
+                            </Link>
+                        </div>
+
+                        {/* 7. PURGE PROTOCOL */}
                         <div className="w-full py-32 flex flex-col items-center gap-12 opacity-30 hover:opacity-100 transition-opacity duration-1000">
                             <button
                                 onClick={() => {
