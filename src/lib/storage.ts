@@ -602,3 +602,67 @@ export async function fetchMirrorBlobs(userHash: string): Promise<{ dayIndex: nu
     // Future: implement fetch logic from R2 list API
     return [];
 }
+/**
+ * THE NUCLEAR OPTION: Clear all local traces and session data.
+ * This is used for the Vault Purge ritual (Withdrawal).
+ */
+export async function hardPurgeEverything(): Promise<void> {
+    if (typeof window === 'undefined') return;
+
+    try {
+        // 1. Clear all etchvox_* keys from localStorage
+        const keys = Object.keys(localStorage);
+        keys.forEach(key => {
+            if (key.startsWith('etchvox_') || key.startsWith('mirror_')) {
+                localStorage.removeItem(key);
+            }
+        });
+
+        // 2. Clear Mirror specific keys
+        localStorage.removeItem('mirror_genre_selection');
+        localStorage.removeItem('mirror_preference_v2');
+        localStorage.removeItem('mirror_mnemonic');
+        localStorage.removeItem('mirror_user_hash');
+
+        // 3. Optional: Hit server-side purge endpoint if session exists
+        const sessionId = localStorage.getItem('etchvox_session');
+        if (sessionId) {
+            await fetch('/api/results/purge-session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId }),
+            }).catch(e => console.warn('Server purge skipped or failed:', e));
+        }
+
+        // 4. Clear subscription and session last
+        localStorage.removeItem('etchvox_session');
+        localStorage.removeItem('etchvox_subscription');
+
+        console.log('✓ Nuclear Purge completed. All traces removed.');
+    } catch (e) {
+        console.error('Failed to perform hard purge:', e);
+    }
+}
+
+/**
+ * THE SAFE OPTION: Sign out and clear session, but KEEP history.
+ * Ideal for 7-day users or those wanting to pause their subscription.
+ */
+export function softWithdraw(): void {
+    if (typeof window === 'undefined') return;
+
+    try {
+        // Clear active session and subscription status
+        localStorage.removeItem('etchvox_session');
+        localStorage.removeItem('etchvox_subscription');
+
+        // Clear Mirror active state but keep the user identity (userHash/mnemonic)
+        // so they can see their Vault when they return.
+        localStorage.removeItem('mirror_genre_selection');
+        localStorage.removeItem('mirror_preference_v2');
+
+        console.log('✓ Soft Withdrawal completed. Session cleared, history preserved.');
+    } catch (e) {
+        console.error('Failed to perform soft withdrawal:', e);
+    }
+}

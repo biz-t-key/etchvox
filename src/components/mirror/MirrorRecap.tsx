@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { getAudioBlob, getAllAudioBlobs } from '@/lib/mirrorDb';
 import { loadVoiceLogHistory, type VoiceLog } from '@/lib/mirrorEngine';
 import { motion, AnimatePresence } from 'framer-motion';
+import BlessingPortal from './BlessingPortal';
 
 interface MirrorRecapProps {
     userHash: string;
@@ -24,6 +25,7 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
     const [exportMode, setExportMode] = useState<'full' | 'sns'>('full');
     const [revealPhase, setRevealPhase] = useState<'IDLE' | 'RECALLING' | 'SYNCING' | 'STITCHING' | 'FINALIZING' | 'SUCCESS'>('IDLE');
     const [revealLogs, setRevealLogs] = useState<string[]>([]);
+    const [showPortal, setShowPortal] = useState(false);
 
     const THEMES: Record<string, any> = {
         OPTIMIZER: {
@@ -846,18 +848,16 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
                     {!isPlaying && !isRecording && (
                         <div className="flex items-center gap-8 border-t pt-6" style={{ borderColor: pageTheme.color + '20' }}>
                             <button
-                                onClick={onClose}
-                                className="text-sm font-mono transition"
-                                style={{ color: pageTheme.color + '60' }}
+                                onClick={() => setShowPortal(true)}
+                                className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white rounded-full font-black uppercase tracking-widest text-[10px] transition-all border border-white/20"
                             >
-                                Finish Journey
+                                🕯️ Purge Cycle & Bless
                             </button>
                             <button
-                                onClick={purgeData}
-                                className="text-sm font-mono transition"
-                                style={{ color: '#ef4444' }}
+                                onClick={onClose}
+                                className="text-[10px] font-mono transition uppercase tracking-widest text-white/40 hover:text-white"
                             >
-                                Purge & Reset Phase
+                                Not Now
                             </button>
                         </div>
                     )}
@@ -870,6 +870,23 @@ export default function MirrorRecap({ userHash, onClose, archetype = 'optimizer'
                 onPlay={() => setIsPlaying(true)}
                 className="hidden"
             />
+
+            <AnimatePresence>
+                {showPortal && (
+                    <BlessingPortal
+                        onComplete={async () => {
+                            // Final Purge Logic triggered by breath burst
+                            const { clearAudioBlobs } = await import('@/lib/mirrorDb');
+                            const { clearVoiceLogHistory } = await import('@/lib/mirrorEngine');
+                            await clearAudioBlobs();
+                            clearVoiceLogHistory();
+                            localStorage.removeItem('mirror_genre_selection');
+                            localStorage.removeItem('mirror_preference_v2');
+                            onClose();
+                        }}
+                    />
+                )}
+            </AnimatePresence>
 
             <style jsx>{`
                 @keyframes fade-in {

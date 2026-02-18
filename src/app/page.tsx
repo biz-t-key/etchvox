@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getHistory, requestSyncOtp, verifySyncOtp, removeFromHistory, VoiceResult } from '@/lib/storage';
+import { motion, AnimatePresence } from 'framer-motion';
+import BlessingPortal from '@/components/mirror/BlessingPortal';
+import { getHistory, requestSyncOtp, verifySyncOtp, removeFromHistory, softWithdraw, VoiceResult } from '@/lib/storage';
 import { voiceTypes } from '@/lib/types';
 import { format } from 'date-fns';
 import { getDb, isFirebaseConfigured } from '@/lib/firebase';
@@ -20,14 +22,36 @@ export default function HomePage() {
   const [step, setStep] = useState<'email' | 'otp'>('email');
   const [isRestoring, setIsRestoring] = useState(false);
   const [restoreStatus, setRestoreStatus] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
+  const [showPurgePortal, setShowPurgePortal] = useState(false);
 
   async function loadHistory() {
     const data = await getHistory();
     setHistory(data);
   }
 
+  const [totalVoices, setTotalVoices] = useState(14028);
+  const [dataMB, setDataMB] = useState(482);
+
   useEffect(() => {
     loadHistory();
+
+    // Fetch real stats
+    if (isFirebaseConfigured()) {
+      const fetchStats = async () => {
+        try {
+          const { getCountFromServer, collection } = await import('firebase/firestore');
+          const db = getDb();
+          const snapshot = await getCountFromServer(collection(db, 'results'));
+          const count = snapshot.data().count;
+          setTotalVoices(count);
+          // Roughly 1.5MB per voice recording * count
+          setDataMB(Math.floor(count * 1.5));
+        } catch (e) {
+          console.warn("Failed to fetch statistics", e);
+        }
+      };
+      fetchStats();
+    }
   }, []);
 
   const handleRequestOtp = async (e: React.FormEvent) => {
@@ -250,13 +274,17 @@ export default function HomePage() {
           <div className="space-y-6 pt-10">
             <p className="text-[10px] uppercase tracking-[0.4em] text-gray-600 font-black italic">Archive Statistics: Real-time Data Feed</p>
             <div className="flex justify-center gap-16 text-center">
-              <div className="space-y-3">
-                <div className="mono text-3xl md:text-4xl font-bold neon-text-cyan">14,028</div>
-                <div className="text-sm text-gray-500 uppercase tracking-widest text-[10px] font-bold">Voices Analyzed</div>
+              <div className="space-y-2">
+                <div className="mono text-3xl md:text-5xl font-bold neon-text-cyan">
+                  {totalVoices.toLocaleString()}
+                </div>
+                <div className="text-sm text-gray-500 uppercase tracking-widest text-[10px] font-bold">Voices Archived</div>
               </div>
-              <div className="space-y-3">
-                <div className="mono text-3xl md:text-4xl font-bold neon-text-magenta">482 TB</div>
-                <div className="text-sm text-gray-500 uppercase tracking-widest text-[10px] font-bold">Data Processed</div>
+              <div className="space-y-2">
+                <div className="mono text-3xl md:text-5xl font-bold neon-text-magenta">
+                  {dataMB > 1024 ? (dataMB / 1024).toFixed(1) : dataMB} {dataMB > 1024 ? 'GB' : 'MB'}
+                </div>
+                <div className="text-sm text-gray-500 uppercase tracking-widest text-[10px] font-bold">Grid Capacity</div>
               </div>
             </div>
           </div>
@@ -377,14 +405,72 @@ export default function HomePage() {
           </div>
 
           {history.length > 0 && (
-            <div className="mt-12 text-center">
+            <div className="mt-32 space-y-12">
               <p className="text-[9px] text-gray-600 uppercase tracking-widest font-black italic">
-                Archived records are hidden from active view.
+                -- Terminal Options --
               </p>
+
+              {/* Vault Legacy Management */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Safe Withdrawal */}
+                <div className="glass rounded-2xl p-8 border border-cyan-500/10 bg-cyan-500/5 group hover:border-cyan-500/30 transition-all duration-700 text-center flex flex-col justify-between">
+                  <div className="space-y-4">
+                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-500/60 group-hover:text-cyan-500 transition-colors">Freeze Vault & Exit</span>
+                    <p className="text-[8px] font-mono text-gray-500 uppercase tracking-widest leading-relaxed">
+                      Safe Sanctuary. End your active session but keep your archives viewable for free via your recovery phrase.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      softWithdraw();
+                      window.location.reload();
+                    }}
+                    className="mt-6 px-10 py-3 bg-cyan-900/20 hover:bg-cyan-600 text-cyan-500 hover:text-white rounded-full font-black uppercase tracking-widest text-[9px] transition-all border border-cyan-500/20"
+                  >
+                    ❄️ FREEZE SESSION
+                  </button>
+                </div>
+
+                {/* Nuclear Purge Sanctuary */}
+                <div className="glass rounded-2xl p-8 border border-red-500/10 bg-red-500/5 group hover:border-red-500/30 transition-all duration-700 text-center flex flex-col justify-between">
+                  <div className="space-y-4">
+                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-red-500/60 group-hover:text-red-500 transition-colors">Nuclear Purge Sanctuary</span>
+                    <p className="text-[8px] font-mono text-gray-500 uppercase tracking-widest leading-relaxed">
+                      Withdraw Consent. Incinerate all traces of your vocal identity from both the grid and this device.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowPurgePortal(true)}
+                    className="mt-6 px-10 py-3 bg-red-900/20 hover:bg-red-600 text-red-500 hover:text-white rounded-full font-black uppercase tracking-widest text-[9px] transition-all border border-red-500/20"
+                  >
+                    🚀 INITIATE ERASURE
+                  </button>
+                </div>
+              </div>
+
+              {/* Retention Policy Note */}
+              <div className="pt-8 border-t border-white/5 opacity-40">
+                <p className="text-[8px] font-mono uppercase tracking-[0.3em] leading-relaxed max-w-lg mx-auto">
+                  Note for 7-Day Journey & Subscription Users: Expired status does not destroy your Vault. History remains viewable for free unless you perform a Nuclear Purge.
+                </p>
+              </div>
             </div>
           )}
         </div>
       </div>
+
+      <AnimatePresence>
+        {showPurgePortal && (
+          <BlessingPortal
+            variant="vault"
+            onComplete={async () => {
+              const { hardPurgeEverything } = await import('@/lib/storage');
+              await hardPurgeEverything();
+              window.location.reload();
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Footer */}
       <footer className="relative z-10 w-full mt-48 pb-16 text-center text-[10px] text-gray-600 space-y-6">
