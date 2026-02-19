@@ -7,6 +7,8 @@ import ReactMarkdown from 'react-markdown'; // ✅ Markdown Renderer
 import { voiceTypes, TypeCode, groupColors } from '@/lib/types';
 import { getResult, VoiceResult, removeFromHistory, linkResultToEmail } from '@/lib/storage';
 import { getBestMatches, getWorstMatches, getCompatibilityTier } from '@/lib/compatibilityMatrix';
+import { getSoloIdentity } from '@/lib/soloIdentityMatrix';
+import { getDuoIdentity } from '@/lib/duoIdentityMatrix';
 import ShareButtons from '@/components/result/ShareButtons';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import HighFidelityMetrics from '@/components/result/HighFidelityMetrics';
@@ -342,6 +344,22 @@ You are currently optimized for **Hard-Core Engineering** and **Rapid Iteration*
 
     const voiceType = voiceTypes[result.typeCode] || voiceTypes['HFCC']; // Robust fallback
 
+    // RESOLVE REFINED IDENTITY
+    const identityData = isCouple && result.coupleData
+        ? getDuoIdentity(
+            result.coupleData.userA?.typeCode || 'UNKNOWN',
+            result.coupleData.userB?.typeCode || 'UNKNOWN',
+            result.coupleData.relationshipType || 'romantic'
+        )
+        : getSoloIdentity((result.mbti || 'INTJ') as MBTIType, result.typeCode);
+
+    const brandingLabel = isCouple
+        ? (identityData as any).label
+        : (identityData as any).brandName;
+    const brandingRoast = isCouple
+        ? (identityData as any).tagline
+        : (identityData as any).roast;
+
     // Re-check after possible fallback
     const colors = groupColors[voiceType.group] || groupColors['special']; // Final safety
     const bestMatches = getBestMatches(result.typeCode);
@@ -577,7 +595,7 @@ You are currently optimized for **Hard-Core Engineering** and **Rapid Iteration*
                                             metadata={{
                                                 archetypeCode: result.typeCode || 'UNKNOWN',
                                                 mbti: result.mbti || 'Void',
-                                                roast: voiceType.roast || voiceType.catchphrase || 'Echo in the void',
+                                                roast: brandingRoast,
                                                 isCouple: isCouple,
                                                 price: isCouple ? POLAR_CONFIG.IDENTITY_DUO_PRICE : POLAR_CONFIG.IDENTITY_SOLO_PRICE,
                                                 partnerA: isCouple ? result.coupleData?.userA?.name : undefined,
@@ -678,6 +696,8 @@ You are currently optimized for **Hard-Core Engineering** and **Rapid Iteration*
                                         catchphrase={voiceType.catchphrase}
                                         typeCode={result.typeCode}
                                         cardImageUrl={cardImageUrl}
+                                        refinedName={brandingLabel}
+                                        refinedRoast={brandingRoast}
                                     />
                                 </section>
 

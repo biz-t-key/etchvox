@@ -9,10 +9,12 @@ interface ShareButtonsProps {
     typeIcon: string;
     catchphrase: string;
     typeCode: string;
-    cardImageUrl?: string | null; // Added for sharing
+    cardImageUrl?: string | null;
+    refinedName?: string;
+    refinedRoast?: string;
 }
 
-export default function ShareButtons({ resultId, typeName, typeIcon, catchphrase, typeCode, cardImageUrl }: ShareButtonsProps) {
+export default function ShareButtons({ resultId, typeName, typeIcon, catchphrase, typeCode, cardImageUrl, refinedName, refinedRoast }: ShareButtonsProps) {
     const [copied, setCopied] = useState<'bio' | 'link' | null>(null);
     const [canShare, setCanShare] = useState(false);
 
@@ -30,9 +32,12 @@ export default function ShareButtons({ resultId, typeName, typeIcon, catchphrase
 
     const shareUrl = `${baseUrl}/result/${resultId}`;
 
-    const bioText = `${typeIcon} ${typeName.toUpperCase()}\n"${catchphrase}"\n#etchvox @etchvox`;
+    const displayTypeCode = refinedName ? refinedName.toUpperCase() : typeName.toUpperCase();
+    const displayRoast = refinedRoast || catchphrase;
 
-    const fullShareText = `I just discovered I'm ${typeIcon} ${typeName.toUpperCase()}! "${catchphrase}" What's YOUR voice type? #etchvox @etchvox`;
+    const bioText = `${typeIcon} ${displayTypeCode}\n"${displayRoast}"\n#etchvox @etchvox`;
+
+    const fullShareText = `I just discovered I'm ${typeIcon} ${displayTypeCode}! "${displayRoast}" What's YOUR voice type? #etchvox @etchvox`;
 
     const copyToClipboard = async (text: string, type: 'bio' | 'link') => {
         // Analytics: Share Click (Clipboard)
@@ -182,6 +187,24 @@ export default function ShareButtons({ resultId, typeName, typeIcon, catchphrase
                     className="px-3 py-1 text-xs bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 rounded transition-colors whitespace-nowrap"
                 >
                     {copied === 'link' ? '✓ Copied!' : 'Copy Link'}
+                </button>
+            </div>
+
+            {/* Download Card (Duplicate trigger for convenience) */}
+            <div className="mt-8">
+                <button
+                    onClick={() => {
+                        if (!cardImageUrl) return;
+                        trackEv('3.0', 'card_download', { type: 'broadcast_trigger', code: typeCode });
+                        const link = document.createElement('a');
+                        link.download = `etchvox-truth-card-${typeCode}.png`;
+                        link.href = cardImageUrl;
+                        link.click();
+                    }}
+                    disabled={!cardImageUrl}
+                    className="w-full flex items-center justify-center gap-2 py-4 border border-white/10 hover:border-white/20 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-white transition-all disabled:opacity-30"
+                >
+                    <span>{cardImageUrl ? '📥 Download Identity Card' : '⌛ Encoding Visual Print...'}</span>
                 </button>
             </div>
         </div>
